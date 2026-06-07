@@ -1,0 +1,126 @@
+:root {
+	/* canvas */
+	--ink: #0a0d16; /* page background — blue-black, not pure black */
+	--surface: #11151f; /* panels, expanders, the diagram stage */
+	--line: #1e2533; /* schematic strokes, hairlines, grid */
+	--line-bright: #2c3650; /* active/framed strokes */
+
+	/* type */
+	--paper: #e8e6df; /* body text — warm off-white for long reading */
+	--muted: #8a93a6; /* captions, secondary labels */
+	--faint: #5a6275; /* disabled, far-away diagram detail */
+
+	/* the only saturated colors — token flow ONLY */
+	--cool: #38e1c6; /* context tokens → into the model */
+	--warm: #ff9d4d; /* response tokens ← back to the agent */
+	--glow-cool: 0 0 12px rgba(56, 225, 198, 0.45);
+	--glow-warm: 0 0 12px rgba(255, 157, 77, 0.45);
+
+	/* fonts */
+	--display: 'Instrument Serif', Georgia, serif;
+	--serif: 'Newsreader', Georgia, serif;
+	--mono: 'Spline Sans Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+	--reading: 62ch;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background-color: var(--ink);
+	/* faint full-page blueprint dot-grid — never a flat fill */
+	background-image: radial-gradient(circle at center, var(--line) 0.9px, transparent 0.9px);
+	background-size: 30px 30px;
+	background-position: -15px -15px;
+	color: var(--paper);
+	font-family: var(--serif);
+	font-size: 1.125rem;
+	line-height: 1.65;
+	font-weight: 300;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+/* subtle full-page film-grain overlay */
+.film-grain {
+	pointer-events: none;
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	opacity: 0.035;
+	mix-blend-mode: overlay;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--display);
+	font-weight: 400;
+	letter-spacing: -0.01em;
+	line-height: 1.04;
+	margin: 0;
+}
+
+p {
+	margin: 0;
+}
+
+a {
+	color: inherit;
+	text-decoration-color: var(--line-bright);
+	text-underline-offset: 0.2em;
+}
+
+a:hover {
+	text-decoration-color: var(--muted);
+}
+
+::selection {
+	background: var(--line-bright);
+	color: var(--paper);
+}
+
+/* shared utility text registers */
+.mono {
+	font-family: var(--mono);
+	font-feature-settings: 'ss01';
+}
+
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 0.72rem;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.disclaimer {
+	font-family: var(--mono);
+	font-size: 0.72rem;
+	line-height: 1.6;
+	color: var(--muted);
+}
+
+:focus-visible {
+	outline: 2px solid var(--line-bright);
+	outline-offset: 3px;
+	border-radius: 4px;
+}

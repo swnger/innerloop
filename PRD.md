@@ -66,7 +66,7 @@ The camera path:
 |---|---|---|
 | 0 | The whole machine, ticking once, barely labeled | 01 (the hook) |
 | → | Zoom right, into the LLM — one call: tokens in, response out, one token at a time | 03 |
-| → | Zoom the channel between them — the context window and context engineering | 07, 10 |
+| → | Zoom the channel between them — the context window (drawn as a stratified tank that fills and overflows) and context engineering | 07, 10 |
 | → | Zoom left, into the agent — **the inner loop**: the tool-calling cycle nested in the prompt loop | 09, 11 |
 | ↺ | Pull all the way back out — the whole machine, every part now labeled and clickable | finale |
 

@@ -2,8 +2,10 @@
 node_modules/
 
 # Build output
+build/
 dist/
 dist-ssr/
+.svelte-kit/
 .vite/
 
 # Local env

@@ -13,6 +13,8 @@
 
 The two flow accents are **reserved exclusively for token flow** (PRD §6.1, §9) — never use them for buttons, links, or chrome. Cool = context tokens travelling **right into the LLM**; warm = the generated response streaming **left back to the agent**. That consistency is the navigational cue, so don't dilute it.
 
+Two derived uses stay inside the rule because they still read as *flow*, not chrome: a context-window stratum that holds model output wears a thin **warm** resting edge (it *is* response tokens), and a budget **overflow** flashes warm on the `max` line as a breach signal. Both are always paired with a mono label, and neither ever lands on a button, link, or border.
+
 ```css
 :root {
   /* canvas */
@@ -53,6 +55,7 @@ Distinctive editorial-scientific trio (all Google Fonts). Never substitute Inter
 ### Layout & atmosphere
 
 - Pinned diagram stage on `--surface`; reading column overlaid or beside it, asymmetric, generous negative space around the lit machine.
+- **The context window is a stratified tank** (PRD §7) — the mediator in the agent↔LLM channel, not just two flow lines. Labeled token strata (system prompt, tool definitions, user prompt, tool outputs, responses) stack in a vessel against a finite `used / max` budget line; it fills as the inner loop runs, is handed to the model **whole** on every call, and **evicts the oldest content on overflow**. Strata are monochrome luminance steps so the flow accents stay reserved. Rendered compact in the hero's context-window stop and full-scale (a sticky tank scrolled past prose steps) in Chapter 7.
 - Background depth: a faint blueprint dot-grid behind the stage (`--line` at low opacity) and a subtle full-page film-grain overlay — never flat fills. Glow on active strokes and token chips via `box-shadow`/`drop-shadow` with `--glow-*`.
 - **"Go deeper" expanders** (PRD §8) styled as folded schematic cards on `--surface` with a `--line` hairline; closed by default so the main path reads clean for the least technical viewer.
 - Illustrative-demo disclaimers (PRD §5.5, §8) set small in `--muted` `Spline Sans Mono`.
