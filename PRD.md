@@ -22,7 +22,7 @@ The goal is a single, self-serve resource that gives any colleague an accurate, 
 
 ## 3. Audience
 
-The primary audience is the **non-technical to semi-technical colleague** — operations, sales, marketing, legal, support, product. The secondary audience is **engineers** who want a shared reference and occasional depth. The hard constraint is that the site must work for the least technical viewer first, while offering optional depth that does not get in their way (see §8).
+The primary audience is the **non-technical to semi-technical colleague** — operations, sales, marketing, legal, support, product. The secondary audience is **engineers** who want a shared reference and occasional depth. The hard constraint is that the site must work for the least technical viewer first, while offering optional depth that does not get in their way.
 
 ## 4. Non-goals
 
@@ -121,84 +121,6 @@ Every illustrative demo carries a short, honest disclaimer. A tokenizer prototyp
 For the dual audience, depth lives in **optional, collapsed "go deeper" expanders** that the default reader can skip entirely. The main scroll path must read cleanly for the least technical viewer with every expander closed.
 
 Tone is plain, concrete, and free of hype. No emoji, no exclamatory marketing voice. Analogies are favored over jargon; jargon, when unavoidable, is defined inline and added to the glossary.
-
-## 9. Visual identity & design system
-
-The look is deliberately **editorial "paper and ink"** rather than the typical dark-mode AI aesthetic — warmer, more approachable for a broad internal audience, and more distinctive. The recurring **colored token "chip"** is the visual signature of the entire site and should appear in some form in most chapters so readers build a single, persistent mental object.
-
-**Color tokens**
-
-| Token | Hex | Role |
-|---|---|---|
-| `paper` | `#F6F1E7` | Page background |
-| `paper-2` | `#F1EADC` | Panels, cards |
-| `ink` | `#211B16` | Primary text |
-| `ink-soft` | `#5C5347` | Secondary text |
-| `ink-faint` | `#8C8273` | Captions, labels |
-| `line` / `line-strong` | `#E3DACA` / `#D6CBB6` | Borders |
-| `accent` | `#D8451F` | Highlights, the brand "Loop," progress |
-| `space-glyph` | `#B8AE9E` | The ▁ space marker inside tokens |
-
-Token chips draw from a fixed nine-color palette assigned deterministically by hashing the token text, so the same token is always the same color across the site.
-
-**Typography**
-
-- **Display** — *Fraunces* (chapter titles, large numerals)
-- **Body** — *Newsreader* (all prose)
-- **Mono** — *IBM Plex Mono* (tokens, labels, UI chrome, the glossary)
-
-**Layout** — A single ~46rem reading column, generous vertical rhythm between sections, a fixed top bar with the chapter label, and a thin accent scroll-progress bar.
-
-## 10. Interaction & animation patterns
-
-A small set of reusable patterns should carry the whole site so each chapter feels part of one object:
-
-- **Crystallize** — flat plain text snaps into colored token chips and holds. The core "concept clicking into place" motion; reused for openers, the rare-word shatter, and more.
-- **Number reveal** — a chip cross-fades to reveal its vocabulary ID, making "tokens are really numbers" visible rather than asserted.
-- **Collapse** — letters physically squeeze and dissolve into a few opaque chunks (the strawberry moment); the payoff animation for character-level failures.
-- **Live widgets** — fully interactive controls (the tokenizer; later, a temperature slider, a context-window filler). These are the highest-value elements and should be prioritized per chapter.
-
-**The scroll-trigger rule.** Animations fire when their section scrolls into view and play through once. We do **not** use replay buttons; instead, an animation re-runs when the reader scrolls back to it, so re-entry is the replay mechanism. Each runs long enough to be read, then settles on its finished state.
-
-**Reduced motion.** Respect `prefers-reduced-motion`, but the fallback must render the *finished, meaningful* state of each animation — never a blank or frozen intermediate frame. This is the single most important detail for getting scroll-triggering right (see §11).
-
-## 11. Technical approach
-
-The site will be built in **React**, one self-contained component per chapter, sharing a common set of primitives (the chip, the token stream, the crystallize loop) and the design tokens above.
-
-**Animations are scroll-triggered.** Each chapter uses `IntersectionObserver` to fire its animations when the relevant section enters the viewport, and re-fires them on re-entry so scrolling back replays them. Two things make this reliable: the `prefers-reduced-motion` fallback must resolve to each animation's *finished* state (a frozen intermediate frame was the cause of an earlier "stuck animation" bug), and the behavior must be verified in a **real browser** — embedded or sandboxed preview panes handle scroll and observers differently and are not a faithful test of the final experience. Scroll position also drives the cosmetic progress bar.
-
-**No browser storage.** Components hold all state in memory (React state). No `localStorage` or `sessionStorage`.
-
-**Styling** is via inline styles plus a single injected stylesheet, so rendering does not depend on a Tailwind build step.
-
-**Production tokenizer.** The shipping build should use a real tokenizer (e.g. a `tiktoken`-style library or a small tokenization endpoint) so the live counts are exact. Simplified tokenizers are acceptable only for prototyping.
-
-## 12. Accessibility
-
-Color is never the sole carrier of meaning (token chips also differ by text and position). Text meets contrast guidance against the paper background. All interactive controls are keyboard-operable, motion honors `prefers-reduced-motion` per §10, and the reading column and type sizes are tuned for comfortable reading on mobile as well as desktop.
-
-## 13. Success signals
-
-We will consider the site working if a non-technical colleague who has read two or three chapters can, unprompted, explain that the model predicts text one token at a time, that it doesn't see letters, and that it isn't learning from their messages in the moment. Secondary signals: engineers adopt the glossary and link to chapters in their own docs, and support/onboarding teams reference it instead of re-explaining the basics.
-
-## 14. Milestones & phasing
-
-- **Phase 0 — Prototype validation.** Use exploratory prototypes, including `/examples/inner-loop-hero.jsx`, to test whether the animation, camera stops, and system-diagram story work. These prototypes are not part of the shipping site and do not count as built chapters.
-- **Phase 1 — Spine.** Build the three "engine room" chapters that anchor the mental model: 3 (next-token loop), 7 (context window), 9 (the agentic loop), plus the production version of the system diagram. With these in place, the core story stands on its own.
-- **Phase 2 — Foundations.** Fill in 1, 4, 5, 6, 8.
-- **Phase 3 — Practice & reference.** Build 10, 11, 12, 13, and localize Chapter 12 with the company's real tools and policies.
-- **Phase 4 — Polish.** Production tokenizer, accessibility pass, cross-chapter navigation, and a landing/index page.
-
-## 15. Open questions
-
-- Who owns this (single author vs. a small content + design pair), and what's the target ship date?
-- Which internal tools and policies anchor Chapter 12 — and who signs off on the responsible-use guidance?
-- Hosting and platform: standalone internal site, or embedded in an existing internal portal / wiki?
-- Do we want light analytics (e.g. which chapters are read) given the explicit non-goal of optimizing engagement?
-- Is there appetite for a short guided "start here" path versus pure free browsing?
-
----
 
 ## Appendix A — Glossary (terms the site will define)
 
