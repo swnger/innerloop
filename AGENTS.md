@@ -6,6 +6,7 @@
 
 - Target hosting: GitHub Pages, so the app must build to static files.
 - Use SvelteKit + TypeScript + adapter-static + GSAP
+- Animations should use GSAP only! Exceptions only if no other option.
 - Package manager: bun, build + test: Vite
 - If publishing under `org.github.io/repo`, set Vite `base` to `/repo/`; use `/` for custom domains or root user/org sites.
 - Use the agent-browser cli (`agent-browser --help`) for E2E verification

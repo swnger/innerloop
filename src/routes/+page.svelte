@@ -194,7 +194,6 @@
 		gap: 1rem;
 		padding: 1.05rem 0.4rem;
 		border-bottom: 1px solid var(--line);
-		transition: background 0.18s ease;
 	}
 
 	.chapter:hover {
