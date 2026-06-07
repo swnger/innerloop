@@ -1128,9 +1128,17 @@
 
 <style>
     .hero {
+        /* One slide: fill the viewport below the sticky header, no scroll. */
+        --header: 50px;
+        --ratio: 1.746; /* 1100 / 630 svg aspect */
         max-width: 72rem;
         margin: 0 auto;
-        padding: clamp(2rem, 6vw, 4.5rem) clamp(1rem, 4vw, 2rem) 4rem;
+        min-height: calc(100svh - var(--header));
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: clamp(0.6rem, 1.6vh, 1.2rem);
+        padding: clamp(0.75rem, 2vh, 1.5rem) clamp(1rem, 4vw, 2rem);
     }
 
     .intro {
@@ -1142,18 +1150,17 @@
     }
 
     #hero-title {
-        font-size: clamp(2.4rem, 7vw, 4rem);
-        margin: 0.5rem 0 0.9rem;
-    }
-
-    .lede {
-        font-size: clamp(1.1rem, 2.6vw, 1.3rem);
-        color: var(--muted);
-        max-width: var(--reading);
+        font-size: clamp(1.8rem, 5vh, 3rem);
+        margin: 0.2rem 0 0;
+        line-height: 1.02;
     }
 
     .stage {
-        margin: clamp(1.6rem, 4vw, 2.4rem) 0 0;
+        /* Tight box around the diagram: capped by viewport height via the svg ratio. */
+        align-self: center;
+        width: 100%;
+        /* svg height ≈ viewport minus header + intro/caption/note chrome (~300px) */
+        max-width: min(100%, calc((100svh - 300px) * var(--ratio)));
         border: 1px solid var(--line);
         border-radius: 18px;
         overflow: hidden;
@@ -1174,9 +1181,9 @@
         gap: 0.75rem;
         align-items: baseline;
         flex-wrap: wrap;
-        padding: 1rem 1.2rem;
+        padding: 0.7rem 1.1rem;
         border-top: 1px solid var(--line);
-        min-height: 64px;
+        min-height: 0;
     }
 
     .caption-label {
@@ -1186,8 +1193,8 @@
 
     .caption-text {
         font-family: var(--serif);
-        font-size: 1rem;
-        line-height: 1.55;
+        font-size: 0.95rem;
+        line-height: 1.5;
         color: var(--muted);
         flex: 1;
         min-width: 16rem;
@@ -1195,12 +1202,14 @@
     }
 
     .note {
-        margin-top: 1.4rem;
+        margin: 0;
         max-width: 48rem;
+        font-size: 0.66rem;
     }
 
     @media (max-width: 700px) {
         .hero {
+            min-height: 0;
             padding-inline: 0.75rem;
         }
 
