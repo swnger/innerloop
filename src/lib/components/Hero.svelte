@@ -130,12 +130,21 @@
         },
     ];
 
-    // Decoder blocks, top → bottom. Forward pass flows downward.
-    const BLOCKS = [
-        { y: 200, label: "LAYER 1", cls: "block-1" },
-        { y: 274, label: "LAYER 2", cls: "block-2" },
-        { y: 368, label: "LAYER N", cls: "block-n" },
-    ];
+    // Context shown as tokens entering the model. Sub-word splits ("fail"+"ing")
+    // foreshadow Ch.2 tokenization; x is laid out left→right once.
+    let readAcc = 752;
+    const READ_TOKENS = [
+        { t: "fix", w: 30 },
+        { t: " the", w: 32 },
+        { t: " fail", w: 34 },
+        { t: "ing", w: 30 },
+        { t: " test", w: 36 },
+        { t: "…", w: 20 },
+    ].map((d) => {
+        const o = { ...d, x: readAcc };
+        readAcc += d.w + 4;
+        return o;
+    });
 
     // Narration synced to the timeline so the eye can follow each hop.
     const PHASES = [
@@ -150,11 +159,11 @@
         },
         {
             k: "forward",
-            t: "Tokens become embeddings and flow down through every decoder layer.",
+            t: "Inside, the context flows down through stacked layers — each token looking back at the others.",
         },
         {
             k: "sample",
-            t: "The model samples one next token. Here it is a tool call, appended as context.",
+            t: "It scores every possible token and samples one, looping to build the reply one token at a time — here, a tool call.",
         },
         {
             k: "tool",
@@ -178,7 +187,7 @@
     let reduced = $state(false);
     let phase = $state(0);
     let used = $state("1.8k");
-    let gen = $state("run_tool");
+    let gen = $state("read");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let gsap: any;
 
@@ -219,6 +228,7 @@
                         });
                         gsap.set(q(".transformer-step"), { opacity: 0.3 });
                         gsap.set(q(".generated-token"), { opacity: 0 });
+                        gsap.set(q(".gen-loop-chip"), { opacity: 0 });
                     };
 
                     if (reduced) {
@@ -229,6 +239,7 @@
                         });
                         gsap.set(q(".transformer-step"), { opacity: 1 });
                         gsap.set(q(".generated-token"), { opacity: 1 });
+                        gsap.set(q(".gen-loop-chip"), { opacity: 0 });
                         gsap.set(q(".flow-chip"), { opacity: 0 });
                         used = "4.2k";
                         phase = 0;
@@ -271,7 +282,16 @@
                                     duration: 0.3,
                                     transformOrigin: "50% 50%",
                                 },
-                            );
+                            )
+                            // inner generation loop: append this token, predict the next
+                            .set(q(".gen-loop-chip"), { opacity: 1 })
+                            .to(q(".gen-loop-chip"), {
+                                duration: 0.5,
+                                ease: "none",
+                                repeat: 1,
+                                ...motionPath("#gen-loop-path"),
+                            })
+                            .set(q(".gen-loop-chip"), { opacity: 0 });
                     };
                     const dimLLM = (tl: any) => {
                         tl.to(q(".transformer-step"), {
@@ -336,7 +356,7 @@
 
                         // 3 — forward pass
                         .call(setPhase(3));
-                    forwardPass(tl, "read_file");
+                    forwardPass(tl, "read");
 
                     tl
                         // 4 — sample a token (tool call) and append it
@@ -405,7 +425,7 @@
                         .to(q(".context-chip"), { opacity: 0, duration: 0.15 })
                         .to(q(".code-loop"), DIM, "<");
 
-                    forwardPass(tl, "Fixed.");
+                    forwardPass(tl, "Fixed");
 
                     tl
                         // 7 — return the final answer to the user
@@ -451,7 +471,7 @@
         <svg
             viewBox="0 0 1100 630"
             role="img"
-            aria-label="A coding agent appends user input to the bottom of a stratified context window, sends the whole context to a decoder-only transformer that processes top to bottom, samples a tool call, runs it and appends the output, then loops to generate and return the final answer."
+            aria-label="A coding agent appends user input to the bottom of a stratified context window, then sends the whole context to a model that reads it as tokens, weighs them across stacked layers, and predicts a reply one token at a time. The agent runs the tool the model calls and appends the output, then loops until the model returns the final answer."
         >
             <defs>
                 <marker
@@ -547,7 +567,7 @@
                 />
                 <path
                     id="return-path-1"
-                    d="M 824 511 C 706 548, 654 408, 632 362"
+                    d="M 820 500 C 706 540, 654 408, 632 362"
                     fill="none"
                     stroke={WARM}
                     stroke-width="1.2"
@@ -556,7 +576,7 @@
                 />
                 <path
                     id="return-path-2"
-                    d="M 824 511 C 700 552, 648 472, 632 442"
+                    d="M 820 500 C 700 545, 648 472, 632 442"
                     fill="none"
                     stroke={WARM}
                     stroke-width="1.2"
@@ -761,7 +781,7 @@
                     fill={MUTED}>APPENDED THIS TURN</text
                 >
 
-                <!-- LLM — decoder-only transformer, forward pass flows downward -->
+                <!-- LLM — a next-token predictor: reads context, weighs it, predicts one token, loops -->
                 <rect
                     x="720"
                     y="96"
@@ -787,197 +807,184 @@
                     text-anchor="end"
                     font-family="var(--mono)"
                     font-size="9.5"
+                    fill={FAINT}>a next-token predictor</text
+                >
+                <line x1="744" y1="138" x2="1036" y2="138" stroke={LINE} />
+
+                <!-- 1 — READS the whole context, broken into tokens -->
+                <text
+                    x="744"
+                    y="162"
+                    font-family="var(--mono)"
+                    font-size="10.5"
+                    font-weight="600"
+                    letter-spacing="0.12em"
+                    fill={MUTED}><tspan fill={PAPER}>1</tspan>  READS THE CONTEXT</text
+                >
+                <text
+                    x="1036"
+                    y="162"
+                    text-anchor="end"
+                    font-family="var(--mono)"
+                    font-size="8.5"
+                    fill={FAINT}>the window → tokens</text
+                >
+                <g class="transformer-step embedding-step">
+                    {#each READ_TOKENS as tk}
+                        <rect
+                            x={tk.x}
+                            y="176"
+                            width={tk.w}
+                            height="20"
+                            rx="4"
+                            fill="#1B2434"
+                            stroke={LINE_B}
+                            stroke-width="0.8"
+                        />
+                        <text
+                            x={tk.x + tk.w / 2}
+                            y="187"
+                            text-anchor="middle"
+                            dominant-baseline="middle"
+                            xml:space="preserve"
+                            font-family="var(--mono)"
+                            font-size="9"
+                            fill={PAPER}>{tk.t}</text
+                        >
+                    {/each}
+                </g>
+
+                <!-- 2 — WEIGHS it: a stack of identical layers; attention lets each token look back -->
+                <text
+                    x="744"
+                    y="226"
+                    font-family="var(--mono)"
+                    font-size="10.5"
+                    font-weight="600"
+                    letter-spacing="0.12em"
+                    fill={MUTED}><tspan fill={PAPER}>2</tspan>  WEIGHS IT</text
+                >
+                <text
+                    x="1000"
+                    y="226"
+                    text-anchor="end"
+                    font-family="var(--mono)"
+                    font-size="8.5"
                     fill={FAINT}>decoder-only transformer</text
                 >
 
-                <!-- forward-pass spine -->
-                <path
-                    d="M 732 150 L 732 488"
-                    fill="none"
-                    stroke={FAINT}
-                    stroke-width="1"
-                    stroke-dasharray="2 4"
-                    marker-end="url(#arrow-faint)"
-                />
-                <text
-                    x="726"
-                    y="320"
-                    text-anchor="middle"
-                    transform="rotate(-90 726 320)"
-                    font-family="var(--mono)"
-                    font-size="7.5"
-                    letter-spacing="0.1em"
-                    fill={FAINT}>FORWARD PASS</text
-                >
-
-                <g class="transformer-step embedding-step">
+                <!-- ghosted depth: the same layer, repeated N times -->
+                <g class="transformer-step block-n">
                     <rect
                         x="748"
-                        y="140"
-                        width="288"
-                        height="46"
+                        y="234"
+                        width="240"
+                        height="78"
                         rx="7"
-                        fill="#1B2434"
+                        fill={SURFACE}
+                        stroke={LINE}
+                    />
+                </g>
+                <g class="transformer-step block-2">
+                    <rect
+                        x="754"
+                        y="240"
+                        width="240"
+                        height="78"
+                        rx="7"
+                        fill={SURFACE}
+                        stroke={LINE}
+                    />
+                </g>
+                <g class="transformer-step block-1">
+                    <rect
+                        x="760"
+                        y="246"
+                        width="240"
+                        height="78"
+                        rx="7"
+                        fill="#171D2A"
                         stroke={LINE_B}
                     />
                     <text
-                        x="766"
-                        y="160"
-                        font-family="var(--mono)"
-                        font-size="8.5"
-                        fill={MUTED}>TOKEN + POSITION EMBEDDINGS</text
-                    >
-                    <text
-                        x="766"
-                        y="177"
+                        x="994"
+                        y="262"
+                        text-anchor="end"
                         font-family="var(--mono)"
                         font-size="8"
-                        fill={FAINT}
-                        >system · tools · history · user · tool output</text
+                        fill={FAINT}>×N layers</text
+                    >
+                    <circle cx="778" cy="276" r="3" fill={MUTED} />
+                    <circle cx="812" cy="276" r="3" fill={MUTED} />
+                    <circle cx="846" cy="276" r="3" fill={MUTED} />
+                    <circle cx="880" cy="276" r="3" fill={MUTED} />
+                    <circle cx="914" cy="276" r="3" fill={MUTED} />
+                    <circle cx="948" cy="276" r="3" fill={MUTED} />
+                    <circle cx="982" cy="276" r="3" fill={MUTED} />
+                    <path d="M 982 276 Q 880 304 778 276" fill="none" stroke={LINE_B} stroke-width="1" opacity="0.7" />
+                    <path d="M 948 276 Q 880 300 812 276" fill="none" stroke={LINE_B} stroke-width="1" opacity="0.7" />
+                    <path d="M 914 276 Q 880 296 846 276" fill="none" stroke={LINE_B} stroke-width="1" opacity="0.7" />
+                    <path d="M 880 276 Q 846 292 812 276" fill="none" stroke={LINE_B} stroke-width="1" opacity="0.7" />
+                    <path d="M 846 276 Q 812 290 778 276" fill="none" stroke={LINE_B} stroke-width="1" opacity="0.7" />
+                    <text
+                        x="880"
+                        y="316"
+                        text-anchor="middle"
+                        font-family="var(--mono)"
+                        font-size="8"
+                        fill={FAINT}>self-attention · every token looks back</text
                     >
                 </g>
-                <path
-                    d="M 760 138 L 760 150"
-                    fill="none"
-                    stroke={COOL}
-                    stroke-width="1.2"
-                    marker-end="url(#arrow-cool)"
-                />
 
-                {#each BLOCKS as block}
-                    <g class="transformer-step {block.cls}">
-                        <rect
-                            x="748"
-                            y={block.y}
-                            width="288"
-                            height="66"
-                            rx="7"
-                            fill="#171D2A"
-                            stroke={LINE_B}
-                        />
-                        <text
-                            x="764"
-                            y={block.y + 14}
-                            font-family="var(--mono)"
-                            font-size="7.5"
-                            font-weight="600"
-                            fill={FAINT}>{block.label}</text
-                        >
-                        <line
-                            x1="766"
-                            y1={block.y + 20}
-                            x2="766"
-                            y2={block.y + 56}
-                            stroke={MUTED}
-                            stroke-width="1.5"
-                        />
-                        <rect
-                            x="784"
-                            y={block.y + 8}
-                            width="120"
-                            height="22"
-                            rx="4"
-                            fill="#202B3E"
-                            stroke={LINE}
-                        />
-                        <text
-                            x="844"
-                            y={block.y + 20}
-                            text-anchor="middle"
-                            dominant-baseline="middle"
-                            font-family="var(--mono)"
-                            font-size="8.2"
-                            fill={MUTED}>CAUSAL ATTENTION</text
-                        >
-                        <rect
-                            x="784"
-                            y={block.y + 36}
-                            width="120"
-                            height="22"
-                            rx="4"
-                            fill="#26344A"
-                            stroke={LINE}
-                        />
-                        <text
-                            x="844"
-                            y={block.y + 48}
-                            text-anchor="middle"
-                            dominant-baseline="middle"
-                            font-family="var(--mono)"
-                            font-size="8.2"
-                            fill={MUTED}>FEED-FORWARD MLP</text
-                        >
-                        <path
-                            d={`M 914 ${block.y + 19} h 28 v 28 h -28`}
-                            fill="none"
-                            stroke={FAINT}
-                            stroke-width="1"
-                        />
-                        <text
-                            x="954"
-                            y={block.y + 36}
-                            font-family="var(--mono)"
-                            font-size="7.5"
-                            fill={FAINT}>ADD + NORM</text
-                        >
-                        <text
-                            x="1018"
-                            y={block.y + 60}
-                            text-anchor="end"
-                            font-family="var(--mono)"
-                            font-size="7"
-                            fill={FAINT}>residual stream</text
-                        >
-                    </g>
-                {/each}
+                <!-- 3 — PREDICTS the next token: score the vocabulary, sample one -->
                 <text
-                    x="892"
-                    y="356"
-                    text-anchor="middle"
+                    x="744"
+                    y="350"
                     font-family="var(--mono)"
-                    font-size="14"
-                    fill={FAINT}>⋮</text
+                    font-size="10.5"
+                    font-weight="600"
+                    letter-spacing="0.12em"
+                    fill={MUTED}><tspan fill={PAPER}>3</tspan>  PREDICTS WHAT'S NEXT</text
+                >
+                <text
+                    x="1000"
+                    y="350"
+                    text-anchor="end"
+                    font-family="var(--mono)"
+                    font-size="8.5"
+                    fill={FAINT}>score every token</text
                 >
 
                 <g class="transformer-step logits-step">
-                    <rect
-                        x="748"
-                        y="446"
-                        width="288"
-                        height="42"
-                        rx="7"
-                        fill="#1B2434"
-                        stroke={LINE_B}
-                    />
-                    <text
-                        x="766"
-                        y="463"
-                        font-family="var(--mono)"
-                        font-size="8.5"
-                        fill={MUTED}>FINAL NORM → VOCAB LOGITS</text
-                    >
-                    <text
-                        x="766"
-                        y="478"
-                        font-family="var(--mono)"
-                        font-size="8"
-                        fill={FAINT}>score every token · sample one</text
-                    >
+                    <text x="786" y="369" text-anchor="end" dominant-baseline="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" fill={WARM}>{gen}</text>
+                    <rect x="794" y="362" width="93" height="14" rx="3" fill="rgba(255,157,77,0.16)" stroke={WARM} />
+                    <text x="900" y="369" dominant-baseline="middle" font-family="var(--mono)" font-size="8.5" fill={FAINT}>0.62</text>
+                    <text x="946" y="369" dominant-baseline="middle" font-family="var(--mono)" font-size="8" fill={WARM}>◀ sampled</text>
+
+                    <text x="786" y="393" text-anchor="end" dominant-baseline="middle" font-family="var(--mono)" font-size="9.5" fill={MUTED}>open</text>
+                    <rect x="794" y="386" width="31" height="14" rx="3" fill="#26344A" stroke={LINE} />
+                    <text x="900" y="393" dominant-baseline="middle" font-family="var(--mono)" font-size="8.5" fill={FAINT}>0.21</text>
+
+                    <text x="786" y="417" text-anchor="end" dominant-baseline="middle" font-family="var(--mono)" font-size="9.5" fill={MUTED}>fix</text>
+                    <rect x="794" y="410" width="14" height="14" rx="3" fill="#26344A" stroke={LINE} />
+                    <text x="900" y="417" dominant-baseline="middle" font-family="var(--mono)" font-size="8.5" fill={FAINT}>0.09</text>
                 </g>
+
+                <path d="M 841 380 L 841 466" fill="none" stroke={FAINT} stroke-width="1" stroke-dasharray="2 3" marker-end="url(#arrow-faint)" />
 
                 <g class="generated-token">
                     <rect
-                        x="824"
-                        y="498"
-                        width="98"
-                        height="26"
+                        x="792"
+                        y="470"
+                        width="100"
+                        height="28"
                         rx="6"
                         fill="rgba(255,157,77,0.12)"
                         stroke={WARM}
                     />
                     <text
-                        x="873"
-                        y="512"
+                        x="842"
+                        y="485"
                         text-anchor="middle"
                         dominant-baseline="middle"
                         font-family="var(--mono)"
@@ -986,14 +993,37 @@
                         fill={WARM}>{gen}</text
                     >
                 </g>
+
+                <!-- the generation loop: each token is appended, then the model predicts again -->
+                <path
+                    id="gen-loop-path"
+                    d="M 892 484 C 1006 484, 1022 452, 1022 330 C 1022 235, 1010 188, 958 186"
+                    fill="none"
+                    stroke={WARM}
+                    stroke-width="1.2"
+                    opacity="0.3"
+                    marker-end="url(#arrow-warm)"
+                />
                 <text
-                    x="1018"
-                    y="514"
-                    text-anchor="end"
+                    x="1040"
+                    y="338"
+                    text-anchor="middle"
+                    transform="rotate(-90 1040 338)"
+                    font-family="var(--mono)"
+                    font-size="7.5"
+                    letter-spacing="0.08em"
+                    fill={FAINT}>APPEND · PREDICT AGAIN</text
+                >
+                <text
+                    x="744"
+                    y="524"
                     font-family="var(--mono)"
                     font-size="8"
-                    fill={FAINT}>one token · repeat to stream</text
+                    fill={FAINT}>one token at a time — sample, append, predict the next</text
                 >
+                <g class="gen-loop-chip" style="filter: drop-shadow(var(--glow-warm));">
+                    <circle r="4" fill={WARM} />
+                </g>
 
                 <!-- Travelling token chips -->
                 <g

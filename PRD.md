@@ -47,7 +47,7 @@ The title is the spine, and it refers to two loops, one running inside the other
 
 Both loops belong to the **agent** and sit on the **left** of the system diagram (§6.1) — the tool-calling loop nested inside the prompt loop — while the **LLM sits on the right**. Each turn of the inner loop sends a window of context (tokens) rightward to the model and receives a response back, so the flowing tokens are the connective tissue between the two sides. A third, finer loop — the model generating its response one token at a time (autoregression) — lives inside each model call and is covered in Chapter 3, but the namesake is the tool-calling loop.
 
-The cold open shows this whole nested machine running before anything is labeled; the chapters then build the pieces and arrive at the inner loop as the climax (Chapter 6), finally placing it inside the user-facing loop the reader has been in all along.
+The cold open shows this whole nested machine running before anything is labeled; the chapters then build the pieces and arrive at the inner loop as the climax (Chapter 5), finally placing it inside the user-facing loop the reader has been in all along.
 
 ### 6.1 The system diagram (hero animation)
 
@@ -66,28 +66,89 @@ The camera path:
 |---|---|---|
 | 0 | The whole machine, ticking once, barely labeled | 01 (the hook) |
 | → | Zoom right, into the LLM — one call: tokens in, response out, one token at a time | 03 |
-| → | Zoom the channel between them — the context window (drawn as a stratified tank that fills and overflows) and context engineering | 05, 07 |
-| → | Zoom left, into the agent — **the inner loop**: the tool-calling cycle nested in the prompt loop | 06, 08 |
+| → | Zoom the channel between them — the context window (drawn as a stratified tank that fills and overflows) and context engineering | 04, 06 |
+| → | Zoom left, into the agent — **the inner loop**: the tool-calling cycle nested in the prompt loop | 05, 07 |
 | ↺ | Pull all the way back out — the whole machine, every part now labeled and clickable | finale |
 
 Flow direction doubles as a navigational cue: context tokens travel right into the LLM in cool palette colors, and the generated response streams back left in the warm accent (§9).
 
-## 7. Information architecture
+## 7. Curriculum
 
-Eight chapters, ordered as a single narrative. Chapter 1 supplies the "wow"; chapters 2–5 build the foundations bottom-up now that the hook has earned the reader's attention; chapters 6–8 widen to agents.
+Seven chapters, ordered as a single narrative. Chapter 1 supplies the "wow"; chapters 2–4 build the foundations now that the hook has earned the reader's attention; chapters 5–7 widen to agents.
 
 | # | Chapter | The "aha" | Signature moment | Status |
 |---|---|---|---|---|
 | 01 | **The Cold Open** | "How on earth did it do that?" | A coding agent takes a vague request, reads files, runs a command, hits an error, fixes it, succeeds — with zero explanation | Planned |
 | 02 | **Tokenization** | The model never saw your words | Live tokenizer you type into; the strawberry letter-count failure | Planned |
 | 03 | **From Tokens to a Guess** | It's just predicting the next token, over and over | Text writing itself one token at a time (autoregression) | Planned |
-| 04 | **Inside a Single Guess** | The same prompt can give different answers, by design | A light-touch attention view + a temperature slider showing the distribution shift | Planned |
-| 05 | **The Context Window** | The model has no memory between calls — only what's in the window | A finite window filling and overflowing | Planned |
-| 06 | **Giving It Hands** | Add tools + a loop, and a chatbot becomes an agent | **The inner loop revealed** — the tool-calling cycle (think → act → observe) nested inside the user's prompt loop; re-annotate Chapter 1's demo | Planned |
-| 07 | **Context Engineering** | The hard part is choosing what goes in the window each step | "Packing the backpack" before every move — instructions, examples, retrieved facts, tool results | Planned |
-| 08 | **Harness Engineering** | The model is the engine; the harness is the rest of the car | The scaffold around the model — the loop, tools, retries, guardrails | Planned |
+| 04 | **The Context Window** | The model has no memory between calls — only what's in the window | A finite window filling and overflowing | Planned |
+| 05 | **Giving It Hands** | Add tools + a loop, and a chatbot becomes an agent | **The inner loop revealed** — the tool-calling cycle (think → act → observe) nested inside the user's prompt loop; re-annotate Chapter 1's demo | Planned |
+| 06 | **Context Engineering** | The hard part is choosing what goes in the window each step | "Packing the backpack" before every move — instructions, examples, retrieved facts, tool results | Planned |
+| 07 | **Harness Engineering** | The model is the engine; the harness is the rest of the car | The scaffold around the model — the loop, tools, retries, guardrails | Planned |
 
-### 7.1 Two terms we will keep distinct
+### 7.1 Suggested topics by chapter
+
+#### 01 — The Cold Open
+
+- Start with a plausible request whose solution requires inspecting files, acting, encountering a failure, and recovering.
+- Show the user-visible request and final answer around a compressed event trace: model call, tool call, observation, repeat.
+- Keep mechanisms unlabeled at first. End by asking what happened inside that one turn.
+- Establish that the demo is representative, not a claim that every agent follows the exact same steps.
+
+#### 02 — Tokenization
+
+- Words are converted into tokens before the model receives them; tokens may be words, word pieces, punctuation, or spaces.
+- Let readers compare familiar words, unusual names, code, numbers, and multiple languages.
+- Show token IDs as labels, while making clear that the IDs themselves carry no human-readable meaning.
+- Connect tokenization to common surprises: letter counting, awkward splits, context limits, latency, and cost.
+- Explain embeddings only as the next transformation: token IDs become learned numeric representations. Keep vectors and geometry optional.
+
+#### 03 — From Tokens to a Guess
+
+- Given the tokens so far, the model produces scores for possible next tokens.
+- Turn scores into a small illustrative probability distribution readers can inspect.
+- Choose one token, append it, and run the same process again until a stopping condition.
+- Show how an early choice changes later possibilities and why separate runs can diverge.
+- Distinguish fluent continuation from fact lookup, reasoning guarantees, or a database of stored sentences.
+- Put training, logits, sampling controls, and attention mechanics in `Go deeper`; they are supporting detail, not separate chapters.
+
+#### 04 — The Context Window
+
+- Define the context window as the full token sequence supplied to one model call.
+- Stack system instructions, tool definitions, user messages, prior responses, and tool results in the stratified tank.
+- Replay successive calls to show that the whole assembled window is sent again each time.
+- Show the finite token budget filling, then truncation or summarization when content no longer fits.
+- State the key boundary plainly: the model does not remember a previous call unless the application includes relevant information again.
+- Connect window size and contents to quality, latency, and cost without implying that more context is always better.
+
+#### 05 — Giving It Hands
+
+- Contrast a single model call with an agent that can select tools and repeat.
+- Introduce the namesake loop: think or decide, act through a tool, observe the result, then decide again.
+- Cover representative tools: file reads, search, code execution, APIs, and structured data lookup.
+- Revisit the cold open and annotate which parts were model output, harness actions, and tool observations.
+- Show both recovery and stopping: errors become new observations; the loop ends when the task is done, blocked, or capped.
+- Clarify that tools extend what the system can do; they do not make model output inherently correct.
+
+#### 06 — Context Engineering
+
+- Treat every model call as a packing decision: include the information most useful for the next step.
+- Cover instructions, examples, retrieved documents, conversation history, plans, tool outputs, and summaries.
+- Compare under-packed, well-packed, and over-packed windows on the same task.
+- Show selection, ordering, formatting, and compression as distinct choices.
+- Explain retrieval as finding candidate material, not guaranteeing relevance or truth.
+- Include prompt injection and stale or conflicting context as practical failure modes.
+
+#### 07 — Harness Engineering
+
+- Identify the software surrounding the model: loop, tool contracts, state, routing, retries, budgets, and stopping rules.
+- Show validation and guardrails at boundaries before tool execution and before results reach users.
+- Cover permissions, sandboxing, approval gates, timeouts, and limits on expensive or destructive actions.
+- Explain observability through traces, logs, evaluations, and reproducible test cases.
+- Compare a brittle happy-path demo with a production harness that handles malformed calls, tool failures, and partial progress.
+- End by pulling back to the complete nested machine and locating every chapter within it.
+
+### 7.2 Two terms we will keep distinct
 
 These are routinely conflated and the site must separate them clearly:
 
