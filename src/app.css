@@ -22,6 +22,7 @@
 	--mono: 'Spline Sans Mono', ui-monospace, 'SFMono-Regular', monospace;
 
 	--reading: 62ch;
+	--page-gutter: clamp(1rem, 4vw, 6rem);
 }
 
 *,
@@ -32,6 +33,7 @@
 
 html {
 	-webkit-text-size-adjust: 100%;
+	font-size: clamp(16px, min(0.625vw, 1.1vh), 24px);
 }
 
 body {

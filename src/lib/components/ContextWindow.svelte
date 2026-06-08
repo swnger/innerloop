@@ -374,9 +374,9 @@
 
 <style>
 	.ctx {
-		max-width: 70rem;
-		margin: clamp(4rem, 12vw, 9rem) auto 0;
-		padding: 0 clamp(1rem, 4vw, 2rem);
+		width: 100%;
+		margin: clamp(4rem, 12vw, 9rem) 0 0;
+		padding: 0 var(--page-gutter);
 	}
 
 	.ctx-head {
@@ -401,7 +401,7 @@
 
 	.ctx-scrolly {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.65fr);
 		gap: clamp(1.5rem, 5vw, 4rem);
 		margin-top: clamp(1.5rem, 5vw, 3rem);
 		align-items: start;
@@ -411,6 +411,8 @@
 		position: sticky;
 		top: 8vh;
 		margin: 0;
+		width: 100%;
+		max-width: min(100%, calc((92svh - 4rem) * 1.191));
 		padding: 1.25rem;
 		border: 1px solid var(--line);
 		border-radius: 16px;

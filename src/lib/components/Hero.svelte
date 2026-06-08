@@ -1129,16 +1129,17 @@
 <style>
     .hero {
         /* One slide: fill the viewport below the sticky header, no scroll. */
-        --header: 50px;
+        --header: 3.15rem;
         --ratio: 1.746; /* 1100 / 630 svg aspect */
-        max-width: 72rem;
+        --hero-chrome: clamp(19rem, 30svh, 24rem);
+        width: 100%;
         margin: 0 auto;
         min-height: calc(100svh - var(--header));
         display: flex;
         flex-direction: column;
         justify-content: center;
         gap: clamp(0.6rem, 1.6vh, 1.2rem);
-        padding: clamp(0.75rem, 2vh, 1.5rem) clamp(1rem, 4vw, 2rem);
+        padding: clamp(0.75rem, 2vh, 1.5rem) var(--page-gutter);
     }
 
     .intro {
@@ -1156,11 +1157,13 @@
     }
 
     .stage {
-        /* Tight box around the diagram: capped by viewport height via the svg ratio. */
+        /* Grow with the display while preserving room for the surrounding copy. */
         align-self: center;
         width: 100%;
-        /* svg height ≈ viewport minus header + intro/caption/note chrome (~300px) */
-        max-width: min(100%, calc((100svh - 300px) * var(--ratio)));
+        max-width: min(
+            100%,
+            calc((100svh - var(--hero-chrome)) * var(--ratio))
+        );
         border: 1px solid var(--line);
         border-radius: 18px;
         overflow: hidden;
@@ -1215,6 +1218,13 @@
 
         .caption {
             padding-inline: 1rem;
+        }
+    }
+
+    @media (max-height: 720px) and (min-width: 701px) {
+        .hero {
+            --hero-chrome: 290px;
+            justify-content: flex-start;
         }
     }
 </style>

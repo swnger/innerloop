@@ -95,7 +95,7 @@
 		justify-content: space-between;
 		align-items: center;
 		gap: 1rem;
-		padding: 0.85rem clamp(1rem, 4vw, 2.5rem);
+		padding: 0.85rem var(--page-gutter);
 		border-bottom: 1px solid var(--line);
 		position: sticky;
 		top: 0;
@@ -138,9 +138,9 @@
 
 	/* prose block */
 	.prose-block {
-		max-width: 50rem;
-		margin: clamp(3rem, 9vw, 6rem) auto 0;
-		padding: 0 clamp(1rem, 4vw, 2rem);
+		width: 100%;
+		margin: clamp(3rem, 9vw, 6rem) 0 0;
+		padding: 0 var(--page-gutter);
 	}
 
 	.about-eyebrow {
@@ -162,9 +162,9 @@
 
 	/* chapter index */
 	.chapters {
-		max-width: 60rem;
-		margin: clamp(3.5rem, 10vw, 7rem) auto 0;
-		padding: 0 clamp(1rem, 4vw, 2rem);
+		width: 100%;
+		margin: clamp(3.5rem, 10vw, 7rem) 0 0;
+		padding: 0 var(--page-gutter);
 	}
 
 	.chapters-head {
@@ -247,9 +247,9 @@
 
 	/* footer */
 	.site-footer {
-		max-width: 60rem;
-		margin: clamp(4rem, 10vw, 7rem) auto 0;
-		padding: 2rem clamp(1rem, 4vw, 2rem) 3rem;
+		width: 100%;
+		margin: clamp(4rem, 10vw, 7rem) 0 0;
+		padding: 2rem var(--page-gutter) 3rem;
 		border-top: 1px solid var(--line);
 		display: flex;
 		justify-content: space-between;
