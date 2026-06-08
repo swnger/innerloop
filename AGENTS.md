@@ -2,6 +2,15 @@
 
 - Be extremely concise. Sacrifice grammar for the sake of concision.
 
+## Project
+
+- **The Inner Loop** is an internal, self-serve visual field guide explaining LLMs and coding agents to non-technical and semi-technical colleagues. Build accurate intuition, not a comprehensive ML course or marketing site.
+- Narrative spine: reveal the hidden nested machine inside one user turn. The agent's prompt loop contains a tool-calling loop (`think -> act -> observe`); each model call contains one-token-at-a-time generation.
+- Eight-chapter path: cold-open agent demo -> tokenization -> next-token prediction -> attention/temperature -> context window -> agent tools/inner loop -> context engineering -> harness engineering.
+- Design for the least technical reader first. Hook before abstraction; visuals/interactions carry the explanation; prose stays caption-length. Put optional technical depth in closed `Go deeper` expanders.
+- Keep terms distinct: **context engineering** chooses what enters each model call; **harness engineering** is the surrounding loop, tools, retries, orchestration, and guardrails.
+- Be accurate and plain-spoken. Label simplified demos as illustrative; avoid hype, false precision, and implying the model remembers between calls.
+
 ## Hosting / Stack
 
 - Target hosting: GitHub Pages, so the app must build to static files.
