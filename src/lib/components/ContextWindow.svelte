@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 
 	/* ============================================================
-	   Chapter 07 — The Context Window (PRD §7, §10)
+	   Chapter 05 — The Context Window (PRD §7)
 	   A liquid tank that mediates between the agent and the LLM.
 	   Strata = what's in the window (system prompt, tool defs, user
 	   prompt, tool outputs, model replies). It fills as the inner
@@ -74,7 +74,7 @@
 		},
 		{
 			title: 'It fills up',
-			body: 'Do that a few times and the stack climbs toward the line. Every tool result and every reply is more tokens — and tokens are the budget for cost, speed, and how much the model can still take in.',
+			body: 'Do that a few times and the stack climbs toward the line. Every tool result and every reply adds tokens, leaving less room for what comes next.',
 			bands: ['system', 'tools', 'history', 'user', 'toolout1', 'response1', 'toolout2', 'response2', 'toolout3'],
 			highlight: 'all',
 			entered: ['toolout2', 'response2', 'toolout3'],
@@ -257,7 +257,7 @@
 
 <section class="ctx" aria-labelledby="ctx-title">
 	<div class="ctx-head">
-		<p class="eyebrow">Chapter 07 · the mediator</p>
+		<p class="eyebrow">Chapter 05 · the mediator</p>
 		<h2 id="ctx-title">The context window is the model’s entire world.</h2>
 		<p class="ctx-intro">
 			Between the agent and the LLM sits a tank. The agent fills it; the whole thing is handed to the

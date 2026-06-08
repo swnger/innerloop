@@ -1,22 +1,6 @@
 <script lang="ts">
 	import Hero from '$lib/components/Hero.svelte';
 	import ContextWindow from '$lib/components/ContextWindow.svelte';
-
-	const chapters = [
-		{ n: '01', title: 'The Cold Open', aha: '“How on earth did it do that?”' },
-		{ n: '02', title: 'Tokenization', aha: 'The model never saw your words.' },
-		{ n: '03', title: 'From Tokens to a Guess', aha: 'It just predicts the next token, over and over.' },
-		{ n: '04', title: 'Meaning as Geometry', aha: 'Words become points in space; meaning is direction.' },
-		{ n: '05', title: 'Where Knowledge Comes From', aha: 'It learned by reading — it is not learning from you now.' },
-		{ n: '06', title: 'Inside a Single Guess', aha: 'The same prompt can give different answers, by design.' },
-		{ n: '07', title: 'The Context Window', aha: 'No memory between calls — only what’s in the window.' },
-		{ n: '08', title: 'When It Makes Things Up', aha: 'It predicts plausible text, not true text.' },
-		{ n: '09', title: 'Giving It Hands', aha: 'Add tools and a loop, and a chatbot becomes an agent.' },
-		{ n: '10', title: 'Context Engineering', aha: 'The hard part is choosing what goes in the window.' },
-		{ n: '11', title: 'Harness Engineering', aha: 'The model is the engine; the harness is the car.' },
-		{ n: '12', title: 'Using It Well & Responsibly', aha: 'How to get good results, safely.' },
-		{ n: '13', title: 'Glossary & Reference', aha: 'A place to look things up.' }
-	];
 </script>
 
 <svelte:head>
@@ -57,31 +41,7 @@
 		</p>
 	</section>
 
-	<ContextWindow />
-
-	<section class="chapters" aria-labelledby="chapters-title">
-		<div class="chapters-head">
-			<p class="eyebrow">The path</p>
-			<h2 id="chapters-title">Thirteen chapters, one narrative.</h2>
-			<p class="prose chapters-sub">
-				The hook earns your attention first; the foundations build bottom-up; then the view widens to
-				agents and lands on practice. Every chapter is being built — the diagram above is the first.
-			</p>
-		</div>
-
-		<ol class="chapter-list">
-			{#each chapters as c, i}
-				<li class="chapter" class:lead={i === 0}>
-					<span class="chapter-n mono">{c.n}</span>
-					<span class="chapter-body">
-						<span class="chapter-title">{c.title}</span>
-						<span class="chapter-aha">{c.aha}</span>
-					</span>
-					<span class="chapter-status mono">{i === 0 ? 'hero' : 'planned'}</span>
-				</li>
-			{/each}
-		</ol>
-	</section>
+		<ContextWindow />
 </main>
 
 <footer class="site-footer">
@@ -160,91 +120,6 @@
 		margin-bottom: 1.1rem;
 	}
 
-	/* chapter index */
-	.chapters {
-		width: 100%;
-		margin: clamp(3.5rem, 10vw, 7rem) 0 0;
-		padding: 0 var(--page-gutter);
-	}
-
-	.chapters-head {
-		max-width: 46rem;
-	}
-
-	.chapters-head h2 {
-		font-size: clamp(1.7rem, 4.2vw, 2.6rem);
-		margin: 0.5rem 0 1rem;
-	}
-
-	.chapters-sub {
-		margin-bottom: 0;
-	}
-
-	.chapter-list {
-		list-style: none;
-		margin: 2rem 0 0;
-		padding: 0;
-		border-top: 1px solid var(--line);
-	}
-
-	.chapter {
-		display: grid;
-		grid-template-columns: 3.2rem 1fr auto;
-		align-items: baseline;
-		gap: 1rem;
-		padding: 1.05rem 0.4rem;
-		border-bottom: 1px solid var(--line);
-	}
-
-	.chapter:hover {
-		background: color-mix(in srgb, var(--surface) 60%, transparent);
-	}
-
-	.chapter-n {
-		color: var(--faint);
-		font-size: 0.85rem;
-	}
-
-	.chapter.lead .chapter-n {
-		color: var(--cool);
-	}
-
-	.chapter-body {
-		display: flex;
-		flex-direction: column;
-		gap: 0.15rem;
-	}
-
-	.chapter-title {
-		font-family: var(--display);
-		font-size: 1.4rem;
-		color: var(--paper);
-		line-height: 1.1;
-	}
-
-	.chapter-aha {
-		font-family: var(--serif);
-		font-size: 0.98rem;
-		color: var(--muted);
-	}
-
-	.chapter-status {
-		font-size: 0.68rem;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--faint);
-		border: 1px solid var(--line);
-		border-radius: 20px;
-		padding: 0.25rem 0.6rem;
-		align-self: center;
-		white-space: nowrap;
-	}
-
-	.chapter.lead .chapter-status {
-		color: var(--paper);
-		border-color: var(--line-bright);
-	}
-
 	/* footer */
 	.site-footer {
 		width: 100%;
@@ -266,12 +141,4 @@
 		color: var(--faint);
 	}
 
-	@media (max-width: 540px) {
-		.chapter {
-			grid-template-columns: 2.4rem 1fr;
-		}
-		.chapter-status {
-			display: none;
-		}
-	}
 </style>
