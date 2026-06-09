@@ -1,6 +1,7 @@
 ## General
 
 - Be extremely concise. Sacrifice grammar for the sake of concision.
+- Before starting a new dev server, check whether one is already running (usually on port 5173) to reuse.
 
 ## Project
 
