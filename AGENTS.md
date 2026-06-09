@@ -78,5 +78,4 @@ Distinctive editorial-scientific trio (all Google Fonts). Never substitute Inter
 ### Accessibility & degradation (PRD §11)
 
 - `--paper` on `--ink` clears WCAG AA for body; the flow accents are decorative motion, never the sole carrier of meaning (always paired with a mono label or arrowhead).
-- Honor `prefers-reduced-motion`: replace token particle flow and camera tweens with instant snaps to each framed state plus static directional arrows — the explanation must survive with zero animation.
 - Static-first build (adapter-static): each camera stop maps to a real in-page anchor so the narrative is navigable without JS.

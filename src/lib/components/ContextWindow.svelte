@@ -102,7 +102,6 @@
 	const fmt = (n: number) => (n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n));
 
 	let activeStep = $state(0);
-	let reduced = $state(false);
 	let figureEl: HTMLElement;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let gsap: any;
@@ -136,7 +135,7 @@
 		const previousMap = new Map(previousLayout.map((band) => [band.key, band]));
 		const removed = previous.bands.filter((key) => !STEPS[nextIndex].bands.includes(key));
 
-		if (gsap && !reduced && removed.length) {
+		if (gsap && removed.length) {
 			const nodes = removed
 				.map((key) => figureEl.querySelector<SVGGElement>(`[data-band="${key}"]`))
 				.filter(Boolean);
@@ -153,7 +152,7 @@
 		if (run !== activation || !gsap) return;
 
 		const nextLayout = layoutFor(STEPS[nextIndex]);
-		const duration = reduced ? 0 : 0.62;
+		const duration = 0.62;
 		const timeline = gsap.timeline({ defaults: { duration, ease: 'power2.inOut' } });
 
 		for (const band of nextLayout) {
@@ -216,15 +215,11 @@
 		);
 
 		const prose = Array.from(document.querySelectorAll<HTMLElement>('.ctx-step'));
-		gsap.to(prose, { opacity: 0.32, duration: reduced ? 0 : 0.35, overwrite: true });
-		gsap.to(prose[nextIndex], { opacity: 1, duration: reduced ? 0 : 0.35, overwrite: true });
+		gsap.to(prose, { opacity: 0.32, duration: 0.35, overwrite: true });
+		gsap.to(prose[nextIndex], { opacity: 1, duration: 0.35, overwrite: true });
 	}
 
 	onMount(() => {
-		const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-		reduced = mq.matches;
-		const onChange = () => (reduced = mq.matches);
-		mq.addEventListener('change', onChange);
 		let io: IntersectionObserver | undefined;
 		let disposed = false;
 
@@ -250,7 +245,6 @@
 		return () => {
 			disposed = true;
 			io?.disconnect();
-			mq.removeEventListener('change', onChange);
 		};
 	});
 </script>
@@ -266,7 +260,7 @@
 	</div>
 
 	<div class="ctx-scrolly">
-		<figure class="ctx-sticky" class:reduced bind:this={figureEl}>
+		<figure class="ctx-sticky" bind:this={figureEl}>
 			<svg viewBox="0 0 560 470" role="img" aria-label="A context window drawn as a tank filling with labeled layers — system prompt and tool definitions at the base, then user prompt, tool outputs and model responses — rising toward a maximum budget line.">
 				<defs>
 					<linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">

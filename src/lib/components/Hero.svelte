@@ -178,30 +178,17 @@
             t: "This time it returns the final answer to you, ending the turn.",
         },
     ];
-    const SUMMARY = {
-        k: "inner loop",
-        t: "Append, send the whole context, generate one token at a time, append, and loop until the model answers.",
-    };
 
     let stageEl: HTMLElement;
-    let reduced = $state(false);
     let phase = $state(0);
     let used = $state("1.8k");
     let gen = $state("read");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let gsap: any;
 
-    const beat = $derived(reduced ? SUMMARY : PHASES[phase]);
+    const beat = $derived(PHASES[phase]);
 
     onMount(() => {
-        const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-        reduced = media.matches;
-        const onChange = () => {
-            reduced = media.matches;
-            window.location.reload();
-        };
-        media.addEventListener("change", onChange);
-
         let context: { revert: () => void } | undefined;
         let disposed = false;
 
@@ -230,21 +217,6 @@
                         gsap.set(q(".generated-token"), { opacity: 0 });
                         gsap.set(q(".gen-loop-chip"), { opacity: 0 });
                     };
-
-                    if (reduced) {
-                        gsap.set(q(".code-line"), { opacity: 1 });
-                        gsap.set(q(bands), {
-                            scaleY: 1,
-                            transformOrigin: "50% 0%",
-                        });
-                        gsap.set(q(".transformer-step"), { opacity: 1 });
-                        gsap.set(q(".generated-token"), { opacity: 1 });
-                        gsap.set(q(".gen-loop-chip"), { opacity: 0 });
-                        gsap.set(q(".flow-chip"), { opacity: 0 });
-                        used = "4.2k";
-                        phase = 0;
-                        return;
-                    }
 
                     rest();
 
@@ -456,7 +428,6 @@
         return () => {
             disposed = true;
             context?.revert();
-            media.removeEventListener("change", onChange);
         };
     });
 </script>
@@ -467,7 +438,7 @@
         <h1 id="hero-title">One continuous cycle.</h1>
     </div>
 
-    <figure class="stage" class:reduced bind:this={stageEl}>
+    <figure class="stage" bind:this={stageEl}>
         <svg
             viewBox="0 0 1100 630"
             role="img"
@@ -1151,8 +1122,7 @@
 
     <p class="disclaimer note">
         Illustrative: layer count, token counts, and contents are simplified.
-        The transformer structure and context flow are representative;
-        reduced-motion shows the same argument as one static frame.
+        The transformer structure and context flow are representative.
     </p>
 </section>
 
