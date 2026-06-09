@@ -10,11 +10,29 @@
 	--muted: #8a93a6; /* captions, secondary labels */
 	--faint: #5a6275; /* disabled, far-away diagram detail */
 
-	/* the only saturated colors — token flow ONLY */
+	/* flow accents — token MOTION only (travelling chips + flow arrows) */
 	--cool: #38e1c6; /* context tokens → into the model */
 	--warm: #ff9d4d; /* response tokens ← back to the agent */
 	--glow-cool: 0 0 12px rgba(56, 225, 198, 0.45);
 	--glow-warm: 0 0 12px rgba(255, 157, 77, 0.45);
+
+	/* stratum categories — a distinct muted hue per context layer so the
+	   blocks read apart by color, not just by shade. Each is an {accent,fill}
+	   pair: accent = label + left stripe, fill = the tinted block body. Tool
+	   output and model response reuse the cool/warm flow accents (they ARE
+	   context-in and response-out), tying the strata back to the flow. */
+	--cat-system: #6e7bb0; /* system prompt — slate blue */
+	--cat-system-fill: #1c2238;
+	--cat-tools: #a284d6; /* tool definitions — violet */
+	--cat-tools-fill: #272140;
+	--cat-history: #4fa6d6; /* conversation history — azure */
+	--cat-history-fill: #143040;
+	--cat-user: #5bc592; /* user input — green */
+	--cat-user-fill: #163127;
+	--cat-tool: #38e1c6; /* tool output — cool (context in) */
+	--cat-tool-fill: #103330;
+	--cat-response: #ff9d4d; /* model response — warm (response out) */
+	--cat-response-fill: #352513;
 
 	/* fonts */
 	--display: 'Instrument Serif', Georgia, serif;

@@ -21,21 +21,28 @@
 		WARM = '#FF9D4D';
 
 	type Kind = 'fixed' | 'history' | 'user' | 'tool' | 'response';
-	type Band = { key: string; label: string; tok: number; kind: Kind; fill: string };
+	type Band = { key: string; label: string; tok: number; kind: Kind; fill: string; accent: string };
+
+	// One distinct hue per category so adjacent layers read apart by color.
+	const SYSTEM = { accent: '#6E7BB0', fill: '#1C2238' };
+	const TOOLS = { accent: '#A284D6', fill: '#272140' };
+	const HISTORY = { accent: '#4FA6D6', fill: '#143040' };
+	const USER = { accent: '#5BC592', fill: '#163127' };
+	const TOOLOUT = { accent: COOL, fill: '#103330' };
+	const RESPONSE = { accent: WARM, fill: '#352513' };
 
 	const B: Record<string, Band> = {
-		system: { key: 'system', label: 'system prompt', tok: 450, kind: 'fixed', fill: '#171D2A' },
-		tools: { key: 'tools', label: 'tool definitions', tok: 1900, kind: 'fixed', fill: '#1B2434' },
-		history: { key: 'history', label: 'conversation history', tok: 650, kind: 'history', fill: '#202B3E' },
-		user: { key: 'user', label: 'user input', tok: 160, kind: 'user', fill: '#2C3C56' },
-		toolout1: { key: 'toolout1', label: 'tool output', tok: 1050, kind: 'tool', fill: '#26344A' },
-		response1: { key: 'response1', label: 'model response', tok: 320, kind: 'response', fill: '#30394C' },
-		toolout2: { key: 'toolout2', label: 'tool output', tok: 1250, kind: 'tool', fill: '#26344A' },
-		response2: { key: 'response2', label: 'model response', tok: 360, kind: 'response', fill: '#30394C' },
-		toolout3: { key: 'toolout3', label: 'tool output', tok: 1200, kind: 'tool', fill: '#26344A' },
-		response3: { key: 'response3', label: 'model response', tok: 760, kind: 'response', fill: '#30394C' }
+		system: { key: 'system', label: 'system prompt', tok: 450, kind: 'fixed', ...SYSTEM },
+		tools: { key: 'tools', label: 'tool definitions', tok: 1900, kind: 'fixed', ...TOOLS },
+		history: { key: 'history', label: 'conversation history', tok: 650, kind: 'history', ...HISTORY },
+		user: { key: 'user', label: 'user input', tok: 450, kind: 'user', ...USER },
+		toolout1: { key: 'toolout1', label: 'tool output', tok: 1050, kind: 'tool', ...TOOLOUT },
+		response1: { key: 'response1', label: 'model response', tok: 320, kind: 'response', ...RESPONSE },
+		toolout2: { key: 'toolout2', label: 'tool output', tok: 1250, kind: 'tool', ...TOOLOUT },
+		response2: { key: 'response2', label: 'model response', tok: 360, kind: 'response', ...RESPONSE },
+		toolout3: { key: 'toolout3', label: 'tool output', tok: 1200, kind: 'tool', ...TOOLOUT },
+		response3: { key: 'response3', label: 'model response', tok: 760, kind: 'response', ...RESPONSE }
 	};
-	const accentOf = (k: Kind) => (k === 'tool' ? COOL : k === 'response' ? WARM : null);
 
 	type Step = {
 		title: string;
@@ -86,7 +93,7 @@
 			bands: ['system', 'tools', 'user', 'toolout1', 'response1', 'toolout2', 'response2', 'toolout3', 'response3'],
 			highlight: 'all',
 			entered: ['response3'],
-			note: 'attempted 8.1k / 8k → oldest history evicted · 7.5k remains',
+			note: 'attempted 8.4k / 8k → oldest history evicted · 7.7k remains',
 			overflow: true
 		}
 	];
@@ -287,7 +294,6 @@
 
 				<!-- live strata -->
 				{#each laid as b (b.key)}
-					{@const accent = accentOf(b.kind)}
 					<g data-band={b.key} opacity={b.lit ? 1 : 0.4}>
 						<rect
 							class="band-body"
@@ -297,18 +303,16 @@
 							y={b.y}
 							height={Math.max(0, b.h - 2)}
 							fill={b.fill}
-							stroke={b.isNew && accent ? accent : LINE}
-							stroke-width={b.isNew && accent ? 1.4 : 0.8}
-							style:filter={b.isNew && accent ? `drop-shadow(0 0 8px ${accent}66)` : 'none'}
+							stroke={b.isNew ? b.accent : LINE}
+							stroke-width={b.isNew ? 1.4 : 0.8}
+							style:filter={b.isNew ? `drop-shadow(0 0 8px ${b.accent}66)` : 'none'}
 						/>
 						{#if b.kind === 'fixed'}
 							<rect class="band-hatch" x={VX + 4} y={b.y} width={VW - 8} height={Math.max(0, b.h - 2)} rx="3" fill="url(#ctx-fixed-hatch)" />
 						{/if}
-						{#if accent}
-							<rect class="band-accent" x={VX + 4} y={b.y} width="3" height={Math.max(0, b.h - 2)} fill={accent} opacity={b.isNew ? 1 : 0.55} />
-						{/if}
+						<rect class="band-accent" x={VX + 4} y={b.y} width="3" height={Math.max(0, b.h - 2)} fill={b.accent} opacity={b.isNew ? 1 : 0.6} />
 						{#if b.h >= 17}
-							<text class="band-label" x={VX + 14} y={b.y + b.h / 2} dominant-baseline="middle" font-family="var(--mono)" font-size="11" fill={b.kind === 'fixed' ? MUTED : PAPER}>{b.label}</text>
+							<text class="band-label" x={VX + 14} y={b.y + b.h / 2} dominant-baseline="middle" font-family="var(--mono)" font-size="11" fill={b.accent}>{b.label}</text>
 							<text class="band-count" x={VX + VW - 10} y={b.y + b.h / 2} text-anchor="end" dominant-baseline="middle" font-family="var(--mono)" font-size="10" fill={FAINT}>{fmt(b.tok)}</text>
 						{/if}
 					</g>
@@ -328,15 +332,14 @@
 				{#each LEGEND.slice(0, 2) as item, i}
 					<rect x="316" y={113 + i * 28} width="18" height="18" rx="3" fill={item.fill} stroke={LINE_B} />
 					<rect x="316" y={113 + i * 28} width="18" height="18" rx="3" fill="url(#ctx-fixed-hatch)" />
-					<text x="344" y={123 + i * 28} dominant-baseline="middle" font-family="var(--mono)" font-size="10" fill={MUTED}>{item.label}</text>
+					<rect x="316" y={113 + i * 28} width="3" height="18" fill={item.accent} />
+					<text x="344" y={123 + i * 28} dominant-baseline="middle" font-family="var(--mono)" font-size="10" fill={item.accent}>{item.label}</text>
 				{/each}
 				<text x="316" y="184" font-family="var(--mono)" font-size="9" letter-spacing="0.1em" fill={MUTED}>DYNAMIC · CHANGES BY TURN</text>
 				{#each LEGEND.slice(2) as item, i}
 					<rect x="316" y={197 + i * 32} width="18" height="18" rx="3" fill={item.fill} stroke={LINE_B} />
-					{#if item.kind === 'response'}
-						<rect x="316" y={197 + i * 32} width="3" height="18" fill={WARM} />
-					{/if}
-					<text x="344" y={207 + i * 32} dominant-baseline="middle" font-family="var(--mono)" font-size="10" fill={item.kind === 'response' ? WARM : PAPER}>{item.label}</text>
+					<rect x="316" y={197 + i * 32} width="3" height="18" fill={item.accent} />
+					<text x="344" y={207 + i * 32} dominant-baseline="middle" font-family="var(--mono)" font-size="10" fill={item.accent}>{item.label}</text>
 				{/each}
 				<text x="316" y="350" font-family="var(--mono)" font-size="9.5" fill={FAINT}>Fixed = prompt scaffolding</text>
 				<text x="316" y="369" font-family="var(--mono)" font-size="9.5" fill={FAINT}>Dynamic = task state and outputs</text>

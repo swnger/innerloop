@@ -23,13 +23,13 @@
 
 ## Design
 
-**Concept: a blueprint observatory.** The site is one glowing technical schematic on a near-black ink-blue canvas. The machine (PRD §6.1) reads like an instrument lit in the dark — the cold open shows it ticking before anything is named. The whole palette is restrained and monochrome-blue *except* the two token-flow accents, so the eye always tracks meaning, not decoration. This matches the 3Blue1Brown register while keeping the editorial calm of distill.pub.
+**Concept: a blueprint observatory.** The site is one glowing technical schematic on a near-black ink-blue canvas. The machine (PRD §6.1) reads like an instrument lit in the dark — the cold open shows it ticking before anything is named. The palette stays restrained and blue-dominant: chrome (panels, lines, type) is monochrome, the two **flow accents** mark token *motion*, and each **context-window category** carries one distinct muted hue so layers read apart by color, not just shade. The eye still tracks meaning, not decoration. This matches the 3Blue1Brown register while keeping the editorial calm of distill.pub.
 
 ### Palette
 
-The two flow accents are **reserved exclusively for token flow** (PRD §6.1, §9) — never use them for buttons, links, or chrome. Cool = context tokens travelling **right into the LLM**; warm = the generated response streaming **left back to the agent**. That consistency is the navigational cue, so don't dilute it.
+The two flow accents are **reserved for token motion** (PRD §6.1, §9) — the travelling token chips and flow arrows, never buttons, links, or chrome. Cool = context tokens travelling **right into the LLM**; warm = the generated response streaming **left back to the agent**. That consistency is the navigational cue, so don't dilute it.
 
-Two derived uses stay inside the rule because they still read as *flow*, not chrome: a context-window stratum that holds model output wears a thin **warm** resting edge (it *is* response tokens), and a budget **overflow** flashes warm on the `max` line as a breach signal. Both are always paired with a mono label, and neither ever lands on a button, link, or border.
+**Context-window categories each get one muted hue** so adjacent strata are distinguishable at a glance (`--cat-*`): system prompt = slate blue, tool definitions = violet, conversation history = azure, user input = green. Tool output and model response deliberately reuse the cool/warm flow accents — they *are* context-in and response-out — which ties the strata back to the flow. Each category is an `{accent, fill}` pair: accent on the label + a thin left stripe, the darker fill as the block body. A budget **overflow** still flashes warm on the `max` line as a breach signal. Keep these hues muted and confined to the strata (and their legend) — chrome stays monochrome.
 
 ```css
 :root {
@@ -44,11 +44,19 @@ Two derived uses stay inside the rule because they still read as *flow*, not chr
   --muted:      #8A93A6;  /* captions, secondary labels */
   --faint:      #5A6275;  /* disabled, far-away diagram detail */
 
-  /* the only saturated colors — token flow ONLY */
+  /* flow accents — token MOTION only (chips + flow arrows) */
   --cool:       #38E1C6;  /* context tokens → into the model */
   --warm:       #FF9D4D;  /* response tokens ← back to the agent */
   --glow-cool:  0 0 12px rgba(56,225,198,.45);
   --glow-warm:  0 0 12px rgba(255,157,77,.45);
+
+  /* context-window category hues — one per stratum, {accent, fill} */
+  --cat-system:  #6E7BB0; --cat-system-fill:  #1C2238;  /* slate blue */
+  --cat-tools:   #A284D6; --cat-tools-fill:   #272140;  /* violet */
+  --cat-history: #4FA6D6; --cat-history-fill: #143040;  /* azure */
+  --cat-user:    #5BC592; --cat-user-fill:    #163127;  /* green */
+  --cat-tool:    #38E1C6; --cat-tool-fill:    #103330;  /* cool — context in */
+  --cat-response:#FF9D4D; --cat-response-fill:#352513;  /* warm — response out */
 }
 ```
 
@@ -71,7 +79,7 @@ Distinctive editorial-scientific trio (all Google Fonts). Never substitute Inter
 ### Layout & atmosphere
 
 - Pinned diagram stage on `--surface`; reading column overlaid or beside it, asymmetric, generous negative space around the lit machine.
-- **The context window is a stratified tank** (PRD §7) — the mediator in the agent↔LLM channel, not just two flow lines. Labeled token strata (system prompt, tool definitions, user prompt, tool outputs, responses) stack in a vessel against a finite `used / max` budget line; it fills as the inner loop runs, is handed to the model **whole** on every call, and **evicts the oldest content on overflow**. Strata are monochrome luminance steps so the flow accents stay reserved. Rendered compact in the hero's context-window stop and full-scale (a sticky tank scrolled past prose steps) in Chapter 7.
+- **The context window is a stratified tank** (PRD §7) — the mediator in the agent↔LLM channel, not just two flow lines. Labeled token strata (system prompt, tool definitions, user prompt, tool outputs, responses) stack in a vessel against a finite `used / max` budget line; it fills as the inner loop runs, is handed to the model **whole** on every call, and **evicts the oldest content on overflow**. Each stratum wears its category hue (`--cat-*`) — a tinted fill plus an accent label and left stripe — so layers read apart by color. Rendered compact in the hero's context-window stop and full-scale (a sticky tank scrolled past prose steps) in Chapter 7.
 - Background depth: a faint blueprint dot-grid behind the stage (`--line` at low opacity) and a subtle full-page film-grain overlay — never flat fills. Glow on active strokes and token chips via `box-shadow`/`drop-shadow` with `--glow-*`.
 - **"Go deeper" expanders** (PRD §8) styled as folded schematic cards on `--surface` with a `--line` hairline; closed by default so the main path reads clean for the least technical viewer.
 - Illustrative-demo disclaimers (PRD §5.5, §8) set small in `--muted` `Spline Sans Mono`.

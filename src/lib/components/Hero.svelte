@@ -66,17 +66,24 @@
         y: number;
         h: number;
         fill: string;
+        accent: string; // category hue — left stripe + label
         fixed?: boolean;
         response?: boolean;
         cls?: string;
     };
+    // One distinct hue per category so adjacent layers read apart by color.
+    const SYSTEM = "#6E7BB0";
+    const TOOLS = "#A284D6";
+    const HISTORY = "#4FA6D6";
+    const USER = "#5BC592";
     const STRATA: Band[] = [
         {
             label: "system prompt",
             detail: "fixed",
             y: 206,
             h: 30,
-            fill: "#171D2A",
+            fill: "#1C2238",
+            accent: SYSTEM,
             fixed: true,
         },
         {
@@ -84,7 +91,8 @@
             detail: "fixed",
             y: 238,
             h: 34,
-            fill: "#1B2434",
+            fill: "#272140",
+            accent: TOOLS,
             fixed: true,
         },
         {
@@ -92,14 +100,16 @@
             detail: "carried",
             y: 274,
             h: 30,
-            fill: "#202B3E",
+            fill: "#143040",
+            accent: HISTORY,
         },
         {
             label: "user input",
             detail: "appended",
             y: 306,
             h: 36,
-            fill: "#2C3C56",
+            fill: "#163127",
+            accent: USER,
             cls: "band-user",
         },
         {
@@ -107,7 +117,8 @@
             detail: "tool call",
             y: 344,
             h: 36,
-            fill: "#30394C",
+            fill: "#352513",
+            accent: WARM,
             response: true,
             cls: "band-toolcall",
         },
@@ -116,7 +127,8 @@
             detail: "appended",
             y: 382,
             h: 40,
-            fill: "#26344A",
+            fill: "#103330",
+            accent: COOL,
             cls: "band-toolout",
         },
         {
@@ -124,7 +136,8 @@
             detail: "answer",
             y: 424,
             h: 36,
-            fill: "#33405A",
+            fill: "#352513",
+            accent: WARM,
             response: true,
             cls: "band-answer",
         },
@@ -686,26 +699,20 @@
                                 fill="url(#fixed-hatch)"
                             />
                         {/if}
-                        {#if band.response}
-                            <rect
-                                x="479"
-                                y={band.y}
-                                width="3"
-                                height={band.h - 2}
-                                fill={WARM}
-                            />
-                        {/if}
+                        <rect
+                            x="479"
+                            y={band.y}
+                            width="3"
+                            height={band.h - 2}
+                            fill={band.accent}
+                        />
                         <text
                             x="488"
                             y={band.y + band.h / 2}
                             dominant-baseline="middle"
                             font-family="var(--mono)"
                             font-size="9.5"
-                            fill={band.response
-                                ? WARM
-                                : band.fixed
-                                  ? MUTED
-                                  : PAPER}>{band.label}</text
+                            fill={band.accent}>{band.label}</text
                         >
                         <text
                             x="618"
