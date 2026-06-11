@@ -1,5 +1,6 @@
 <script lang="ts">
     import Hero from "$lib/components/Hero.svelte";
+    import Tokenization from "$lib/components/Tokenization.svelte";
     import ContextWindow from "$lib/components/ContextWindow.svelte";
 </script>
 
@@ -42,6 +43,8 @@
 
 <main>
     <Hero />
+
+    <Tokenization />
 
     <ContextWindow />
 </main>
