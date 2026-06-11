@@ -91,43 +91,117 @@
 			gsap.registerPlugin(ScrollTrigger);
 
 			context = gsap.context(() => {
-				/* ---- 1 · the break-away transition (pinned, scrubbed) ----
-				   The serif sentence is what you wrote; the chips are what
-				   the model received. Scrolling dissolves one into the other. */
+				/* ---- 1a · the dive into ch.1's real diagram ----
+				   Pin the hero itself: everything fades except the LLM's
+				   "READS THE CONTEXT" token row — the one already holding
+				   "fix the failing test" as chips — and the camera pushes
+				   into it until the tokens fill the screen. */
+				// the hero lives outside this component, so reach it by element
+				// (gsap.context scopes string selectors to rootEl)
+				const hero = document.querySelector('#machine') as HTMLElement | null;
+				const h = (sel: string) => hero?.querySelectorAll(sel) ?? [];
+				if (hero) {
+					const tktSec = rootEl.querySelector('.tkt') as HTMLElement;
+
+					/* pinSpacing:false — ch.2 scrolls up OVER the pinned hero, so
+					   its azure frame physically sweeps in and takes over. No zoom:
+					   the whole machine simply dissolves in place, and ch.1's token
+					   row fades out with it — leaving a single copy of the sentence
+					   to slide into ch.2's box. */
+					const heroZoom = gsap.timeline({
+						scrollTrigger: {
+							trigger: hero,
+							start: 'top top',
+							end: () =>
+								tktSec.getBoundingClientRect().top + window.scrollY + window.innerHeight * 0.5,
+							scrub: 1,
+							pin: true,
+							pinSpacing: false,
+							anticipatePin: 1,
+							invalidateOnRefresh: true,
+							onUpdate: (self: { progress: number }) => {
+								// freeze the ticking loop while the machine dissolves
+								const loop = gsap.getById('hero-loop');
+								if (!loop) return;
+								if (self.progress > 0.03 && !loop.paused()) loop.pause();
+								else if (self.progress <= 0.03 && loop.paused()) loop.resume();
+							}
+						},
+						defaults: { ease: 'none' }
+					});
+
+					heroZoom
+						// the whole machine falls away — no zoom, it just dissolves
+						.to(h('.intro, .caption, .note'), { opacity: 0, duration: 0.3 }, 0)
+						.to(
+							h('.stage'),
+							{
+								borderColor: 'rgba(0,0,0,0)',
+								boxShadow: '0 30px 60px -40px rgba(0,0,0,0)',
+								duration: 0.3
+							},
+							0
+						)
+						.to(
+							h('.hero-bg, .hero-agent, .hero-ctx, .hero-flows'),
+							{ opacity: 0, duration: 0.6 },
+							0.15
+						)
+						// the LLM panel — and ch.1's token row inside it — fade with it
+						.to(h('.hero-llm'), { opacity: 0, duration: 0.6 }, 0.2)
+						.set(h('.stage'), { background: 'transparent' }, 0.6)
+						// hold: the azure frame scrolls up and closes around the box
+						.to({}, { duration: 0.8 });
+				}
+
+				/* ---- 1b · inside the window (pinned, scrubbed) ----
+				   The frame is the user-input stratum up close: your sentence,
+				   dissolving into the chips the model actually receives. */
 				const tkt = gsap.timeline({
 					scrollTrigger: {
 						trigger: '.tkt',
 						start: 'top top',
-						end: '+=260%',
+						end: '+=240%',
 						scrub: 1,
 						pin: true,
-						anticipatePin: 1
+						anticipatePin: 1,
+						invalidateOnRefresh: true
 					},
 					defaults: { ease: 'power2.out' }
 				});
 
 				tkt
-					.set('.tkt-word', { opacity: 1, y: 0, filter: 'blur(0px)' })
-					.fromTo('.tkt-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.3 })
+					// the sentence slides into the frame from the left — a single
+					// copy, no zoom; the box's clip reveals it entering from the edge
 					.fromTo(
-						'.tkt-frame',
-						{ opacity: 0, scale: 0.94 },
-						{ opacity: 1, scale: 1, duration: 0.45 },
-						'<0.05'
+						'.tkt-sentence',
+						{ xPercent: -120 },
+						{ xPercent: 0, duration: 0.6, ease: 'power2.out' },
+						0
 					)
-					.to({}, { duration: 0.7 })
-					// the dissolve — a word breaking into chunks
+					.fromTo('.tkt-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35 }, 0.6)
+					.to({}, { duration: 0.45 })
+					// rewind: the ghost of what you actually typed
+					.addLabel('ghost')
+					.to('.tkt-chip', { opacity: 0.1, filter: 'blur(4px)', duration: 0.5, stagger: 0.06 }, 'ghost')
+					.fromTo(
+						'.tkt-word',
+						{ opacity: 0, y: 10, filter: 'blur(5px)' },
+						{ opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.55, stagger: 0.1 },
+						'ghost+=0.15'
+					)
+					.to({}, { duration: 0.5 })
+					// …and it breaks apart again — for good, with IDs this time
 					.to('.tkt-word', {
 						opacity: 0,
 						filter: 'blur(7px)',
 						y: -14,
-						duration: 0.7,
+						duration: 0.6,
 						stagger: 0.12
 					})
-					.fromTo(
+					.to(
 						'.tkt-chip',
-						{ opacity: 0, y: 22, scale: 0.88 },
-						{ opacity: 1, y: 0, scale: 1, duration: 0.55, stagger: 0.1 },
+						{ opacity: 1, filter: 'blur(0px)', duration: 0.5, stagger: 0.1 },
 						'<0.25'
 					)
 					.fromTo(
@@ -338,24 +412,26 @@
 	<div class="tkt">
 		<div class="tkt-stage">
 			<p class="tkt-kicker mono">
-				leaving the machine · the message, in flight between agent and model
+				the reading step, up close · what did the model actually receive?
 			</p>
 
-			<div class="tkt-frame">
-				<div class="tkt-sentence">
-					{#each UNITS as u (u.word)}
-						<span class="tkt-unit">
-							<span class="tkt-chips">
-								{#each u.parts as p (p.text)}
-									<span class="tkt-chip">
-										<span class="tkt-chip-text">{display(p.text)}</span>
-										<span class="tkt-chip-id">{p.id}</span>
-									</span>
-								{/each}
+			<div class="tkt-framewrap">
+				<div class="tkt-frame">
+					<div class="tkt-sentence">
+						{#each UNITS as u (u.word)}
+							<span class="tkt-unit">
+								<span class="tkt-chips">
+									{#each u.parts as p (p.text)}
+										<span class="tkt-chip">
+											<span class="tkt-chip-text">{display(p.text)}</span>
+											<span class="tkt-chip-id">{p.id}</span>
+										</span>
+									{/each}
+								</span>
+								<span class="tkt-word" aria-hidden="true">{u.word}</span>
 							</span>
-							<span class="tkt-word" aria-hidden="true">{u.word}</span>
-						</span>
-					{/each}
+						{/each}
+					</div>
 				</div>
 			</div>
 
@@ -631,12 +707,15 @@
 
 <style>
 	.tk {
+		/* paints above the hero's overflowing zoomed tank during the hand-off */
+		position: relative;
 		width: 100%;
 		margin-top: clamp(3rem, 8vw, 6rem);
 	}
 
 	/* ---------- 1 · transition ---------- */
 	.tkt {
+		position: relative;
 		height: 100svh;
 		display: flex;
 		align-items: center;
@@ -655,6 +734,13 @@
 	}
 
 	.tkt-kicker {
+		position: absolute;
+		top: clamp(4.5rem, 11vh, 7rem);
+		left: 0;
+		right: 0;
+		text-align: center;
+		padding: 0 var(--page-gutter);
+		z-index: 2;
 		font-size: 0.72rem;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -662,13 +748,23 @@
 		opacity: 0.85;
 	}
 
-	/* ch.1's "whole context" chip, blown up to full size */
+	.tkt-framewrap {
+		position: relative;
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+
+	/* ch.1's reading step, blown up to full size — context meeting the model */
 	.tkt-frame {
+		position: relative;
+		z-index: 1;
 		border: 1px solid var(--cool);
 		border-radius: 14px;
-		background: rgba(56, 225, 198, 0.05);
+		background: rgba(56, 225, 198, 0.04);
 		box-shadow: var(--glow-cool);
 		padding: clamp(1.6rem, 5vw, 3.4rem) clamp(1.2rem, 4.5vw, 3.6rem);
+		min-width: min(88vw, 52rem); /* wide enough to receive the zoomed ch.1 row */
 		max-width: min(92vw, 64rem);
 	}
 
@@ -710,7 +806,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 0.35rem;
-		padding: 0.55rem 0.7rem 0.45rem;
+		padding: 0.6rem 0.8rem 0.5rem;
 		border: 1px solid var(--line-bright);
 		border-radius: 8px;
 		background: #1b2434;
@@ -718,7 +814,7 @@
 
 	.tkt-chip-text {
 		font-family: var(--mono);
-		font-size: clamp(1rem, 2.6vw, 1.6rem);
+		font-size: clamp(1.15rem, 3.2vw, 2.1rem);
 		color: var(--paper);
 		white-space: pre;
 	}

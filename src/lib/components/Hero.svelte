@@ -289,7 +289,12 @@
                         );
                     };
 
-                    const tl = gsap.timeline({ repeat: -1, repeatDelay: 1 });
+                    // id lets ch.2's break-away transition pause the loop mid-zoom
+                    const tl = gsap.timeline({
+                        id: "hero-loop",
+                        repeat: -1,
+                        repeatDelay: 1,
+                    });
 
                     tl.call(() => {
                         rest();
@@ -518,10 +523,16 @@
                 </pattern>
             </defs>
 
-            <rect width="1100" height="630" fill="url(#hero-dots)" />
+            <rect
+                class="hero-bg"
+                width="1100"
+                height="630"
+                fill="url(#hero-dots)"
+            />
 
             <g>
                 <!-- Flow paths: cool travels right into the model, warm returns left. Also the static fallback. -->
+                <g class="hero-flows">
                 <path
                     id="input-path"
                     d="M 360 272 C 410 286, 432 314, 470 324"
@@ -567,8 +578,10 @@
                     opacity="0.3"
                     marker-end="url(#arrow-warm)"
                 />
+                </g>
 
                 <!-- AGENT — the routine, read top to bottom -->
+                <g class="hero-agent">
                 <rect
                     x="40"
                     y="150"
@@ -629,8 +642,10 @@
                     font-size="9.5"
                     fill={FAINT}>the loop runs, not you — until it returns</text
                 >
+                </g>
 
                 <!-- CONTEXT WINDOW — a tank that fills top→bottom as the turn runs -->
+                <g class="hero-ctx">
                 <text
                     x="552"
                     y="184"
@@ -758,8 +773,10 @@
                     letter-spacing="0.08em"
                     fill={MUTED}>APPENDED THIS TURN</text
                 >
+                </g>
 
                 <!-- LLM — a next-token predictor: reads context, weighs it, predicts one token, loops -->
+                <g class="hero-llm">
                 <rect
                     x="720"
                     y="96"
@@ -791,6 +808,7 @@
 
                 <!-- 1 — READS the whole context, broken into tokens -->
                 <text
+                    class="read-label"
                     x="744"
                     y="162"
                     font-family="var(--mono)"
@@ -800,6 +818,7 @@
                     fill={MUTED}><tspan fill={PAPER}>1</tspan>  READS THE CONTEXT</text
                 >
                 <text
+                    class="read-label"
                     x="1036"
                     y="162"
                     text-anchor="end"
@@ -809,26 +828,28 @@
                 >
                 <g class="transformer-step embedding-step">
                     {#each READ_TOKENS as tk}
-                        <rect
-                            x={tk.x}
-                            y="176"
-                            width={tk.w}
-                            height="20"
-                            rx="4"
-                            fill="#1B2434"
-                            stroke={LINE_B}
-                            stroke-width="0.8"
-                        />
-                        <text
-                            x={tk.x + tk.w / 2}
-                            y="187"
-                            text-anchor="middle"
-                            dominant-baseline="middle"
-                            xml:space="preserve"
-                            font-family="var(--mono)"
-                            font-size="9"
-                            fill={PAPER}>{tk.t}</text
-                        >
+                        <g class="read-tk" class:read-ellipsis={tk.t === "…"}>
+                            <rect
+                                x={tk.x}
+                                y="176"
+                                width={tk.w}
+                                height="20"
+                                rx="4"
+                                fill="#1B2434"
+                                stroke={LINE_B}
+                                stroke-width="0.8"
+                            />
+                            <text
+                                x={tk.x + tk.w / 2}
+                                y="187"
+                                text-anchor="middle"
+                                dominant-baseline="middle"
+                                xml:space="preserve"
+                                font-family="var(--mono)"
+                                font-size="9"
+                                fill={PAPER}>{tk.t}</text
+                            >
+                        </g>
                     {/each}
                 </g>
 
@@ -1002,8 +1023,10 @@
                 <g class="gen-loop-chip" style="filter: drop-shadow(var(--glow-warm));">
                     <circle r="4" fill={WARM} />
                 </g>
+                </g>
 
                 <!-- Travelling token chips -->
+                <g class="hero-flows">
                 <g
                     class="flow-chip input-chip"
                     style="filter: drop-shadow(var(--glow-cool));"
@@ -1117,6 +1140,7 @@
                         font-weight="600"
                         fill={WARM}>response</text
                     >
+                </g>
                 </g>
             </g>
         </svg>
