@@ -5,8 +5,8 @@
 	/* ============================================================
 	   Chapter 02 — Tokenization (PRD §7.1)
 	   The conceptual break-away: the camera leaves the machine.
-	   1. Pinned transition — ch.1's "whole context" chip blown up,
-	      the sentence dissolving into token chips (scrub).
+	   1. Pinned transition — ch.1's real token row hands off into
+	      the chapter frame, then reveals the token IDs.
 	   2. Token lab — live tokenizer the reader types into.
 	   3. Why not whole words — triptych.
 	   4. Why numbers — words bounce off the arithmetic, IDs pass;
@@ -17,12 +17,7 @@
 	const WARM = '#FF9D4D';
 
 	/* — transition: the very sentence ch.1's machine just read — */
-	const UNITS = [
-		{ word: 'fix', parts: tokenize('fix') },
-		{ word: 'the', parts: tokenize(' the') },
-		{ word: 'failing', parts: tokenize(' failing') },
-		{ word: 'test', parts: tokenize(' test') }
-	];
+	const TRANSITION_TOKENS = tokenize('fix the failing test');
 
 	/* — token lab — */
 	const PRESETS = [
@@ -91,136 +86,136 @@
 			gsap.registerPlugin(ScrollTrigger);
 
 			context = gsap.context(() => {
-				/* ---- 1a · the dive into ch.1's real diagram ----
-				   Pin the hero itself: everything fades except the LLM's
-				   "READS THE CONTEXT" token row — the one already holding
-				   "fix the failing test" as chips — and the camera pushes
-				   into it until the tokens fill the screen. */
+				/* ---- 1a · hand off ch.1's real token row ---- */
 				// the hero lives outside this component, so reach it by element
 				// (gsap.context scopes string selectors to rootEl)
 				const hero = document.querySelector('#machine') as HTMLElement | null;
 				const h = (sel: string) => hero?.querySelectorAll(sel) ?? [];
 				if (hero) {
 					const tktSec = rootEl.querySelector('.tkt') as HTMLElement;
+					const heroTokens = Array.from(hero.querySelectorAll<SVGGElement>('.read-tk:not(.read-ellipsis)'));
+					const heroEllipsis = hero.querySelector('.read-ellipsis');
+					const transitionSentence = rootEl.querySelector('.tkt-sentence') as HTMLElement;
+					const transitionTokens = Array.from(rootEl.querySelectorAll<HTMLElement>('.tkt-chip'));
+					const heroTokenRow = heroEllipsis ? [...heroTokens, heroEllipsis] : heroTokens;
 
-					/* pinSpacing:false — ch.2 scrolls up OVER the pinned hero, so
-					   its azure frame physically sweeps in and takes over. No zoom:
-					   the whole machine simply dissolves in place, and ch.1's token
-					   row fades out with it — leaving a single copy of the sentence
-					   to slide into ch.2's box. */
-					const heroZoom = gsap.timeline({
-						scrollTrigger: {
-							trigger: hero,
-							start: 'top top',
-							end: () =>
-								tktSec.getBoundingClientRect().top + window.scrollY + window.innerHeight * 0.5,
-							scrub: 1,
-							pin: true,
-							pinSpacing: false,
-							anticipatePin: 1,
-							invalidateOnRefresh: true,
-							onUpdate: (self: { progress: number }) => {
-								// freeze the ticking loop while the machine dissolves
-								const loop = gsap.getById('hero-loop');
-								if (!loop) return;
-								if (self.progress > 0.03 && !loop.paused()) loop.pause();
-								else if (self.progress <= 0.03 && loop.paused()) loop.resume();
-							}
-						},
-						defaults: { ease: 'none' }
+					ScrollTrigger.create({
+						trigger: hero,
+						start: 'top top',
+						end: () =>
+							tktSec.getBoundingClientRect().top + window.scrollY + window.innerHeight * 0.8,
+						pin: true,
+						pinSpacing: false,
+						anticipatePin: 1,
+						invalidateOnRefresh: true,
+						onUpdate: (self: { progress: number }) => {
+							const loop = gsap.getById('hero-loop');
+							if (!loop) return;
+							if (self.progress > 0.03 && !loop.paused()) loop.pause();
+							else if (self.progress <= 0.03 && loop.paused()) loop.resume();
+						}
 					});
 
-					heroZoom
-						// the whole machine falls away — no zoom, it just dissolves
-						.to(h('.intro, .caption, .note'), { opacity: 0, duration: 0.3 }, 0)
+					const measureSourceTransforms = () => {
+						const heroRect = hero.getBoundingClientRect();
+						const tktRect = tktSec.getBoundingClientRect();
+
+						return transitionTokens.map((target, index) => {
+							const source = heroTokens[index]?.getBoundingClientRect();
+							const targetRect = target.getBoundingClientRect();
+							if (!source) return { x: 0, y: 0, scaleX: 1, scaleY: 1 };
+
+							return {
+								x:
+									source.left + source.width / 2 - heroRect.left -
+									(targetRect.left + targetRect.width / 2 - tktRect.left),
+								y:
+									source.top + source.height / 2 - heroRect.top -
+									(targetRect.top + targetRect.height / 2 - tktRect.top),
+								scaleX: source.width / targetRect.width,
+								scaleY: source.height / targetRect.height
+							};
+						});
+					};
+
+					gsap.set(transitionTokens, { transformOrigin: 'center center' });
+					gsap.set(transitionSentence, { autoAlpha: 0 });
+					let sourceTransforms = measureSourceTransforms();
+					const showTransitionTokens = (show: boolean) => {
+						gsap.set(transitionSentence, { autoAlpha: show ? 1 : 0 });
+						gsap.set(heroTokenRow, { autoAlpha: show ? 0 : 1 });
+					};
+
+					const tkt = gsap.timeline({
+						scrollTrigger: {
+							trigger: tktSec,
+							start: 'top top',
+							end: '+=200%',
+							scrub: 1,
+							pin: true,
+							anticipatePin: 1,
+							invalidateOnRefresh: true,
+							onEnter: () => showTransitionTokens(true),
+							onLeaveBack: () => showTransitionTokens(false),
+							onRefreshInit: () => {
+								gsap.set(transitionTokens, { x: 0, y: 0, scaleX: 1, scaleY: 1 });
+								sourceTransforms = measureSourceTransforms();
+							},
+							onRefresh: (self: { progress: number }) => showTransitionTokens(self.progress > 0)
+						},
+						defaults: { ease: 'power2.out' }
+					});
+
+					tkt
+						.fromTo(
+							transitionTokens,
+							{
+								x: (index: number) => sourceTransforms[index].x,
+								y: (index: number) => sourceTransforms[index].y,
+								scaleX: (index: number) => sourceTransforms[index].scaleX,
+								scaleY: (index: number) => sourceTransforms[index].scaleY
+							},
+							{
+								x: 0,
+								y: 0,
+								scaleX: 1,
+								scaleY: 1,
+								duration: 1,
+								stagger: 0.025,
+								ease: 'power2.inOut'
+							},
+							0
+						)
+						.to(h('.intro, .caption, .note'), { opacity: 0, duration: 0.35 }, 0.05)
+						.to(h('.hero-bg, .hero-agent, .hero-ctx, .hero-flows'), { opacity: 0, duration: 0.65 }, 0.08)
+						.to(h('.hero-llm'), { opacity: 0, duration: 0.65 }, 0.18)
 						.to(
 							h('.stage'),
 							{
 								borderColor: 'rgba(0,0,0,0)',
 								boxShadow: '0 30px 60px -40px rgba(0,0,0,0)',
-								duration: 0.3
+								duration: 0.5
 							},
-							0
+							0.2
 						)
-						.to(
-							h('.hero-bg, .hero-agent, .hero-ctx, .hero-flows'),
-							{ opacity: 0, duration: 0.6 },
-							0.15
+						.set(h('.stage'), { background: 'transparent' }, 0.75)
+						.fromTo('.tkt-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35 }, 0.55)
+						.to({}, { duration: 0.3 })
+						.fromTo(
+							'.tkt-chip-id',
+							{ opacity: 0, y: 6 },
+							{ opacity: 1, y: 0, duration: 0.35, stagger: 0.06 }
 						)
-						// the LLM panel — and ch.1's token row inside it — fade with it
-						.to(h('.hero-llm'), { opacity: 0, duration: 0.6 }, 0.2)
-						.set(h('.stage'), { background: 'transparent' }, 0.6)
-						// hold: the azure frame scrolls up and closes around the box
-						.to({}, { duration: 0.8 });
+						.fromTo('.tkt-claim', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.55 }, '<0.1')
+						.to('.tkt-kicker', { opacity: 0.25, duration: 0.35 }, '<')
+						.fromTo(
+							'.tkt-titleblock',
+							{ opacity: 0, y: 34 },
+							{ opacity: 1, y: 0, duration: 0.65 },
+							'+=0.3'
+						)
+						.to({}, { duration: 0.6 });
 				}
-
-				/* ---- 1b · inside the window (pinned, scrubbed) ----
-				   The frame is the user-input stratum up close: your sentence,
-				   dissolving into the chips the model actually receives. */
-				const tkt = gsap.timeline({
-					scrollTrigger: {
-						trigger: '.tkt',
-						start: 'top top',
-						end: '+=240%',
-						scrub: 1,
-						pin: true,
-						anticipatePin: 1,
-						invalidateOnRefresh: true
-					},
-					defaults: { ease: 'power2.out' }
-				});
-
-				tkt
-					// the sentence slides into the frame from the left — a single
-					// copy, no zoom; the box's clip reveals it entering from the edge
-					.fromTo(
-						'.tkt-sentence',
-						{ xPercent: -120 },
-						{ xPercent: 0, duration: 0.6, ease: 'power2.out' },
-						0
-					)
-					.fromTo('.tkt-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35 }, 0.6)
-					.to({}, { duration: 0.45 })
-					// rewind: the ghost of what you actually typed
-					.addLabel('ghost')
-					.to('.tkt-chip', { opacity: 0.1, filter: 'blur(4px)', duration: 0.5, stagger: 0.06 }, 'ghost')
-					.fromTo(
-						'.tkt-word',
-						{ opacity: 0, y: 10, filter: 'blur(5px)' },
-						{ opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.55, stagger: 0.1 },
-						'ghost+=0.15'
-					)
-					.to({}, { duration: 0.5 })
-					// …and it breaks apart again — for good, with IDs this time
-					.to('.tkt-word', {
-						opacity: 0,
-						filter: 'blur(7px)',
-						y: -14,
-						duration: 0.6,
-						stagger: 0.12
-					})
-					.to(
-						'.tkt-chip',
-						{ opacity: 1, filter: 'blur(0px)', duration: 0.5, stagger: 0.1 },
-						'<0.25'
-					)
-					.fromTo(
-						'.tkt-chip-id',
-						{ opacity: 0, y: 6 },
-						{ opacity: 1, y: 0, duration: 0.4, stagger: 0.07 },
-						'>-0.2'
-					)
-					.to({}, { duration: 0.4 })
-					.fromTo('.tkt-claim', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.6 })
-					.to('.tkt-frame', { opacity: 0.4, scale: 0.97, duration: 0.6 }, '<')
-					.to('.tkt-kicker', { opacity: 0.25, duration: 0.4 }, '<')
-					.fromTo(
-						'.tkt-titleblock',
-						{ opacity: 0, y: 34 },
-						{ opacity: 1, y: 0, duration: 0.7 },
-						'+=0.25'
-					)
-					.to({}, { duration: 0.6 });
 
 				/* ---- 2 · lab + head reveals ---- */
 				for (const sel of ['.tk-head', '.tok-lab']) {
@@ -418,17 +413,10 @@
 			<div class="tkt-framewrap">
 				<div class="tkt-frame">
 					<div class="tkt-sentence">
-						{#each UNITS as u (u.word)}
-							<span class="tkt-unit">
-								<span class="tkt-chips">
-									{#each u.parts as p (p.text)}
-										<span class="tkt-chip">
-											<span class="tkt-chip-text">{display(p.text)}</span>
-											<span class="tkt-chip-id">{p.id}</span>
-										</span>
-									{/each}
-								</span>
-								<span class="tkt-word" aria-hidden="true">{u.word}</span>
+						{#each TRANSITION_TOKENS as token (token.text)}
+							<span class="tkt-chip">
+								<span class="tkt-chip-text">{display(token.text)}</span>
+								<span class="tkt-chip-id">{token.id}</span>
 							</span>
 						{/each}
 					</div>
@@ -707,7 +695,7 @@
 
 <style>
 	.tk {
-		/* paints above the hero's overflowing zoomed tank during the hand-off */
+		/* paints above the hero during the token hand-off */
 		position: relative;
 		width: 100%;
 		margin-top: clamp(3rem, 8vw, 6rem);
@@ -755,7 +743,7 @@
 		justify-content: center;
 	}
 
-	/* ch.1's reading step, blown up to full size — context meeting the model */
+	/* ch.1's reading step, handed into the chapter frame */
 	.tkt-frame {
 		position: relative;
 		z-index: 1;
@@ -764,7 +752,7 @@
 		background: rgba(56, 225, 198, 0.04);
 		box-shadow: var(--glow-cool);
 		padding: clamp(1.6rem, 5vw, 3.4rem) clamp(1.2rem, 4.5vw, 3.6rem);
-		min-width: min(88vw, 52rem); /* wide enough to receive the zoomed ch.1 row */
+		min-width: min(88vw, 52rem);
 		max-width: min(92vw, 64rem);
 	}
 
@@ -775,30 +763,6 @@
 		align-items: flex-end;
 		column-gap: 0.45em;
 		row-gap: 1.2rem;
-	}
-
-	.tkt-unit {
-		position: relative;
-		display: inline-flex;
-	}
-
-	.tkt-word {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-family: var(--display);
-		font-size: clamp(2rem, 6vw, 3.8rem);
-		color: var(--paper);
-		white-space: nowrap;
-		opacity: 0;
-		pointer-events: none;
-	}
-
-	.tkt-chips {
-		display: inline-flex;
-		gap: 0.4rem;
 	}
 
 	.tkt-chip {
@@ -848,10 +812,6 @@
 		height: auto;
 		padding: 4rem 0;
 	}
-	:global(html.no-js) .tkt-word {
-		display: none;
-	}
-
 	/* ---------- 2 · lede + lab ---------- */
 	.tk-head {
 		padding: clamp(2.5rem, 7vw, 5rem) var(--page-gutter) 0;
