@@ -12,7 +12,8 @@
 	   4. Why numbers — IDs on a number line (a locker number, not
 	      a meaning); then a sentence explodes into a drag-to-rotate
 	      3-D meaning-space: the embedding vectors.
-	   5. The strawberry stumble — horizontal scroll interlude.
+	   5. The strawberry stumble — pinned beat sequence: the word
+	      seals shut into chips (the inverse of the explosion).
 	   6. Token lab — the chapter's toy, earned: the reader now
 	      knows the rules and gets to break them.
 	============================================================ */
@@ -120,7 +121,6 @@
 
 	/* — strawberry — */
 	const SB = tokenize('strawberry');
-	const SB_LETTERS = 'strawberry'.split('');
 
 	let rootEl: HTMLElement;
 	let outEl: HTMLElement;
@@ -609,59 +609,101 @@
 					stage.removeEventListener('keydown', onKey);
 				};
 
-				/* ---- 5 · strawberry: the horizontal interlude ---- */
-				const track = rootEl.querySelector('.sb-track') as HTMLElement;
-				if (track) {
-					const dist = () => track.scrollWidth - window.innerWidth;
-					const sbTween = gsap.to(track, {
-						x: () => -dist(),
-						ease: 'none',
+				/* ---- 5 · strawberry: pinned beat sequence ----
+				   Four framed stops (snap on labels, like the camera). The
+				   centerpiece inverts the chapter's explosion: the word splits,
+				   chip chrome seals around the pieces, the r's flare and then
+				   dim away inside — the letters never make the trip. */
+				const sbStage = rootEl.querySelector('.sb-stage') as HTMLElement | null;
+				if (sbStage) {
+					const sb = gsap.timeline({
 						scrollTrigger: {
 							trigger: '.tk-sb',
 							start: 'top top',
-							end: () => '+=' + dist() * 1.15,
+							end: '+=380%',
 							scrub: 1,
 							pin: true,
 							anticipatePin: 1,
-							invalidateOnRefresh: true,
-							snap: { snapTo: 1 / 3, duration: 0.45, ease: 'power1.inOut', delay: 0.1 }
-						}
+							// no invalidateOnRefresh: re-capturing mid-scrub would
+							// poison the from/to states when earlier pins refresh
+							// inertia:false — snap to the nearest beat, not where a
+							// fast flick would have landed
+							snap: { snapTo: 'labels', duration: 0.5, ease: 'power1.inOut', delay: 0.1, inertia: false }
+						},
+						defaults: { ease: 'power2.out' }
 					});
-					gsap.utils.toArray('.sb-panel', track).forEach((panel: Element) => {
-						gsap.from(panel.querySelectorAll('.sb-rise'), {
-							opacity: 0,
-							y: 42,
-							duration: 0.6,
-							stagger: 0.1,
-							ease: 'power2.out',
-							scrollTrigger: {
-								trigger: panel,
-								containerAnimation: sbTween,
-								start: 'left 65%',
-								toggleActions: 'play none none reverse'
-							}
-						});
-					});
-					// the three r's flare — the thing the model never saw
-					gsap.fromTo(
-						'.sb-r',
-						{ opacity: 0.5, scale: 1 },
-						{
-							opacity: 1,
-							scale: 1.12,
-							color: WARM,
-							textShadow: '0 0 18px rgba(255,157,77,.6)',
-							duration: 0.5,
-							stagger: 0.25,
-							ease: 'power2.out',
-							scrollTrigger: {
-								trigger: '.sb-panel-reveal',
-								containerAnimation: sbTween,
-								start: 'left 45%',
-								toggleActions: 'play none none reverse'
-							}
-						}
-					);
+
+					sb
+						// beat 1 · the question (label after the entrance, so the
+						// snap rests on the fully revealed stop)
+						.from('.sb-ask > *', { autoAlpha: 0, y: 42, duration: 0.55, stagger: 0.12 })
+						.addLabel('ask')
+						.to({}, { duration: 0.7 })
+						.to('.sb-ask', { autoAlpha: 0, y: -36, duration: 0.45 })
+						// beat 2 · the wrong answer
+						.set('.sb-answer', { autoAlpha: 1 })
+						.from('.sb-giant', { autoAlpha: 0, scale: 0.7, duration: 0.5, ease: 'back.out(1.6)' })
+						.from(
+							'.sb-stamp',
+							{ autoAlpha: 0, scale: 1.7, rotation: 6, duration: 0.4 },
+							'>-0.05'
+						)
+						.from('.sb-answer .sb-sub', { autoAlpha: 0, y: 24, duration: 0.45 })
+						.addLabel('answer')
+						.to({}, { duration: 0.7 })
+						.to('.sb-answer', { autoAlpha: 0, y: -36, duration: 0.45 })
+						// beat 3 · the reveal: the word, r's flaring
+						.set('.sb-seal', { autoAlpha: 1 })
+						.from('.sb-lead', { autoAlpha: 0, y: 24, duration: 0.4 })
+						.from('.sb-ch', { autoAlpha: 0, y: 18, duration: 0.35, stagger: 0.05 }, '>-0.1')
+						// the three r's flare — the thing about to vanish
+						.to(
+							'.sb-r',
+							{
+								color: WARM,
+								scale: 1.18,
+								textShadow: '0 0 18px rgba(255,157,77,.6)',
+								duration: 0.45,
+								stagger: 0.2
+							},
+							'+=0.3'
+						)
+						.addLabel('reveal')
+						.to({}, { duration: 0.5 })
+						// beat 4 · the seal: chips close around the pieces
+						.to(
+							'.sb-grp',
+							{ x: (i: number) => `${(i - 1) * 1.2}em`, duration: 0.8, ease: 'power2.inOut' },
+							'shut'
+						)
+						.fromTo(
+							'.sb-grp-chrome',
+							{ autoAlpha: 0, scale: 1.18 },
+							{ autoAlpha: 1, scale: 1, duration: 0.55, stagger: 0.08 },
+							'shut+=0.3'
+						)
+						// …the letters dim inside; only the IDs stay lit
+						.to(
+							'.sb-r',
+							{ color: '#667586', scale: 1, textShadow: 'none', duration: 0.5 },
+							'shut+=0.5'
+						)
+						.to('.sb-ch', { color: '#667586', duration: 0.5 }, '<')
+						.fromTo(
+							'.sb-grp-id',
+							{ autoAlpha: 0, y: 8 },
+							{ autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.08 },
+							'<0.2'
+						)
+						.from('.sb-after', { autoAlpha: 0, y: 24, duration: 0.45 }, '>-0.1')
+						.addLabel('sealed')
+						.to({}, { duration: 0.8 })
+						.to('.sb-seal', { autoAlpha: 0, y: -36, duration: 0.45 })
+						// beat 5 · the takeaway
+						.set('.sb-final', { autoAlpha: 1 })
+						.from('.sb-final > *', { autoAlpha: 0, y: 30, duration: 0.5, stagger: 0.12 })
+						.addLabel('final')
+						.to({}, { duration: 0.6 });
 				}
 
 				/* ---- 6 · the lab: panel rises, then the chips pop in ---- */
@@ -932,47 +974,52 @@
 		</details>
 	</div>
 
-	<!-- 5 · THE STRAWBERRY STUMBLE — horizontal interlude -->
+	<!-- 5 · THE STRAWBERRY STUMBLE — pinned beat sequence -->
 	<div class="tk-sb">
-		<div class="sb-track">
-			<div class="sb-panel">
-				<p class="eyebrow sb-rise">an infamous stumble · scroll →</p>
-				<p class="sb-big sb-rise">
+		<div class="sb-stage">
+			<div class="sb-beat sb-ask">
+				<p class="eyebrow">an infamous stumble</p>
+				<p class="sb-big">
 					How many <em>r</em>’s are in <span class="sb-word-inline">strawberry</span>?
 				</p>
-				<p class="sb-sub sb-rise mono">ask a chatbot · circa 2024</p>
+				<p class="sb-sub mono">ask a chatbot · circa 2024</p>
 			</div>
 
-			<div class="sb-panel">
-				<p class="sb-giant sb-rise">“Two.”</p>
-				<p class="sb-stamp mono sb-rise">wrong — there are three</p>
-				<p class="sb-sub sb-rise">
+			<div class="sb-beat sb-answer">
+				<p class="sb-giant">“Two.”</p>
+				<p class="sb-stamp mono">wrong — there are three</p>
+				<p class="sb-sub">
 					Early chatbots flubbed this constantly. It writes sonnets — how can it
 					fail to count letters?
 				</p>
 			</div>
 
-			<div class="sb-panel sb-panel-reveal">
-				<p class="sb-sub sb-rise">Because this is what it was given:</p>
-				<p class="sb-word sb-rise" aria-hidden="true">
-					{#each SB_LETTERS as ch, i (i)}
-						<span class:sb-r={ch === 'r'}>{ch}</span>
+			<div class="sb-beat sb-seal">
+				<p class="sb-sub sb-lead">Because this is what it was given:</p>
+				<p
+					class="sb-word"
+					role="img"
+					aria-label="The word strawberry sealed into three tokens — st, raw, berry — token IDs {SB.map((t) => t.id).join(', ')}. The r's are locked inside."
+				>
+					{#each SB as t (t.id)}
+						<span class="sb-grp">
+							<span class="sb-grp-chrome"></span>
+							{#each t.text.split('') as ch, i (i)}
+								<span class="sb-ch" class:sb-r={ch === 'r'}>{ch}</span>
+							{/each}
+							<span class="sb-grp-id mono">{t.id}</span>
+						</span>
 					{/each}
 				</p>
-				<div class="sb-chips sb-rise">
-					{#each SB as t (t.text)}
-						<span class="tok-chip"><span class="tok-chip-text">{t.text}</span><span class="tok-chip-id">{t.id}</span></span>
-					{/each}
-				</div>
-				<p class="sb-sub sb-rise">
+				<p class="sb-sub sb-after">
 					Three sealed chips. The letters never made the trip — asking it to count
 					them is asking it to count what it cannot see.
 				</p>
 			</div>
 
-			<div class="sb-panel">
-				<p class="sb-big sb-rise">It wasn't bad at counting. It was never shown the letters.</p>
-				<p class="sb-sub sb-rise">
+			<div class="sb-beat sb-final">
+				<p class="sb-big">It wasn't bad at counting. It was never shown the letters.</p>
+				<p class="sb-sub">
 					Newer models usually pass — they've learned the answer, or call a tool to
 					check. The blindness is structural; the fix lives outside the model.
 				</p>
@@ -1734,18 +1781,17 @@
 	.tk-sb {
 		margin-top: clamp(4rem, 10vw, 7rem);
 		width: 100%;
-		overflow: hidden;
 	}
 
-	.sb-track {
-		display: flex;
-		width: max-content;
-	}
-
-	.sb-panel {
-		width: 100vw;
+	.sb-stage {
+		position: relative;
 		height: 100svh;
-		flex-shrink: 0;
+	}
+
+	/* beats are framed stops layered on one pinned stage */
+	.sb-beat {
+		position: absolute;
+		inset: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -1753,6 +1799,14 @@
 		gap: clamp(1rem, 3vh, 1.8rem);
 		padding: 4rem var(--page-gutter);
 		text-align: center;
+	}
+
+	/* later beats stay hidden until the timeline frames them */
+	:global(html.js) .sb-answer,
+	:global(html.js) .sb-seal,
+	:global(html.js) .sb-final {
+		opacity: 0;
+		visibility: hidden;
 	}
 
 	.sb-big {
@@ -1803,37 +1857,66 @@
 	}
 
 	.sb-word {
+		display: flex;
+		justify-content: center;
 		font-family: var(--mono);
 		font-size: clamp(2.2rem, 7vw, 4.5rem);
 		color: var(--paper);
 		letter-spacing: 0.04em;
+		/* room for the IDs that appear under the sealed chips */
+		margin-bottom: 1.2em;
 	}
 
-	.sb-word span {
+	/* one token's letters; padding makes room for the chip chrome,
+	   negative margins cancel it so the groups first read as one word */
+	.sb-grp {
+		position: relative;
+		display: flex;
+		padding: 0.22em 0.16em;
+		margin-inline: -0.16em;
+	}
+
+	.sb-grp-chrome {
+		position: absolute;
+		inset: 0;
+		border: 1px solid var(--line-bright);
+		border-radius: 0.18em;
+		background: #1b2434;
+		box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.8);
+	}
+
+	.sb-ch {
+		position: relative;
 		display: inline-block;
 	}
 
-	.sb-chips {
-		display: flex;
-		gap: 0.6rem;
+	.sb-grp-id {
+		position: absolute;
+		top: calc(100% + 0.4em);
+		left: 0;
+		right: 0;
+		text-align: center;
+		font-size: clamp(0.62rem, 1.5vw, 0.85rem);
+		letter-spacing: 0.08em;
+		color: var(--brand-strong);
 	}
 
-	.sb-chips .tok-chip {
-		padding: 0.6rem 0.9rem 0.5rem;
+	:global(html.js) .sb-grp-chrome,
+	:global(html.js) .sb-grp-id {
+		opacity: 0;
+		visibility: hidden;
 	}
 
-	.sb-chips .tok-chip-text {
-		font-size: 1.3rem;
-	}
-
-	/* without JS, the interlude stacks vertically and stays readable */
-	:global(html.no-js) .sb-track {
-		flex-direction: column;
-		width: 100%;
-	}
-	:global(html.no-js) .sb-panel {
+	/* without JS, the beats stack vertically in their final state */
+	:global(html.no-js) .sb-stage {
 		height: auto;
+	}
+	:global(html.no-js) .sb-beat {
+		position: static;
 		min-height: 60vh;
+	}
+	:global(html.no-js) .sb-grp {
+		margin-inline: 0.35em;
 	}
 
 	/* ---------- outro ---------- */
