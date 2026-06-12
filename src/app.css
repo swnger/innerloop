@@ -14,6 +14,7 @@
 	--brand: #1c69d4;
 	--brand-strong: #4d96f5;
 	--brand-soft: rgba(28, 105, 212, 0.14);
+	--glow-brand: 0 0 12px rgba(28, 105, 212, 0.45);
 
 	/* Flow accents stay reserved for token motion. */
 	--cool: #38e1c6;

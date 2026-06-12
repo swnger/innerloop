@@ -754,7 +754,7 @@
 		font-size: 0.72rem;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
-		color: var(--cool);
+		color: var(--brand-strong);
 		opacity: 0.85;
 	}
 
@@ -773,10 +773,10 @@
 	.tkt-frame-chrome {
 		position: absolute;
 		inset: 0;
-		border: 1px solid var(--cool);
+		border: 1px solid var(--brand);
 		border-radius: 14px;
-		background: rgba(56, 225, 198, 0.04);
-		box-shadow: var(--glow-cool);
+		background: rgba(28, 105, 212, 0.05);
+		box-shadow: var(--glow-brand);
 		pointer-events: none;
 	}
 
@@ -829,7 +829,7 @@
 	}
 
 	.tkt-titleblock .eyebrow {
-		color: var(--cool);
+		color: var(--brand-strong);
 	}
 
 	/* without JS the pin never runs: show the final, fully-assembled state */
@@ -979,7 +979,7 @@
 	}
 
 	.lab-foot strong {
-		color: var(--cool);
+		color: var(--brand-strong);
 		font-weight: 600;
 	}
 
@@ -1022,7 +1022,7 @@
 	}
 
 	.why-n {
-		color: var(--cool);
+		color: var(--brand-strong);
 		font-size: 0.95rem;
 	}
 
@@ -1174,7 +1174,7 @@
 		color: var(--cool);
 		border: 1px solid var(--cool);
 		border-radius: 7px;
-		background: rgba(56, 225, 198, 0.08);
+		background: var(--cool-soft);
 		box-shadow: var(--glow-cool);
 		padding: 0.35rem 0.7rem;
 	}
@@ -1404,7 +1404,7 @@
 		font-size: 0.68rem;
 		font-weight: 600;
 		letter-spacing: 0.18em;
-		color: var(--cool);
+		color: var(--brand-strong);
 		margin-bottom: 0.4rem;
 	}
 
