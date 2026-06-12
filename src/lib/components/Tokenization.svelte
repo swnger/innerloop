@@ -620,7 +620,7 @@
 						scrollTrigger: {
 							trigger: '.tk-sb',
 							start: 'top top',
-							end: '+=380%',
+							end: '+=280%',
 							scrub: 1,
 							pin: true,
 							anticipatePin: 1,
@@ -634,25 +634,28 @@
 					});
 
 					sb
-						// beat 1 · the question (label after the entrance, so the
-						// snap rests on the fully revealed stop)
-						.from('.sb-ask > *', { autoAlpha: 0, y: 42, duration: 0.55, stagger: 0.12 })
-						.addLabel('ask')
-						.to({}, { duration: 0.7 })
-						.to('.sb-ask', { autoAlpha: 0, y: -36, duration: 0.45 })
-						// beat 2 · the wrong answer
-						.set('.sb-answer', { autoAlpha: 1 })
-						.from('.sb-giant', { autoAlpha: 0, scale: 0.7, duration: 0.5, ease: 'back.out(1.6)' })
+						// beat 1 · the question, then the famous wrong answer
+						// (labels sit after entrances, so snaps rest on settled frames)
+						.from(['.sb-ask .eyebrow', '.sb-ask .sb-big', '.sb-ask .sb-cap'], {
+							autoAlpha: 0,
+							y: 42,
+							duration: 0.55,
+							stagger: 0.12
+						})
+						.from(
+							'.sb-giant',
+							{ autoAlpha: 0, scale: 0.7, duration: 0.5, ease: 'back.out(1.6)' },
+							'+=0.3'
+						)
 						.from(
 							'.sb-stamp',
 							{ autoAlpha: 0, scale: 1.7, rotation: 6, duration: 0.4 },
 							'>-0.05'
 						)
-						.from('.sb-answer .sb-sub', { autoAlpha: 0, y: 24, duration: 0.45 })
-						.addLabel('answer')
+						.addLabel('ask')
 						.to({}, { duration: 0.7 })
-						.to('.sb-answer', { autoAlpha: 0, y: -36, duration: 0.45 })
-						// beat 3 · the reveal: the word, r's flaring
+						.to('.sb-ask', { autoAlpha: 0, y: -36, duration: 0.45 })
+						// beat 2 · the reveal: the word, r's flaring, sealed shut
 						.set('.sb-seal', { autoAlpha: 1 })
 						.from('.sb-lead', { autoAlpha: 0, y: 24, duration: 0.4 })
 						.from('.sb-ch', { autoAlpha: 0, y: 18, duration: 0.35, stagger: 0.05 }, '>-0.1')
@@ -669,8 +672,8 @@
 							'+=0.3'
 						)
 						.addLabel('reveal')
-						.to({}, { duration: 0.5 })
-						// beat 4 · the seal: chips close around the pieces
+						.to({}, { duration: 0.4 })
+						// the chips close around the pieces…
 						.to(
 							'.sb-grp',
 							{ x: (i: number) => `${(i - 1) * 1.2}em`, duration: 0.8, ease: 'power2.inOut' },
@@ -695,14 +698,9 @@
 							{ autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.08 },
 							'<0.2'
 						)
-						.from('.sb-after', { autoAlpha: 0, y: 24, duration: 0.45 }, '>-0.1')
+						.from('.sb-take', { autoAlpha: 0, y: 26, duration: 0.5 }, '>-0.1')
+						.from('.sb-foot', { autoAlpha: 0, duration: 0.4 }, '<0.2')
 						.addLabel('sealed')
-						.to({}, { duration: 0.8 })
-						.to('.sb-seal', { autoAlpha: 0, y: -36, duration: 0.45 })
-						// beat 5 · the takeaway
-						.set('.sb-final', { autoAlpha: 1 })
-						.from('.sb-final > *', { autoAlpha: 0, y: 30, duration: 0.5, stagger: 0.12 })
-						.addLabel('final')
 						.to({}, { duration: 0.6 });
 				}
 
@@ -982,16 +980,9 @@
 				<p class="sb-big">
 					How many <em>r</em>’s are in <span class="sb-word-inline">strawberry</span>?
 				</p>
-				<p class="sb-sub mono">ask a chatbot · circa 2024</p>
-			</div>
-
-			<div class="sb-beat sb-answer">
+				<p class="sb-sub sb-cap mono">ask a chatbot · circa 2024</p>
 				<p class="sb-giant">“Two.”</p>
 				<p class="sb-stamp mono">wrong — there are three</p>
-				<p class="sb-sub">
-					Early chatbots flubbed this constantly. It writes sonnets — how can it
-					fail to count letters?
-				</p>
 			</div>
 
 			<div class="sb-beat sb-seal">
@@ -1011,17 +1002,9 @@
 						</span>
 					{/each}
 				</p>
-				<p class="sb-sub sb-after">
-					Three sealed chips. The letters never made the trip — asking it to count
-					them is asking it to count what it cannot see.
-				</p>
-			</div>
-
-			<div class="sb-beat sb-final">
-				<p class="sb-big">It wasn't bad at counting. It was never shown the letters.</p>
-				<p class="sb-sub">
-					Newer models usually pass — they've learned the answer, or call a tool to
-					check. The blindness is structural; the fix lives outside the model.
+				<p class="sb-take">It wasn't bad at counting. It was never shown the letters.</p>
+				<p class="sb-foot mono">
+					newer models pass — they've learned the answer, or call a tool to check
 				</p>
 			</div>
 		</div>
@@ -1801,10 +1784,8 @@
 		text-align: center;
 	}
 
-	/* later beats stay hidden until the timeline frames them */
-	:global(html.js) .sb-answer,
-	:global(html.js) .sb-seal,
-	:global(html.js) .sb-final {
+	/* the second beat stays hidden until the timeline frames it */
+	:global(html.js) .sb-seal {
 		opacity: 0;
 		visibility: hidden;
 	}
@@ -1831,11 +1812,27 @@
 		padding: 0.05em 0.25em;
 	}
 
+	/* shares the frame with the question, so sized below a full hero */
 	.sb-giant {
 		font-family: var(--display);
-		font-size: clamp(4.5rem, 14vw, 10rem);
+		font-size: clamp(3rem, 8vw, 5.5rem);
 		color: var(--paper);
 		line-height: 1;
+		margin-top: clamp(0.6rem, 2vh, 1.4rem);
+	}
+
+	.sb-take {
+		font-family: var(--display);
+		font-size: clamp(1.5rem, 3.6vw, 2.4rem);
+		color: var(--paper);
+		max-width: 26ch;
+		line-height: 1.15;
+	}
+
+	.sb-foot {
+		font-size: 0.72rem;
+		letter-spacing: 0.08em;
+		color: var(--faint);
 	}
 
 	.sb-stamp {
