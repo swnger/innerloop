@@ -7,17 +7,25 @@
 	   The conceptual break-away: the camera leaves the machine.
 	   1. Pinned transition — ch.1's real token row hands off into
 	      the chapter frame, then reveals the token IDs.
-	   2. Token lab — live tokenizer the reader types into.
+	   2. Lede — the claim, lit up word by word on scroll.
 	   3. Why not whole words — triptych.
 	   4. Why numbers — words bounce off the arithmetic, IDs pass;
 	      IDs on a number line (a locker number, not a meaning).
 	   5. The strawberry stumble — horizontal scroll interlude.
+	   6. Token lab — the chapter's toy, earned: the reader now
+	      knows the rules and gets to break them.
 	============================================================ */
 
 	const WARM = '#FF9D4D';
 
 	/* — transition: the very sentence ch.1's machine just read — */
 	const TRANSITION_TOKENS = tokenize('fix the failing test');
+
+	/* — lede: revealed word by word as the reader scrolls — */
+	const LEDE =
+		'Before anything happens inside the model, your text is chopped into tokens — whole words, word-pieces, punctuation, even spaces — and each piece is swapped for a number. That chopping is the first thing that happens to every message you send.'.split(
+			' '
+		);
 
 	/* — token lab — */
 	const PRESETS = [
@@ -29,7 +37,8 @@
 		{ label: 'the question', text: "How many r's are in strawberry?" }
 	];
 
-	let input = $state('fix the failing test');
+	// the lab sits right after the strawberry interlude — open on its question
+	let input = $state("How many r's are in strawberry?");
 	const tokens = $derived(tokenize(input));
 	const ratio = $derived(tokens.length ? (input.length / tokens.length).toFixed(1) : '0');
 
@@ -220,25 +229,50 @@
 						.to({}, { duration: 0.6 });
 				}
 
-				/* ---- 2 · lab + head reveals ---- */
-				for (const sel of ['.tk-head', '.tok-lab']) {
-					gsap.from(sel, {
-						opacity: 0,
-						y: 36,
-						duration: 0.7,
-						ease: 'power2.out',
-						scrollTrigger: { trigger: sel, start: 'top 82%' }
-					});
-				}
+				/* ---- 2 · lede: the claim lights up word by word ---- */
+				gsap.fromTo(
+					'.lede-w',
+					{ opacity: 0.12 },
+					{
+						opacity: 1,
+						stagger: 0.05,
+						ease: 'none',
+						scrollTrigger: { trigger: '.tk-head', start: 'top 78%', end: 'top 28%', scrub: true }
+					}
+				);
+
+				/* ---- section seams: the schematic line draws, the tick lands ---- */
+				gsap.utils.toArray('.tk-seam', rootEl).forEach((seam: Element) => {
+					gsap
+						.timeline({ scrollTrigger: { trigger: seam, start: 'top 88%' } })
+						.from(seam.querySelectorAll('.seam-line'), {
+							scaleX: 0,
+							duration: 0.8,
+							ease: 'power3.out'
+						})
+						.from(
+							seam.querySelector('.seam-tick'),
+							{ scale: 0, rotation: '-=180', duration: 0.5, ease: 'back.out(2.5)' },
+							'<0.15'
+						);
+				});
 
 				/* ---- 3 · triptych ---- */
+				gsap.from('.tk-why h3', {
+					opacity: 0,
+					y: 32,
+					duration: 0.65,
+					ease: 'power2.out',
+					scrollTrigger: { trigger: '.tk-why', start: 'top 80%' }
+				});
 				gsap.from('.why-card', {
 					opacity: 0,
-					y: 40,
-					duration: 0.6,
-					stagger: 0.12,
+					y: 48,
+					scale: 0.95,
+					duration: 0.65,
+					stagger: 0.15,
 					ease: 'power2.out',
-					scrollTrigger: { trigger: '.tk-why', start: 'top 75%' }
+					scrollTrigger: { trigger: '.tk-why', start: 'top 72%' }
 				});
 				// card 1: the never-ending dictionary scrolls by
 				const col = rootEl.querySelector('.ticker-col') as HTMLElement;
@@ -386,6 +420,25 @@
 					);
 				}
 
+				/* ---- 6 · the lab: panel rises, then the chips pop in ---- */
+				gsap
+					.timeline({ scrollTrigger: { trigger: '.tk-lab-sec', start: 'top 72%' } })
+					.from('.lab-reveal', { opacity: 0, y: 30, duration: 0.6, stagger: 0.12, ease: 'power2.out' })
+					.from('.tok-lab', { opacity: 0, y: 50, duration: 0.7, ease: 'power2.out' }, '<0.2')
+					.from(
+						outEl.querySelectorAll('.tok-chip'),
+						{
+							opacity: 0,
+							y: 10,
+							scale: 0.8,
+							duration: 0.35,
+							stagger: 0.05,
+							ease: 'back.out(1.8)',
+							clearProps: 'transform,opacity'
+						},
+						'>-0.25'
+					);
+
 				/* ---- outro ---- */
 				gsap.from('.tk-outro > *', {
 					opacity: 0,
@@ -406,6 +459,14 @@
 </script>
 
 <section id="tokenization" class="tk" data-chapter="02" bind:this={rootEl} aria-labelledby="tk-title">
+	{#snippet seam()}
+		<div class="tk-seam" aria-hidden="true">
+			<span class="seam-line seam-l"></span>
+			<span class="seam-tick"></span>
+			<span class="seam-line seam-r"></span>
+		</div>
+	{/snippet}
+
 	<!-- 1 · BREAK-AWAY TRANSITION — leaving the machine -->
 	<div class="tkt">
 		<div class="tkt-stage">
@@ -438,60 +499,17 @@
 		</div>
 	</div>
 
-	<!-- 2 · LEDE + TOKEN LAB -->
+	<!-- 2 · LEDE -->
 	<div class="tk-head">
 		<p class="tk-lede">
-			Before anything happens inside the model, your text is chopped into
-			<strong>tokens</strong> — whole words, word-pieces, punctuation, even spaces —
-			and each piece is swapped for a number. That chopping is the first thing that
-			happens to every message you send. Try it.
+			{#each LEDE as w, i (i)}<span
+					class="lede-w"
+					class:lede-strong={w.replace(/[^a-z]/gi, '') === 'tokens'}>{w}</span
+				>{' '}{/each}
 		</p>
 	</div>
 
-	<div class="tok-lab">
-		<header class="lab-head">
-			<span class="mono lab-title">TOKEN LAB</span>
-			<span class="mono lab-hint">type anything — watch it shatter</span>
-		</header>
-
-		<textarea
-			class="lab-input mono"
-			rows="2"
-			maxlength="280"
-			spellcheck="false"
-			bind:value={input}
-			aria-label="Text to tokenize"
-		></textarea>
-
-		<div class="lab-presets">
-			{#each PRESETS as p (p.label)}
-				<button class="mono preset" onclick={() => applyPreset(p.text)}>{p.label}</button>
-			{/each}
-		</div>
-
-		<div class="lab-out" bind:this={outEl} aria-live="polite">
-			{#each tokens as t, i (i)}
-				<span class="tok-chip" class:alt={i % 2 === 1}>
-					<span class="tok-chip-text">{display(t.text)}</span>
-					<span class="tok-chip-id">{t.id}</span>
-				</span>
-			{/each}
-		</div>
-
-		<footer class="lab-foot mono">
-			<span>
-				{input.length} characters → <strong>{tokens.length} tokens</strong>
-				· ~{ratio} chars each
-			</span>
-			<span class="lab-legend">· marks a leading space — it travels inside the token</span>
-		</footer>
-
-		<p class="disclaimer lab-disclaimer">
-			Illustrative tokenizer — a hand-made stand-in, not any model's real vocabulary.
-			The behaviors are real: common words ride whole, rare words shatter, digits chunk,
-			spaces hide inside tokens.
-		</p>
-	</div>
+	{@render seam()}
 
 	<!-- 3 · WHY NOT WHOLE WORDS -->
 	<div class="tk-why">
@@ -549,6 +567,8 @@
 			</article>
 		</div>
 	</div>
+
+	{@render seam()}
 
 	<!-- 4 · WHY NUMBERS -->
 	<div class="tk-num">
@@ -669,6 +689,61 @@
 					check. The blindness is structural; the fix lives outside the model.
 				</p>
 			</div>
+		</div>
+	</div>
+
+	<!-- 6 · TOKEN LAB — now it's your turn -->
+	<div class="tk-lab-sec">
+		{@render seam()}
+		<h3 class="lab-reveal">Now chop something yourself</h3>
+		<p class="tk-prose lab-reveal">
+			You know the rules now — common words ride whole, rare ones shatter, the letters
+			never make the trip. Type anything and watch them apply.
+		</p>
+
+		<div class="tok-lab">
+			<header class="lab-head">
+				<span class="mono lab-title">TOKEN LAB</span>
+				<span class="mono lab-hint">type anything — watch it shatter</span>
+			</header>
+
+			<textarea
+				class="lab-input mono"
+				rows="2"
+				maxlength="280"
+				spellcheck="false"
+				bind:value={input}
+				aria-label="Text to tokenize"
+			></textarea>
+
+			<div class="lab-presets">
+				{#each PRESETS as p (p.label)}
+					<button class="mono preset" onclick={() => applyPreset(p.text)}>{p.label}</button>
+				{/each}
+			</div>
+
+			<div class="lab-out" bind:this={outEl} aria-live="polite">
+				{#each tokens as t, i (i)}
+					<span class="tok-chip" class:alt={i % 2 === 1}>
+						<span class="tok-chip-text">{display(t.text)}</span>
+						<span class="tok-chip-id">{t.id}</span>
+					</span>
+				{/each}
+			</div>
+
+			<footer class="lab-foot mono">
+				<span>
+					{input.length} characters → <strong>{tokens.length} tokens</strong>
+					· ~{ratio} chars each
+				</span>
+				<span class="lab-legend">· marks a leading space — it travels inside the token</span>
+			</footer>
+
+			<p class="disclaimer lab-disclaimer">
+				Illustrative tokenizer — a hand-made stand-in, not any model's real vocabulary.
+				The behaviors are real: common words ride whole, rare words shatter, digits chunk,
+				spaces hide inside tokens.
+			</p>
 		</div>
 	</div>
 
@@ -837,24 +912,74 @@
 		height: auto;
 		padding: 4rem 0;
 	}
-	/* ---------- 2 · lede + lab ---------- */
+	/* ---------- 2 · lede ---------- */
 	.tk-head {
 		padding: clamp(2.5rem, 7vw, 5rem) var(--page-gutter) 0;
+		text-align: center;
 	}
 
 	.tk-lede {
-		font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+		font-size: clamp(1.15rem, 2.7vw, 1.5rem);
 		color: var(--muted);
-		max-width: var(--reading);
+		max-width: 48ch;
+		margin-inline: auto;
+		line-height: 1.6;
 	}
 
-	.tk-lede strong {
+	.lede-strong {
 		color: var(--paper);
 		font-weight: 500;
 	}
 
+	/* ---------- section seams ---------- */
+	.tk-seam {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1.1rem;
+		margin: clamp(3.5rem, 9vw, 6rem) var(--page-gutter) 0;
+	}
+
+	.seam-line {
+		flex: 0 1 14rem;
+		height: 1px;
+		background: var(--line-bright);
+	}
+
+	.seam-l {
+		transform-origin: 100% 50%;
+	}
+
+	.seam-r {
+		transform-origin: 0 50%;
+	}
+
+	.seam-tick {
+		flex-shrink: 0;
+		width: 7px;
+		height: 7px;
+		border: 1px solid var(--brand);
+		box-shadow: var(--glow-brand);
+		transform: rotate(45deg);
+	}
+
+	/* ---------- 6 · token lab ---------- */
+	.tk-lab-sec {
+		padding: 0 var(--page-gutter);
+		text-align: center;
+	}
+
+	.tk-lab-sec h3 {
+		margin-top: clamp(2.2rem, 5vw, 3.5rem);
+	}
+
+	.tk-lab-sec .tk-seam {
+		margin-inline: 0;
+	}
+
 	.tok-lab {
-		margin: clamp(1.8rem, 4vw, 3rem) var(--page-gutter) 0;
+		margin: clamp(1.8rem, 4vw, 3rem) auto 0;
+		text-align: left;
 		border: 1px solid var(--line);
 		border-top: 2px solid var(--brand);
 		border-radius: 3px;
@@ -993,14 +1118,17 @@
 
 	/* ---------- 3 · why not words ---------- */
 	.tk-why {
-		padding: clamp(4rem, 10vw, 7rem) var(--page-gutter) 0;
+		padding: clamp(2.2rem, 5vw, 3.5rem) var(--page-gutter) 0;
+		text-align: center;
 	}
 
 	.tk-why h3,
 	.tk-num h3,
+	.tk-lab-sec h3,
 	.tk-outro h3 {
 		font-size: clamp(1.7rem, 4vw, 2.5rem);
 		max-width: 24ch;
+		margin-inline: auto;
 	}
 
 	.why-grid {
@@ -1009,6 +1137,8 @@
 		gap: clamp(1rem, 2.5vw, 1.8rem);
 		margin-top: clamp(1.5rem, 4vw, 2.5rem);
 		max-width: 72rem;
+		margin-inline: auto;
+		text-align: left;
 	}
 
 	.why-card {
@@ -1121,8 +1251,10 @@
 
 	/* ---------- 4 · why numbers ---------- */
 	.tk-num {
-		padding: clamp(4rem, 10vw, 7rem) var(--page-gutter) 0;
+		padding: clamp(2.2rem, 5vw, 3.5rem) var(--page-gutter) 0;
 		max-width: calc(72rem + 2 * var(--page-gutter));
+		margin-inline: auto;
+		text-align: center;
 	}
 
 	.tk-prose {
@@ -1130,6 +1262,7 @@
 		color: var(--muted);
 		max-width: var(--reading);
 		margin-top: 1rem;
+		margin-inline: auto;
 	}
 
 	.tk-prose em {
@@ -1149,6 +1282,8 @@
 		background: var(--panel-gradient);
 		padding: clamp(1.2rem, 3.5vw, 2.2rem);
 		max-width: 64rem;
+		margin-inline: auto;
+		text-align: left;
 		overflow: hidden;
 	}
 
@@ -1226,15 +1361,18 @@
 		width: 100%;
 		max-width: 64rem;
 		margin-top: clamp(1.5rem, 4vw, 2.5rem);
+		margin-inline: auto;
 	}
 
 	/* ---------- go deeper ---------- */
 	.deeper {
 		margin-top: clamp(1.8rem, 4vw, 2.6rem);
+		margin-inline: auto;
 		max-width: var(--reading);
 		border: 1px solid var(--line);
 		border-radius: 10px;
 		background: var(--surface);
+		text-align: left;
 	}
 
 	.deeper summary {
@@ -1377,16 +1515,18 @@
 	/* ---------- outro ---------- */
 	.tk-outro {
 		padding: clamp(4rem, 10vw, 7rem) var(--page-gutter) 0;
+		text-align: center;
 	}
 
 	.outro-facts {
 		list-style: none;
-		margin: clamp(1.2rem, 3vw, 2rem) 0 0;
+		margin: clamp(1.2rem, 3vw, 2rem) auto 0;
 		padding: 0;
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
 		gap: 1rem;
 		max-width: 72rem;
+		text-align: left;
 	}
 
 	.outro-facts li {
@@ -1411,6 +1551,7 @@
 	.tk-outro .disclaimer {
 		margin-top: 2rem;
 		max-width: 48rem;
+		margin-inline: auto;
 	}
 
 	@media (max-width: 700px) {
