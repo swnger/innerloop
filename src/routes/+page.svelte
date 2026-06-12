@@ -42,7 +42,7 @@
             <span class="wordmark-text">THE INNER <em>LOOP</em></span>
         </span>
     </a>
-    <span class="kicker">Chapter {chapter}/08</span>
+    <span class="kicker">Chapter {chapter}/07</span>
 </header>
 
 <main>

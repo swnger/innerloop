@@ -1176,14 +1176,13 @@
 				function called softmax squashes them into probabilities that sum to 1. The picker
 				is a separate, swappable part: always take the favorite (greedy), draw in
 				proportion to the scores (sampling), or trim the long tail first (top-p). How
-				daring the draw gets is a dial called <em>temperature</em> — it gets its own
-				slider next chapter.
+				daring the draw gets is a dial called <em>temperature</em>.
 			</p>
 		</details>
 
 		<p class="nt-next">
-			Next — the part this chapter skipped: inside that single pass, how does the model
-			decide which earlier tokens matter? That mechanism is called <em>attention</em>.
+			Next — every guess re-read the entire story so far. That story lives in one finite
+			place, handed to the model whole on every call: the <em>context window</em>.
 		</p>
 
 		<p class="disclaimer">

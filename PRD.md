@@ -51,26 +51,14 @@ The cold open shows this whole nested machine running before anything is labeled
 
 ### 6.1 The system diagram (hero animation)
 
-The embodiment of the nested-loop concept is a single, persistent **system diagram** that doubles as the site's primary navigation. It shows the whole machine at once — the user and their prompt, the agent with its two loops on the left, the LLM on the right, and tokens flowing between them — and each chapter frames a different part of it.
+The embodiment of the nested-loop concept is a single **system diagram** shown in the cold open: the whole machine at once — the user and their prompt, the agent with its two loops on the left, the LLM on the right, and tokens flowing between them.
 
 Design rules for the diagram:
 
-- **It assembles progressively.** It is *not* shown fully labeled up front. The cold open gives a brief, unlabeled glimpse as a promise; thereafter each chapter adds a labeled part, and the finale pulls back to the whole thing, now understood.
-- **Navigation is a small set of discrete camera stops, not continuous scroll-scrubbing.** The camera snaps between a handful of framed states on section entry. This reads as zooming, is far more robust than binding a smooth zoom to scroll position, and degrades gracefully (see §11).
-- **Detail appears on zoom.** Labels and sub-mechanisms for a region fade in only when the camera frames it, keeping any single view uncluttered.
-- **Conceptual chapters break away.** Tokenization is not a *place* on the diagram; that chapter leaves it for its own bespoke visual and returns afterward.
+- **It assembles progressively.** It is *not* shown fully labeled up front. The cold open gives a brief, unlabeled glimpse as a promise; each subsequent chapter builds out one part of the machine, and the finale pulls back to the whole thing, now understood.
+- **Chapters are standalone sections, not camera stops.** There is no scroll-driven camera path. Each chapter is a full in-page section with its own bespoke visual (the live tokenizer, the autoregression stage, the stratified tank), reusing the diagram's visual vocabulary — panels, token chips, flow arrows — so every section still reads as a close-up of the same machine.
 
-The camera path:
-
-| Stop | Frame | Chapters |
-|---|---|---|
-| 0 | The whole machine, ticking once, barely labeled | 01 (the hook) |
-| → | Zoom right, into the LLM — one call: tokens in, response out, one token at a time | 03 |
-| → | Zoom the channel between them — the context window (drawn as a stratified tank that fills and overflows) and context engineering | 04, 06 |
-| → | Zoom left, into the agent — **the inner loop**: the tool-calling cycle nested in the prompt loop | 05, 07 |
-| ↺ | Pull all the way back out — the whole machine, every part now labeled and clickable | finale |
-
-Flow direction doubles as a navigational cue: context tokens travel right into the LLM in cool palette colors, and the generated response streams back left in the warm accent (§9).
+Flow direction doubles as a navigational cue: context tokens travel right into the LLM in cool palette colors, and the generated response streams back left in the warm accent.
 
 ## 7. Curriculum
 
@@ -110,12 +98,13 @@ Seven chapters, ordered as a single narrative. Chapter 1 supplies the "wow"; cha
 - Choose one token, append it, and run the same process again until a stopping condition.
 - Show how an early choice changes later possibilities and why separate runs can diverge.
 - Distinguish fluent continuation from fact lookup, reasoning guarantees, or a database of stored sentences.
+- Name hallucination here: a confident-sounding guess produced by the same mechanism as a correct answer, with nothing in the process marking the difference.
 - Put training, logits, sampling controls, and attention mechanics in `Go deeper`; they are supporting detail, not separate chapters.
 
 #### 04 — The Context Window
 
 - Define the context window as the full token sequence supplied to one model call.
-- Stack system instructions, tool definitions, user messages, prior responses, and tool results in the stratified tank.
+- Stack system instructions, user messages, and prior responses in the stratified tank; the tool strata (definitions, outputs) arrive in Chapter 6, after tools exist.
 - Replay successive calls to show that the whole assembled window is sent again each time.
 - Show the finite token budget filling, then truncation or summarization when content no longer fits.
 - State the key boundary plainly: the model does not remember a previous call unless the application includes relevant information again.
@@ -127,13 +116,14 @@ Seven chapters, ordered as a single narrative. Chapter 1 supplies the "wow"; cha
 - Introduce the namesake loop: think or decide, act through a tool, observe the result, then decide again.
 - Cover representative tools: file reads, search, code execution, APIs, and structured data lookup.
 - Revisit the cold open and annotate which parts were model output, harness actions, and tool observations.
-- Show both recovery and stopping: errors become new observations; the loop ends when the task is done, blocked, or capped.
+- Show recovery: errors come back as new observations the next think step can react to.
 - Clarify that tools extend what the system can do; they do not make model output inherently correct.
 
 #### 06 — Context Engineering
 
 - Treat every model call as a packing decision: include the information most useful for the next step.
 - Cover instructions, examples, retrieved documents, conversation history, plans, tool outputs, and summaries.
+- Replay the Chapter 4 tank with the loop running: each turn adds tool-definition and tool-output strata, completing the stratified window.
 - Compare under-packed, well-packed, and over-packed windows on the same task.
 - Show selection, ordering, formatting, and compression as distinct choices.
 - Explain retrieval as finding candidate material, not guaranteeing relevance or truth.
@@ -142,6 +132,7 @@ Seven chapters, ordered as a single narrative. Chapter 1 supplies the "wow"; cha
 #### 07 — Harness Engineering
 
 - Identify the software surrounding the model: loop, tool contracts, state, routing, retries, budgets, and stopping rules.
+- Define when the loop ends: the task is done, blocked, or capped by a turn or cost budget — the harness decides, not the model alone.
 - Show validation and guardrails at boundaries before tool execution and before results reach users.
 - Cover permissions, sandboxing, approval gates, timeouts, and limits on expensive or destructive actions.
 - Explain observability through traces, logs, evaluations, and reproducible test cases.
