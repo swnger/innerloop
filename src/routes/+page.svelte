@@ -3,6 +3,7 @@
     import { base } from "$app/paths";
     import Hero from "$lib/components/Hero.svelte";
     import Tokenization from "$lib/components/Tokenization.svelte";
+    import Inference from "$lib/components/Inference.svelte";
     import ContextWindow from "$lib/components/ContextWindow.svelte";
 
     let chapter = $state("01");
@@ -48,6 +49,8 @@
     <Hero />
 
     <Tokenization />
+
+    <Inference />
 
     <ContextWindow />
 </main>

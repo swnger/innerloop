@@ -80,7 +80,7 @@ Seven chapters, ordered as a single narrative. Chapter 1 supplies the "wow"; cha
 |---|---|---|---|---|
 | 01 | **The Cold Open** | "How on earth did it do that?" | A coding agent takes a vague request, reads files, runs a command, hits an error, fixes it, succeeds — with zero explanation | Planned |
 | 02 | **Tokenization** | The model never saw your words | Live tokenizer you type into; the strawberry letter-count failure | Planned |
-| 03 | **From Tokens to a Guess** | It's just predicting the next token, over and over | Text writing itself one token at a time (autoregression) | Planned |
+| 03 | **Inference** | It's just predicting the next token, over and over | Text writing itself one token at a time (autoregression) | Planned |
 | 04 | **The Context Window** | The model has no memory between calls — only what's in the window | A finite window filling and overflowing | Planned |
 | 05 | **Giving It Hands** | Add tools + a loop, and a chatbot becomes an agent | **The inner loop revealed** — the tool-calling cycle (think → act → observe) nested inside the user's prompt loop; re-annotate Chapter 1's demo | Planned |
 | 06 | **Context Engineering** | The hard part is choosing what goes in the window each step | "Packing the backpack" before every move — instructions, examples, retrieved facts, tool results | Planned |
@@ -103,7 +103,7 @@ Seven chapters, ordered as a single narrative. Chapter 1 supplies the "wow"; cha
 - Connect tokenization to common surprises: letter counting, awkward splits, context limits, latency, and cost.
 - Explain embeddings only as the next transformation: token IDs become learned numeric representations. Keep vectors and geometry optional.
 
-#### 03 — From Tokens to a Guess
+#### 03 — Inference
 
 - Given the tokens so far, the model produces scores for possible next tokens.
 - Turn scores into a small illustrative probability distribution readers can inspect.
