@@ -9,8 +9,9 @@
 	      the chapter frame, then reveals the token IDs.
 	   2. Lede — the claim, lit up word by word on scroll.
 	   3. Why not whole words — triptych.
-	   4. Why numbers — words bounce off the arithmetic, IDs pass;
-	      IDs on a number line (a locker number, not a meaning).
+	   4. Why numbers — IDs on a number line (a locker number, not
+	      a meaning); then a sentence explodes into a slowly turning
+	      3-D meaning-space: the embedding vectors.
 	   5. The strawberry stumble — horizontal scroll interlude.
 	   6. Token lab — the chapter's toy, earned: the reader now
 	      knows the rules and gets to break them.
@@ -59,13 +60,66 @@
 		.sort((a, b) => a.id - b.id)
 		.map((d, i) => ({ ...d, x: AXIS_X + (d.id / VOCAB_MAX) * AXIS_W, up: i % 2 === 0 }));
 
+	/* — why numbers: the sentence explodes into meaning-space —
+	   hand-placed 3-D coords (illustrative); similar words cluster.
+	   Projected to 2-D with a slow yaw spin so the depth reads. */
+	const EMB_CX = 450;
+	const EMB_CY = 248;
+	const EMB_R = 300;
+	const EMB_YAW0 = -0.52;
+	const EMB_WORDS = [
+		{ w: 'kittens', x: -0.62, y: -0.18, z: 0.34 },
+		{ w: 'and', x: 0.66, y: 0.5, z: -0.45 },
+		{ w: 'puppies', x: -0.48, y: -0.36, z: 0.14 },
+		{ w: 'play', x: -0.05, y: -0.62, z: -0.42 },
+		{ w: 'on', x: 0.5, y: 0.62, z: -0.2 },
+		{ w: 'Tuesday', x: 0.6, y: -0.38, z: 0.55 }
+	];
+	const EMB_GHOSTS = [
+		{ w: 'cat', x: -0.55, y: -0.04, z: 0.44 },
+		{ w: 'dog', x: -0.38, y: -0.46, z: 0.3 },
+		{ w: 'pets', x: -0.72, y: -0.3, z: 0.06 },
+		{ w: 'frolic', x: 0.1, y: -0.72, z: -0.28 },
+		{ w: 'Friday', x: 0.7, y: -0.52, z: 0.4 },
+		{ w: 'weekend', x: 0.44, y: -0.24, z: 0.7 },
+		{ w: 'the', x: 0.76, y: 0.4, z: -0.3 }
+	];
+	const EMB_AXES = [
+		{ x: 0.95, y: 0, z: 0, label: 'dim 1' },
+		{ x: 0, y: -0.82, z: 0, label: 'dim 2' },
+		{ x: 0, y: 0, z: 0.95, label: 'dim 3' }
+	];
+	const EMB_CHIP_H = 30;
+	const embChipW = (w: string) => w.length * 9.6 + 24;
+	/* row layout for the not-yet-exploded sentence */
+	const EMB_ROW = (() => {
+		const gap = 10;
+		const total =
+			EMB_WORDS.reduce((s, d) => s + embChipW(d.w), 0) + gap * (EMB_WORDS.length - 1);
+		let cursor = EMB_CX - total / 2;
+		return EMB_WORDS.map((d) => {
+			const c = cursor + embChipW(d.w) / 2;
+			cursor += embChipW(d.w) + gap;
+			return c;
+		});
+	})();
+
+	function embProj(x: number, y: number, z: number, yaw: number) {
+		const rx = x * Math.cos(yaw) + z * Math.sin(yaw);
+		const rz = z * Math.cos(yaw) - x * Math.sin(yaw);
+		return {
+			x: EMB_CX + rx * EMB_R,
+			y: EMB_CY + y * EMB_R * 0.78 - rz * EMB_R * 0.32,
+			d: (rz + 1) / 2 // 0 = far, 1 = near
+		};
+	}
+
 	/* — strawberry — */
 	const SB = tokenize('strawberry');
 	const SB_LETTERS = 'strawberry'.split('');
 
 	let rootEl: HTMLElement;
 	let outEl: HTMLElement;
-	let numStageEl: HTMLElement;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let gsap: any;
 
@@ -319,9 +373,7 @@
 					.to('.gib-chip', { opacity: 0, duration: 0.3 })
 					.set('.gib-word', { y: 0 });
 
-				/* ---- 4 · why numbers: the bouncing word ----
-				   The argument in motion: text cannot enter arithmetic;
-				   its number can. */
+				/* ---- 4 · why numbers ---- */
 				gsap.from('.tk-num .num-reveal', {
 					opacity: 0,
 					y: 36,
@@ -330,26 +382,6 @@
 					ease: 'power2.out',
 					scrollTrigger: { trigger: '.tk-num', start: 'top 78%' }
 				});
-
-				const stageW = () => numStageEl?.clientWidth ?? 600;
-				const bounce = gsap.timeline({
-					repeat: -1,
-					repeatDelay: 1.3,
-					scrollTrigger: { trigger: '.tk-num', start: 'top 70%', toggleActions: 'play pause resume pause' }
-				});
-				bounce
-					// the word charges at the model…
-					.to('.num-word', { x: () => stageW() * 0.42, duration: 0.85, ease: 'power2.in' })
-					.to('.num-box', { borderColor: WARM, duration: 0.12, yoyo: true, repeat: 1 }, '>-0.05')
-					.to('.num-word', { rotate: -4, duration: 0.1 }, '<')
-					// …and bounces off
-					.to('.num-word', { x: 0, rotate: 0, duration: 0.8, ease: 'power3.out' })
-					// its ID sails straight through
-					.to('.num-idchip', { x: () => stageW() * 0.58, duration: 1.1, ease: 'power1.inOut' }, '<0.25')
-					.to('.num-ops', { opacity: 1, duration: 0.3 }, '>-0.35')
-					.to('.num-idchip', { opacity: 0, duration: 0.25 }, '<')
-					.to('.num-ops', { opacity: 0.45, duration: 0.5 }, '+=0.4')
-					.set('.num-idchip', { x: 0, opacity: 1 });
 
 				// the number line draws itself, IDs drop onto it
 				const lineTl = gsap.timeline({
@@ -364,6 +396,102 @@
 						'>-0.1'
 					)
 					.from('.numline-cap', { opacity: 0, y: 10, duration: 0.5 });
+
+				/* ---- 4b · the explosion into meaning-space ----
+				   The sentence sits as a chip row, then flings out to its
+				   embedding positions; the cloud spins slowly forever.
+				   Positions are written per-frame (yaw + per-word spread),
+				   so GSAP animates plain values and embRender projects. */
+				gsap.from('.emb-bridge', {
+					opacity: 0,
+					y: 30,
+					duration: 0.65,
+					ease: 'power2.out',
+					scrollTrigger: { trigger: '.emb-bridge', start: 'top 82%' }
+				});
+
+				const wordEls = gsap.utils.toArray('.emb-word', rootEl) as SVGGElement[];
+				const vecEls = gsap.utils.toArray('.emb-vec', rootEl) as SVGLineElement[];
+				const ghostEls = gsap.utils.toArray('.emb-ghost', rootEl) as SVGTextElement[];
+				const axisEls = gsap.utils.toArray('.emb-axis', rootEl) as SVGLineElement[];
+				const axisLabelEls = gsap.utils.toArray('.emb-axis-label', rootEl) as SVGTextElement[];
+				const view = { yaw: EMB_YAW0 };
+				const spread = EMB_WORDS.map(() => ({ p: 0 }));
+
+				const embRender = () => {
+					EMB_WORDS.forEach((d, i) => {
+						const t = embProj(d.x, d.y, d.z, view.yaw);
+						const p = spread[i].p;
+						const px = EMB_ROW[i] + (t.x - EMB_ROW[i]) * p;
+						const py = EMB_CY + (t.y - EMB_CY) * p;
+						const s = 1 + (0.72 + 0.42 * t.d - 1) * p; // row scale 1 → depth scale
+						wordEls[i]?.setAttribute('transform', `translate(${px} ${py}) scale(${s})`);
+						vecEls[i]?.setAttribute('x2', String(px));
+						vecEls[i]?.setAttribute('y2', String(py));
+					});
+					ghostEls.forEach((el, i) => {
+						const g = EMB_GHOSTS[i];
+						const t = embProj(g.x, g.y, g.z, view.yaw);
+						el.setAttribute('transform', `translate(${t.x} ${t.y}) scale(${0.72 + 0.42 * t.d})`);
+					});
+					axisEls.forEach((el, i) => {
+						const a = EMB_AXES[i];
+						const e1 = embProj(a.x, a.y, a.z, view.yaw);
+						const e2 = embProj(-a.x, -a.y, -a.z, view.yaw);
+						el.setAttribute('x1', String(e1.x));
+						el.setAttribute('y1', String(e1.y));
+						el.setAttribute('x2', String(e2.x));
+						el.setAttribute('y2', String(e2.y));
+						axisLabelEls[i]?.setAttribute('transform', `translate(${e1.x} ${e1.y - 10})`);
+					});
+				};
+				embRender();
+
+				// scrubbed + pinned: scrolling forward explodes the sentence,
+				// scrolling back pulls it home
+				const embTl = gsap.timeline({
+					scrollTrigger: {
+						trigger: '.emb-pin',
+						start: 'center center',
+						end: '+=130%',
+						scrub: 1,
+						pin: true,
+						anticipatePin: 1,
+						invalidateOnRefresh: true
+					},
+					defaults: { ease: 'power2.out' },
+					onUpdate: embRender
+				});
+				embTl
+					// the sentence assembles…
+					.from(wordEls, { opacity: 0, duration: 0.45, stagger: 0.08 })
+					.to({}, { duration: 0.4 })
+					// …the space opens around it…
+					.to(axisEls, { opacity: 0.55, duration: 0.5, stagger: 0.08 })
+					.to([...axisLabelEls, rootEl.querySelector('.emb-origin')], { opacity: 0.8, duration: 0.4 }, '<0.15')
+					// …and it explodes into position
+					.to(spread, { p: 1, duration: 1.25, ease: 'back.out(1.4)', stagger: 0.07 }, '<0.2')
+					.to(vecEls, { opacity: 0.45, duration: 0.5, stagger: 0.06 }, '<0.35')
+					// the neighborhood fades in: nearby means similar
+					.to(ghostEls, { opacity: 0.55, duration: 0.6, stagger: 0.07 }, '>-0.2')
+					.from('.emb-cap', { opacity: 0, y: 10, duration: 0.5 }, '<')
+					.from('.emb-foot', { opacity: 0, duration: 0.5 }, '<0.2')
+					// hold the settled cloud before the pin releases
+					.to({}, { duration: 0.7 });
+
+				// the slow turn that makes the space read as 3-D
+				gsap.to(view, {
+					yaw: EMB_YAW0 + Math.PI * 2,
+					duration: 44,
+					repeat: -1,
+					ease: 'none',
+					onUpdate: embRender,
+					scrollTrigger: {
+						trigger: '.emb-stage',
+						start: 'top 90%',
+						toggleActions: 'play pause resume pause'
+					}
+				});
 
 				/* ---- 5 · strawberry: the horizontal interlude ---- */
 				const track = rootEl.querySelector('.sb-track') as HTMLElement;
@@ -578,25 +706,6 @@
 			additions. You can't multiply a word. You can multiply a number.
 		</p>
 
-		<div class="num-stage num-reveal" bind:this={numStageEl} aria-hidden="true">
-			<div class="num-travellers">
-				<span class="num-word">“berry”</span>
-				<span class="num-idchip mono">{idFor('berry')}</span>
-			</div>
-			<div class="num-box">
-				<span class="mono num-box-label">THE MODEL</span>
-				<div class="num-ops mono" aria-hidden="true">
-					{#each Array(18) as _, i (i)}
-						<span>{i % 2 === 0 ? '×' : '+'}</span>
-					{/each}
-				</div>
-				<span class="mono num-box-note">nothing but arithmetic inside</span>
-			</div>
-		</div>
-		<p class="mono num-caption num-reveal">
-			the word bounces off · its number sails through
-		</p>
-
 		<p class="tk-prose num-reveal">
 			So each piece gets a number: its position in the vocabulary list. And that's
 			<em>all</em> the ID is — a locker number, not a meaning.
@@ -633,13 +742,70 @@
 			<text class="numline-cap" x="440" y="26" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">where a token lands is arbitrary — neighbors share nothing</text>
 		</svg>
 
+		<p class="tk-prose emb-bridge">
+			The model's first move is to trade each locker number for something it can
+			compute with: a long list of numbers — coordinates for a point in a space of
+			meaning. Drop a sentence in, and it comes apart.
+		</p>
+
+		<div class="emb-pin">
+			<div
+				class="emb-stage"
+				role="img"
+			aria-label="The sentence 'kittens and puppies play on Tuesday' exploded into a slowly rotating 3-D meaning space: kittens and puppies land near cat, dog and pets; Tuesday lands near Friday and weekend; filler words like 'and' and 'on' drift off together."
+		>
+			<svg class="emb-svg" viewBox="0 0 900 520" aria-hidden="true">
+				{#each EMB_AXES as a (a.label)}
+					{@const e1 = embProj(a.x, a.y, a.z, EMB_YAW0)}
+					{@const e2 = embProj(-a.x, -a.y, -a.z, EMB_YAW0)}
+					<line class="emb-axis" x1={e1.x} y1={e1.y} x2={e2.x} y2={e2.y} />
+					<text class="emb-axis-label" transform={`translate(${e1.x} ${e1.y - 10})`}>{a.label}</text>
+				{/each}
+				<circle class="emb-origin" cx={EMB_CX} cy={EMB_CY} r="3" />
+
+				{#each EMB_WORDS as d (d.w)}
+					{@const t = embProj(d.x, d.y, d.z, EMB_YAW0)}
+					<line class="emb-vec" x1={EMB_CX} y1={EMB_CY} x2={t.x} y2={t.y} />
+				{/each}
+
+				{#each EMB_GHOSTS as g (g.w)}
+					{@const t = embProj(g.x, g.y, g.z, EMB_YAW0)}
+					<text class="emb-ghost" transform={`translate(${t.x} ${t.y})`}>{g.w}</text>
+				{/each}
+
+				{#each EMB_WORDS as d (d.w)}
+					{@const t = embProj(d.x, d.y, d.z, EMB_YAW0)}
+					<g class="emb-word" transform={`translate(${t.x} ${t.y})`}>
+						<rect
+							x={-embChipW(d.w) / 2}
+							y={-EMB_CHIP_H / 2}
+							width={embChipW(d.w)}
+							height={EMB_CHIP_H}
+							rx="6"
+						/>
+						<text>{d.w}</text>
+					</g>
+				{/each}
+			</svg>
+
+				<footer class="emb-foot mono">
+					<span>kittens ≈ [−0.62, −0.18, 0.34, …] — a position is just a list of numbers</span>
+					<span>illustrative — real embeddings are learned, with thousands of dimensions</span>
+				</footer>
+			</div>
+			<p class="mono num-caption emb-cap">
+				distance is meaning — similar words land close together
+			</p>
+		</div>
+
 		<details class="deeper">
-			<summary><span class="mono">Go deeper</span> — what happens to the ID next?</summary>
+			<summary><span class="mono">Go deeper</span> — why a <em>space</em>, of all things?</summary>
 			<p>
-				The model's first move is to swap each ID for a long list of learned numbers
-				that captures how that token tends to be used — that's where meaning starts
-				to enter, and it's the doorway to the next chapter. The ID itself stays as
-				meaningless as a locker number.
+				Because once words are points, meaning becomes geometry — and geometry is
+				arithmetic. This stage is hand-placed and three-dimensional so you can see it;
+				real models learn the positions from data and use hundreds or thousands of
+				dimensions per token. The principle survives the scale: similar words sit close,
+				and the model computes with the coordinates, never the letters.
 			</p>
 		</details>
 	</div>
@@ -1269,84 +1435,89 @@
 		color: var(--paper);
 	}
 
-	.num-stage {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 2rem;
+	.emb-pin {
 		margin-top: clamp(1.5rem, 4vw, 2.5rem);
+	}
+
+	.emb-stage {
+		margin-inline: auto;
 		border: 1px solid var(--line);
 		border-top: 2px solid var(--brand);
 		border-radius: 3px;
 		background: var(--panel-gradient);
-		padding: clamp(1.2rem, 3.5vw, 2.2rem);
+		box-shadow: var(--panel-shadow);
+		padding: clamp(0.8rem, 2.5vw, 1.6rem) clamp(0.8rem, 2.5vw, 1.6rem) 0.9rem;
 		max-width: 64rem;
-		margin-inline: auto;
-		text-align: left;
-		overflow: hidden;
 	}
 
-	.num-travellers {
-		display: flex;
-		flex-direction: column;
-		gap: 1.6rem;
-		z-index: 1;
+	.emb-svg {
+		display: block;
+		width: 100%;
+		height: auto;
 	}
 
-	.num-word {
-		font-family: var(--display);
-		font-size: clamp(1.5rem, 3.5vw, 2.2rem);
-		color: var(--paper);
-		display: inline-block;
-		width: max-content;
+	.emb-axis {
+		stroke: var(--line-bright);
+		stroke-width: 1;
 	}
 
-	.num-idchip {
-		display: inline-block;
-		width: max-content;
-		font-size: clamp(0.9rem, 2vw, 1.15rem);
-		color: var(--cool);
-		border: 1px solid var(--cool);
-		border-radius: 7px;
-		background: var(--cool-soft);
-		box-shadow: var(--glow-cool);
-		padding: 0.35rem 0.7rem;
-	}
-
-	.num-box {
-		flex-shrink: 0;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.7rem;
-		border: 1.5px solid var(--line-bright);
-		border-radius: 12px;
-		background: var(--surface);
-		padding: 1.1rem 1.4rem;
-		min-width: clamp(9rem, 24vw, 15rem);
-	}
-
-	.num-box-label {
-		font-size: 0.7rem;
-		font-weight: 600;
-		letter-spacing: 0.16em;
-		color: var(--paper);
-	}
-
-	.num-ops {
-		display: grid;
-		grid-template-columns: repeat(6, 1fr);
-		gap: 0.3rem 0.7rem;
-		font-size: 0.85rem;
-		color: var(--muted);
-		opacity: 0.45;
-	}
-
-	.num-box-note {
-		font-size: 0.62rem;
+	.emb-axis-label {
+		font-family: var(--mono);
+		font-size: 11px;
 		letter-spacing: 0.08em;
+		fill: var(--faint);
+		text-anchor: middle;
+	}
+
+	.emb-origin {
+		fill: var(--brand-strong);
+		filter: drop-shadow(0 0 6px rgba(28, 105, 212, 0.6));
+	}
+
+	.emb-vec {
+		stroke: var(--line-bright);
+		stroke-width: 1;
+	}
+
+	.emb-ghost {
+		font-family: var(--mono);
+		font-size: 13px;
+		fill: var(--faint);
+		text-anchor: middle;
+	}
+
+	.emb-word rect {
+		fill: var(--token-fill);
+		stroke: var(--line-bright);
+	}
+
+	.emb-word text {
+		font-family: var(--mono);
+		font-size: 16px;
+		fill: var(--paper);
+		text-anchor: middle;
+		dominant-baseline: central;
+	}
+
+	/* hidden until the timeline opens the space; visible without JS */
+	:global(html.js) .emb-axis,
+	:global(html.js) .emb-axis-label,
+	:global(html.js) .emb-origin,
+	:global(html.js) .emb-vec,
+	:global(html.js) .emb-ghost {
+		opacity: 0;
+	}
+
+	.emb-foot {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.6rem 1.5rem;
+		flex-wrap: wrap;
+		margin-top: 0.7rem;
+		font-size: 0.7rem;
+		letter-spacing: 0.05em;
 		color: var(--faint);
+		text-align: left;
 	}
 
 	.num-caption {
@@ -1554,16 +1725,4 @@
 		margin-inline: auto;
 	}
 
-	@media (max-width: 700px) {
-		.num-stage {
-			gap: 1rem;
-		}
-		.num-box {
-			min-width: 8rem;
-			padding: 0.8rem;
-		}
-		.num-ops {
-			grid-template-columns: repeat(4, 1fr);
-		}
-	}
 </style>
