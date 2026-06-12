@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { base } from "$app/paths";
     import Hero from "$lib/components/Hero.svelte";
     import Tokenization from "$lib/components/Tokenization.svelte";
     import ContextWindow from "$lib/components/ContextWindow.svelte";
@@ -11,34 +12,14 @@
 <header class="site-header">
     <a class="wordmark" href="#machine">
         <span class="ring" aria-hidden="true">
-            <svg viewBox="0 0 32 32" width="22" height="22">
-                <circle
-                    cx="16"
-                    cy="16"
-                    r="9"
-                    fill="none"
-                    stroke="var(--line-bright)"
-                    stroke-width="2"
-                />
-                <path
-                    d="M16 7 a9 9 0 0 1 7.8 4.5"
-                    fill="none"
-                    stroke="var(--cool)"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                />
-                <path
-                    d="M16 25 a9 9 0 0 1 -7.8 -4.5"
-                    fill="none"
-                    stroke="var(--warm)"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                />
-            </svg>
+            <img src="{base}/favicon.svg" alt="" width="30" height="30" />
         </span>
-        <span class="wordmark-text">THE INNER <em>LOOP</em></span>
+        <span class="identity">
+            <span class="brand-line">AI SYSTEMS · VISUAL FIELD GUIDE</span>
+            <span class="wordmark-text">THE INNER <em>LOOP</em></span>
+        </span>
     </a>
-    <span class="kicker">A field guide · v0.3 draft</span>
+    <span class="kicker">AI SYSTEMS FIELD GUIDE · 01/08</span>
 </header>
 
 <main>
@@ -63,32 +44,50 @@
         justify-content: space-between;
         align-items: center;
         gap: 1rem;
-        padding: 0.85rem var(--page-gutter);
+        min-height: 4.35rem;
+        padding: 0.55rem var(--page-gutter);
+        border-top: 3px solid var(--brand);
         border-bottom: 1px solid var(--line);
         position: sticky;
         top: 0;
         z-index: 10;
-        background: color-mix(in srgb, var(--ink) 82%, transparent);
-        backdrop-filter: blur(10px);
+        background: var(--header-bg);
+        backdrop-filter: blur(16px) saturate(1.15);
+        box-shadow: 0 8px 30px -26px var(--paper);
     }
 
     .wordmark {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.72rem;
         text-decoration: none;
         color: var(--paper);
     }
 
     .ring {
         display: inline-flex;
+        flex: 0 0 auto;
+    }
+
+    .identity {
+        display: grid;
+        gap: 0.04rem;
+        line-height: 1.2;
+    }
+
+    .brand-line {
+        font-family: var(--mono);
+        font-size: 0.53rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: var(--brand-strong);
     }
 
     .wordmark-text {
         font-family: var(--mono);
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 600;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.18em;
     }
 
     .wordmark-text em {
@@ -102,30 +101,6 @@
         letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--faint);
-    }
-
-    /* prose block */
-    .prose-block {
-        width: 100%;
-        margin: clamp(3rem, 9vw, 6rem) 0 0;
-        padding: 0 var(--page-gutter);
-    }
-
-    .about-eyebrow {
-        color: var(--muted);
-    }
-
-    .prose-block h2 {
-        font-size: clamp(1.7rem, 4.2vw, 2.6rem);
-        max-width: 22ch;
-        margin: 0.6rem 0 1.4rem;
-    }
-
-    .prose {
-        font-size: clamp(1.05rem, 2.4vw, 1.2rem);
-        color: var(--muted);
-        max-width: var(--reading);
-        margin-bottom: 1.1rem;
     }
 
     /* footer */
@@ -142,10 +117,31 @@
         font-size: 0.78rem;
         letter-spacing: 0.1em;
         color: var(--muted);
+        background: color-mix(in srgb, var(--surface) 74%, transparent);
     }
 
     .site-footer em {
         font-style: normal;
-        color: var(--faint);
+        color: var(--brand-strong);
+    }
+
+    @media (max-width: 720px) {
+        .kicker {
+            display: none;
+        }
+
+        .brand-line {
+            font-size: 0.48rem;
+        }
+
+        .wordmark-text {
+            font-size: 0.65rem;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .site-header {
+            padding-inline: 0.7rem;
+        }
     }
 </style>

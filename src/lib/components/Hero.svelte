@@ -1,14 +1,14 @@
 <script lang="ts">
     import { onMount } from "svelte";
 
-    const SURFACE = "#11151F";
-    const LINE = "#1E2533";
-    const LINE_B = "#2C3650";
-    const PAPER = "#E8E6DF";
-    const MUTED = "#8A93A6";
-    const FAINT = "#5A6275";
-    const COOL = "#38E1C6";
-    const WARM = "#FF9D4D";
+    const SURFACE = "var(--diagram-surface)";
+    const LINE = "var(--line)";
+    const LINE_B = "var(--line-bright)";
+    const PAPER = "var(--paper)";
+    const MUTED = "var(--muted)";
+    const FAINT = "var(--faint)";
+    const COOL = "var(--cool)";
+    const WARM = "var(--warm)";
 
     type CodeLine = {
         text: string;
@@ -72,17 +72,17 @@
         cls?: string;
     };
     // One distinct hue per category so adjacent layers read apart by color.
-    const SYSTEM = "#6E7BB0";
-    const TOOLS = "#A284D6";
-    const HISTORY = "#4FA6D6";
-    const USER = "#5BC592";
+    const SYSTEM = "var(--cat-system)";
+    const TOOLS = "var(--cat-tools)";
+    const HISTORY = "var(--cat-history)";
+    const USER = "var(--cat-user)";
     const STRATA: Band[] = [
         {
             label: "system prompt",
             detail: "fixed",
             y: 206,
             h: 30,
-            fill: "#1C2238",
+            fill: "var(--cat-system-fill)",
             accent: SYSTEM,
             fixed: true,
         },
@@ -91,7 +91,7 @@
             detail: "fixed",
             y: 238,
             h: 34,
-            fill: "#272140",
+            fill: "var(--cat-tools-fill)",
             accent: TOOLS,
             fixed: true,
         },
@@ -100,7 +100,7 @@
             detail: "carried",
             y: 274,
             h: 30,
-            fill: "#143040",
+            fill: "var(--cat-history-fill)",
             accent: HISTORY,
         },
         {
@@ -108,7 +108,7 @@
             detail: "appended",
             y: 306,
             h: 36,
-            fill: "#163127",
+            fill: "var(--cat-user-fill)",
             accent: USER,
             cls: "band-user",
         },
@@ -117,7 +117,7 @@
             detail: "tool call",
             y: 344,
             h: 36,
-            fill: "#352513",
+            fill: "var(--cat-response-fill)",
             accent: WARM,
             response: true,
             cls: "band-toolcall",
@@ -127,7 +127,7 @@
             detail: "appended",
             y: 382,
             h: 40,
-            fill: "#103330",
+            fill: "var(--cat-tool-fill)",
             accent: COOL,
             cls: "band-toolout",
         },
@@ -136,7 +136,7 @@
             detail: "answer",
             y: 424,
             h: 36,
-            fill: "#352513",
+            fill: "var(--cat-response-fill)",
             accent: WARM,
             response: true,
             cls: "band-answer",
@@ -452,8 +452,14 @@
 
 <section id="machine" class="hero" aria-labelledby="hero-title">
     <div class="intro">
-        <p class="eyebrow">The whole machine</p>
-        <h1 id="hero-title">One continuous cycle.</h1>
+        <div>
+            <p class="eyebrow">Module 01 · system overview</p>
+            <h1 id="hero-title">One continuous cycle.</h1>
+        </div>
+        <div class="module-index" aria-label="Education module one">
+            <span>FIELD GUIDE</span>
+            <strong>01</strong>
+        </div>
     </div>
 
     <figure class="stage" bind:this={stageEl}>
@@ -835,7 +841,7 @@
                                 width={tk.w}
                                 height="20"
                                 rx="4"
-                                fill="#1B2434"
+                                fill="var(--token-fill)"
                                 stroke={LINE_B}
                                 stroke-width="0.8"
                             />
@@ -902,7 +908,7 @@
                         width="240"
                         height="78"
                         rx="7"
-                        fill="#171D2A"
+                        fill="var(--transformer-fill)"
                         stroke={LINE_B}
                     />
                     <text
@@ -956,16 +962,16 @@
 
                 <g class="transformer-step logits-step">
                     <text x="786" y="369" text-anchor="end" dominant-baseline="middle" font-family="var(--mono)" font-size="9.5" font-weight="600" fill={WARM}>{gen}</text>
-                    <rect x="794" y="362" width="93" height="14" rx="3" fill="rgba(255,157,77,0.16)" stroke={WARM} />
+                    <rect x="794" y="362" width="93" height="14" rx="3" fill="var(--warm-soft)" stroke={WARM} />
                     <text x="900" y="369" dominant-baseline="middle" font-family="var(--mono)" font-size="8.5" fill={FAINT}>0.62</text>
                     <text x="946" y="369" dominant-baseline="middle" font-family="var(--mono)" font-size="8" fill={WARM}>◀ sampled</text>
 
                     <text x="786" y="393" text-anchor="end" dominant-baseline="middle" font-family="var(--mono)" font-size="9.5" fill={MUTED}>open</text>
-                    <rect x="794" y="386" width="31" height="14" rx="3" fill="#26344A" stroke={LINE} />
+                    <rect x="794" y="386" width="31" height="14" rx="3" fill="var(--bar-fill)" stroke={LINE} />
                     <text x="900" y="393" dominant-baseline="middle" font-family="var(--mono)" font-size="8.5" fill={FAINT}>0.21</text>
 
                     <text x="786" y="417" text-anchor="end" dominant-baseline="middle" font-family="var(--mono)" font-size="9.5" fill={MUTED}>fix</text>
-                    <rect x="794" y="410" width="14" height="14" rx="3" fill="#26344A" stroke={LINE} />
+                    <rect x="794" y="410" width="14" height="14" rx="3" fill="var(--bar-fill)" stroke={LINE} />
                     <text x="900" y="417" dominant-baseline="middle" font-family="var(--mono)" font-size="8.5" fill={FAINT}>0.09</text>
                 </g>
 
@@ -978,7 +984,7 @@
                         width="100"
                         height="28"
                         rx="6"
-                        fill="rgba(255,157,77,0.12)"
+                        fill="var(--warm-soft)"
                         stroke={WARM}
                     />
                     <text
@@ -1037,7 +1043,7 @@
                         width="52"
                         height="20"
                         rx="5"
-                        fill="rgba(56,225,198,0.12)"
+                        fill="var(--cool-soft)"
                         stroke={COOL}
                     />
                     <text
@@ -1060,7 +1066,7 @@
                         width="68"
                         height="20"
                         rx="5"
-                        fill="rgba(56,225,198,0.12)"
+                        fill="var(--cool-soft)"
                         stroke={COOL}
                     />
                     <text
@@ -1083,7 +1089,7 @@
                         width="76"
                         height="36"
                         rx="5"
-                        fill="rgba(56,225,198,0.1)"
+                        fill="var(--cool-soft)"
                         stroke={COOL}
                     />
                     <line
@@ -1128,7 +1134,7 @@
                         width="60"
                         height="20"
                         rx="5"
-                        fill="rgba(255,157,77,0.12)"
+                        fill="var(--warm-soft)"
                         stroke={WARM}
                     />
                     <text
@@ -1160,7 +1166,7 @@
 <style>
     .hero {
         /* One slide: fill the viewport below the sticky header, no scroll. */
-        --header: 3.15rem;
+        --header: 4.35rem;
         --ratio: 1.746; /* 1100 / 630 svg aspect */
         --hero-chrome: clamp(19rem, 30svh, 24rem);
         width: 100%;
@@ -1174,17 +1180,44 @@
     }
 
     .intro {
-        max-width: 44rem;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 2rem;
+        width: 100%;
     }
 
     .eyebrow {
-        color: var(--cool);
+        color: var(--brand-strong);
     }
 
     #hero-title {
         font-size: clamp(1.8rem, 5vh, 3rem);
         margin: 0.2rem 0 0;
         line-height: 1.02;
+    }
+
+    .module-index {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.65rem;
+        padding-left: 0.8rem;
+        border-left: 2px solid var(--brand);
+        font-family: var(--mono);
+        color: var(--muted);
+        line-height: 1;
+    }
+
+    .module-index span {
+        padding-bottom: 0.18rem;
+        font-size: 0.55rem;
+        letter-spacing: 0.14em;
+    }
+
+    .module-index strong {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--paper);
     }
 
     .stage {
@@ -1196,12 +1229,11 @@
             calc((100svh - var(--hero-chrome)) * var(--ratio))
         );
         border: 1px solid var(--line);
-        border-radius: 18px;
+        border-top: 2px solid var(--brand);
+        border-radius: 3px;
         overflow: hidden;
-        background: linear-gradient(180deg, #0c1019, var(--surface));
-        box-shadow:
-            0 30px 60px -40px rgba(0, 0, 0, 0.8),
-            inset 0 1px 0 rgba(232, 230, 223, 0.03);
+        background: var(--panel-gradient);
+        box-shadow: var(--panel-shadow);
     }
 
     .stage svg {
@@ -1232,7 +1264,6 @@
         color: var(--muted);
         flex: 1;
         min-width: 16rem;
-        transition: opacity 0.2s ease;
     }
 
     .note {
@@ -1249,6 +1280,10 @@
 
         .caption {
             padding-inline: 1rem;
+        }
+
+        .module-index {
+            display: none;
         }
     }
 

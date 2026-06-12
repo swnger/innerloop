@@ -1,39 +1,54 @@
 :root {
-	/* canvas */
-	--ink: #0a0d16; /* page background — blue-black, not pure black */
-	--surface: #11151f; /* panels, expanders, the diagram stage */
-	--line: #1e2533; /* schematic strokes, hairlines, grid */
-	--line-bright: #2c3650; /* active/framed strokes */
+	color-scheme: dark;
 
-	/* type */
-	--paper: #e8e6df; /* body text — warm off-white for long reading */
-	--muted: #8a93a6; /* captions, secondary labels */
-	--faint: #5a6275; /* disabled, far-away diagram detail */
+	/* Precision observatory: black glass, mineral chrome, electric blue. */
+	--ink: #080b0f;
+	--surface: #10161d;
+	--diagram-surface: #10161d;
+	--surface-raised: #17202a;
+	--line: #26323f;
+	--line-bright: #4b5c6e;
+	--paper: #f1f4f7;
+	--muted: #9ba8b5;
+	--faint: #667586;
+	--brand: #1c69d4;
+	--brand-strong: #4d96f5;
+	--brand-soft: rgba(28, 105, 212, 0.14);
 
-	/* flow accents — token MOTION only (travelling chips + flow arrows) */
-	--cool: #38e1c6; /* context tokens → into the model */
-	--warm: #ff9d4d; /* response tokens ← back to the agent */
+	/* Flow accents stay reserved for token motion. */
+	--cool: #38e1c6;
+	--warm: #ff9d4d;
+	--cool-soft: rgba(56, 225, 198, 0.12);
+	--warm-soft: rgba(255, 157, 77, 0.14);
 	--glow-cool: 0 0 12px rgba(56, 225, 198, 0.45);
 	--glow-warm: 0 0 12px rgba(255, 157, 77, 0.45);
 
-	/* stratum categories — a distinct muted hue per context layer so the
-	   blocks read apart by color, not just by shade. Each is an {accent,fill}
-	   pair: accent = label + left stripe, fill = the tinted block body. Tool
-	   output and model response reuse the cool/warm flow accents (they ARE
-	   context-in and response-out), tying the strata back to the flow. */
-	--cat-system: #6e7bb0; /* system prompt — slate blue */
-	--cat-system-fill: #1c2238;
-	--cat-tools: #a284d6; /* tool definitions — violet */
-	--cat-tools-fill: #272140;
-	--cat-history: #4fa6d6; /* conversation history — azure */
-	--cat-history-fill: #143040;
-	--cat-user: #5bc592; /* user input — green */
-	--cat-user-fill: #163127;
-	--cat-tool: #38e1c6; /* tool output — cool (context in) */
-	--cat-tool-fill: #103330;
-	--cat-response: #ff9d4d; /* model response — warm (response out) */
-	--cat-response-fill: #352513;
+	--cat-system: #8798d0;
+	--cat-system-fill: #1b2438;
+	--cat-tools: #b394e6;
+	--cat-tools-fill: #292342;
+	--cat-history: #63b6e1;
+	--cat-history-fill: #143242;
+	--cat-user: #6bd0a2;
+	--cat-user-fill: #16342a;
+	--cat-tool: var(--cool);
+	--cat-tool-fill: #103632;
+	--cat-response: var(--warm);
+	--cat-response-fill: #382716;
 
+	--panel-gradient: linear-gradient(155deg, #0b1016 0%, var(--surface) 58%, #111c29 100%);
+	--panel-shadow: 0 30px 70px -42px rgba(0, 0, 0, 0.9);
+	--header-bg: rgba(8, 11, 15, 0.88);
+	--grid-color: rgba(75, 92, 110, 0.17);
+	--token-fill: #1a2634;
+	--transformer-fill: #17212d;
+	--bar-fill: #26384d;
+	--liquid: #4b5c6e;
+	--grain-opacity: 0.035;
+	--grain-blend: overlay;
+}
+
+:root {
 	/* fonts */
 	--display: 'Instrument Serif', Georgia, serif;
 	--serif: 'Newsreader', Georgia, serif;
@@ -58,10 +73,12 @@ body {
 	margin: 0;
 	min-height: 100vh;
 	background-color: var(--ink);
-	/* faint full-page blueprint dot-grid — never a flat fill */
-	background-image: radial-gradient(circle at center, var(--line) 0.9px, transparent 0.9px);
-	background-size: 30px 30px;
-	background-position: -15px -15px;
+	background-image:
+		linear-gradient(var(--grid-color) 1px, transparent 1px),
+		linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+		radial-gradient(circle at 84% 2%, var(--brand-soft), transparent 28rem);
+	background-size: 36px 36px, 36px 36px, auto;
+	background-position: -1px -1px, -1px -1px, 0 0;
 	color: var(--paper);
 	font-family: var(--serif);
 	font-size: 1.125rem;
@@ -77,8 +94,8 @@ body {
 	position: fixed;
 	inset: 0;
 	z-index: 9999;
-	opacity: 0.035;
-	mix-blend-mode: overlay;
+	opacity: var(--grain-opacity);
+	mix-blend-mode: var(--grain-blend);
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -107,8 +124,8 @@ a:hover {
 }
 
 ::selection {
-	background: var(--line-bright);
-	color: var(--paper);
+	background: var(--brand);
+	color: #fff;
 }
 
 /* shared utility text registers */
@@ -133,7 +150,8 @@ a:hover {
 }
 
 :focus-visible {
-	outline: 2px solid var(--line-bright);
+	outline: 2px solid var(--brand);
 	outline-offset: 3px;
-	border-radius: 4px;
+	border-radius: 2px;
 }
+

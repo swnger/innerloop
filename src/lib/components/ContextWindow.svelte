@@ -11,25 +11,25 @@
 	   Sticky graphic + scrolling steps; degrades to static + prose.
 	============================================================ */
 
-	const SURFACE = '#11151F',
-		LINE = '#1E2533',
-		LINE_B = '#2C3650';
-	const PAPER = '#E8E6DF',
-		MUTED = '#8A93A6',
-		FAINT = '#5A6275';
-	const COOL = '#38E1C6',
-		WARM = '#FF9D4D';
+	const SURFACE = 'var(--diagram-surface)',
+		LINE = 'var(--line)',
+		LINE_B = 'var(--line-bright)';
+	const PAPER = 'var(--paper)',
+		MUTED = 'var(--muted)',
+		FAINT = 'var(--faint)';
+	const COOL = 'var(--cool)',
+		WARM = 'var(--warm)';
 
 	type Kind = 'fixed' | 'history' | 'user' | 'tool' | 'response';
 	type Band = { key: string; label: string; tok: number; kind: Kind; fill: string; accent: string };
 
 	// One distinct hue per category so adjacent layers read apart by color.
-	const SYSTEM = { accent: '#6E7BB0', fill: '#1C2238' };
-	const TOOLS = { accent: '#A284D6', fill: '#272140' };
-	const HISTORY = { accent: '#4FA6D6', fill: '#143040' };
-	const USER = { accent: '#5BC592', fill: '#163127' };
-	const TOOLOUT = { accent: COOL, fill: '#103330' };
-	const RESPONSE = { accent: WARM, fill: '#352513' };
+	const SYSTEM = { accent: 'var(--cat-system)', fill: 'var(--cat-system-fill)' };
+	const TOOLS = { accent: 'var(--cat-tools)', fill: 'var(--cat-tools-fill)' };
+	const HISTORY = { accent: 'var(--cat-history)', fill: 'var(--cat-history-fill)' };
+	const USER = { accent: 'var(--cat-user)', fill: 'var(--cat-user-fill)' };
+	const TOOLOUT = { accent: COOL, fill: 'var(--cat-tool-fill)' };
+	const RESPONSE = { accent: WARM, fill: 'var(--cat-response-fill)' };
 
 	const B: Record<string, Band> = {
 		system: { key: 'system', label: 'system prompt', tok: 450, kind: 'fixed', ...SYSTEM },
@@ -271,8 +271,8 @@
 			<svg viewBox="0 0 560 470" role="img" aria-label="A context window drawn as a tank filling with labeled layers — system prompt and tool definitions at the base, then user prompt, tool outputs and model responses — rising toward a maximum budget line.">
 				<defs>
 					<linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0" stop-color="#2C3650" stop-opacity="0.25" />
-						<stop offset="1" stop-color="#2C3650" stop-opacity="0" />
+						<stop offset="0" stop-color="var(--liquid)" stop-opacity="0.25" />
+						<stop offset="1" stop-color="var(--liquid)" stop-opacity="0" />
 					</linearGradient>
 					<pattern id="ctx-fixed-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
 						<line x1="0" y1="0" x2="0" y2="7" stroke={PAPER} stroke-width="1" opacity="0.06" />
@@ -305,7 +305,7 @@
 							fill={b.fill}
 							stroke={b.isNew ? b.accent : LINE}
 							stroke-width={b.isNew ? 1.4 : 0.8}
-							style:filter={b.isNew ? `drop-shadow(0 0 8px ${b.accent}66)` : 'none'}
+							style:filter={b.isNew ? `drop-shadow(0 0 5px ${b.accent})` : 'none'}
 						/>
 						{#if b.kind === 'fixed'}
 							<rect class="band-hatch" x={VX + 4} y={b.y} width={VW - 8} height={Math.max(0, b.h - 2)} rx="3" fill="url(#ctx-fixed-hatch)" />
@@ -371,9 +371,21 @@
 
 <style>
 	.ctx {
+		position: relative;
 		width: 100%;
 		margin: clamp(4rem, 12vw, 9rem) 0 0;
-		padding: 0 var(--page-gutter);
+		padding: clamp(2rem, 4vw, 3rem) var(--page-gutter) 0;
+		border-top: 1px solid var(--line);
+	}
+
+	.ctx::before {
+		content: '';
+		position: absolute;
+		top: -1px;
+		left: var(--page-gutter);
+		width: clamp(5rem, 12vw, 9rem);
+		height: 3px;
+		background: var(--brand);
 	}
 
 	.ctx-head {
@@ -381,7 +393,7 @@
 	}
 
 	.eyebrow {
-		color: var(--muted);
+		color: var(--brand-strong);
 	}
 
 	.ctx-head h2 {
@@ -412,9 +424,10 @@
 		max-width: min(100%, calc((92svh - 4rem) * 1.191));
 		padding: 1.25rem;
 		border: 1px solid var(--line);
-		border-radius: 16px;
-		background: linear-gradient(180deg, #0c1019, var(--surface));
-		box-shadow: 0 30px 60px -40px rgba(0, 0, 0, 0.8);
+		border-top: 2px solid var(--brand);
+		border-radius: 3px;
+		background: var(--panel-gradient);
+		box-shadow: var(--panel-shadow);
 	}
 
 	.ctx-sticky svg {
@@ -462,7 +475,7 @@
 
 	.step-n {
 		font-size: 0.8rem;
-		color: var(--cool);
+		color: var(--brand-strong);
 		letter-spacing: 0.1em;
 	}
 

@@ -194,7 +194,7 @@
 							h('.stage'),
 							{
 								borderColor: 'rgba(0,0,0,0)',
-								boxShadow: '0 30px 60px -40px rgba(0,0,0,0)',
+								boxShadow: '0 30px 70px -42px rgba(0,0,0,0)',
 								duration: 0.5
 							},
 							0.2
@@ -856,9 +856,10 @@
 	.tok-lab {
 		margin: clamp(1.8rem, 4vw, 3rem) var(--page-gutter) 0;
 		border: 1px solid var(--line);
-		border-radius: 16px;
-		background: linear-gradient(180deg, #0c1019, var(--surface));
-		box-shadow: 0 30px 60px -40px rgba(0, 0, 0, 0.8);
+		border-top: 2px solid var(--brand);
+		border-radius: 3px;
+		background: var(--panel-gradient);
+		box-shadow: var(--panel-shadow);
 		padding: clamp(1rem, 3vw, 1.8rem);
 		max-width: 72rem;
 	}
@@ -1143,8 +1144,9 @@
 		gap: 2rem;
 		margin-top: clamp(1.5rem, 4vw, 2.5rem);
 		border: 1px solid var(--line);
-		border-radius: 16px;
-		background: linear-gradient(180deg, #0c1019, var(--surface));
+		border-top: 2px solid var(--brand);
+		border-radius: 3px;
+		background: var(--panel-gradient);
 		padding: clamp(1.2rem, 3.5vw, 2.2rem);
 		max-width: 64rem;
 		overflow: hidden;
