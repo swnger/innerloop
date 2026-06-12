@@ -450,16 +450,10 @@
     });
 </script>
 
-<section id="machine" class="hero" aria-labelledby="hero-title">
+<section id="machine" class="hero" data-chapter="01" aria-labelledby="hero-title">
     <div class="intro">
-        <div>
-            <p class="eyebrow">Module 01 · system overview</p>
-            <h1 id="hero-title">One continuous cycle.</h1>
-        </div>
-        <div class="module-index" aria-label="Education module one">
-            <span>FIELD GUIDE</span>
-            <strong>01</strong>
-        </div>
+        <p class="eyebrow">Chapter 01 · system overview</p>
+        <h1 id="hero-title">One continuous cycle.</h1>
     </div>
 
     <figure class="stage" bind:this={stageEl}>
@@ -1180,11 +1174,7 @@
     }
 
     .intro {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 2rem;
-        width: 100%;
+        max-width: 44rem;
     }
 
     .eyebrow {
@@ -1195,29 +1185,6 @@
         font-size: clamp(1.8rem, 5vh, 3rem);
         margin: 0.2rem 0 0;
         line-height: 1.02;
-    }
-
-    .module-index {
-        display: flex;
-        align-items: flex-end;
-        gap: 0.65rem;
-        padding-left: 0.8rem;
-        border-left: 2px solid var(--brand);
-        font-family: var(--mono);
-        color: var(--muted);
-        line-height: 1;
-    }
-
-    .module-index span {
-        padding-bottom: 0.18rem;
-        font-size: 0.55rem;
-        letter-spacing: 0.14em;
-    }
-
-    .module-index strong {
-        font-size: 1.5rem;
-        font-weight: 500;
-        color: var(--paper);
     }
 
     .stage {
@@ -1280,10 +1247,6 @@
 
         .caption {
             padding-inline: 1rem;
-        }
-
-        .module-index {
-            display: none;
         }
     }
 

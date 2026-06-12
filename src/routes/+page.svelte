@@ -1,8 +1,30 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { base } from "$app/paths";
     import Hero from "$lib/components/Hero.svelte";
     import Tokenization from "$lib/components/Tokenization.svelte";
     import ContextWindow from "$lib/components/ContextWindow.svelte";
+
+    let chapter = $state("01");
+
+    onMount(() => {
+        // A thin band around the viewport middle decides the current chapter.
+        const observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        chapter =
+                            (entry.target as HTMLElement).dataset.chapter ?? chapter;
+                    }
+                }
+            },
+            { rootMargin: "-45% 0px -50% 0px" },
+        );
+        for (const section of document.querySelectorAll("[data-chapter]")) {
+            observer.observe(section);
+        }
+        return () => observer.disconnect();
+    });
 </script>
 
 <svelte:head>
@@ -19,7 +41,7 @@
             <span class="wordmark-text">THE INNER <em>LOOP</em></span>
         </span>
     </a>
-    <span class="kicker">AI SYSTEMS FIELD GUIDE · 01/08</span>
+    <span class="kicker">Chapter {chapter}/08</span>
 </header>
 
 <main>

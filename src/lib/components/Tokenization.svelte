@@ -405,7 +405,7 @@
 	});
 </script>
 
-<section id="tokenization" class="tk" bind:this={rootEl} aria-labelledby="tk-title">
+<section id="tokenization" class="tk" data-chapter="02" bind:this={rootEl} aria-labelledby="tk-title">
 	<!-- 1 · BREAK-AWAY TRANSITION — leaving the machine -->
 	<div class="tkt">
 		<div class="tkt-stage">
