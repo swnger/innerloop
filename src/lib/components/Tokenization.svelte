@@ -140,6 +140,7 @@
 
 					gsap.set(transitionTokens, { transformOrigin: 'center center' });
 					gsap.set(transitionSentence, { autoAlpha: 0 });
+					gsap.set('.tkt-frame-chrome', { autoAlpha: 0 });
 					let sourceTransforms = measureSourceTransforms();
 					const showTransitionTokens = (show: boolean) => {
 						gsap.set(transitionSentence, { autoAlpha: show ? 1 : 0 });
@@ -199,6 +200,8 @@
 							0.2
 						)
 						.set(h('.stage'), { background: 'transparent' }, 0.75)
+						// the frame draws itself around the tokens as they settle
+						.fromTo('.tkt-frame-chrome', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.45 }, 0.7)
 						.fromTo('.tkt-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35 }, 0.55)
 						.to({}, { duration: 0.3 })
 						.fromTo(
@@ -412,6 +415,7 @@
 
 			<div class="tkt-framewrap">
 				<div class="tkt-frame">
+					<div class="tkt-frame-chrome" aria-hidden="true"></div>
 					<div class="tkt-sentence">
 						{#each TRANSITION_TOKENS as token (token.text)}
 							<span class="tkt-chip">
@@ -423,11 +427,13 @@
 				</div>
 			</div>
 
-			<p class="tkt-claim">The model never saw your words.</p>
+			<div class="tkt-below">
+				<p class="tkt-claim">The model never saw your words.</p>
 
-			<div class="tkt-titleblock">
-				<p class="eyebrow">Chapter 02 · the alphabet of the machine</p>
-				<h2 id="tk-title">Tokenization</h2>
+				<div class="tkt-titleblock">
+					<p class="eyebrow">Chapter 02 · the alphabet of the machine</p>
+					<h2 id="tk-title">Tokenization</h2>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -712,13 +718,29 @@
 	}
 
 	.tkt-stage {
+		/* frame pinned to the vertical center — below the diagram's token
+		   row, so the hand-off reads as a downward drop */
+		display: grid;
+		grid-template-rows: 1fr auto 1fr;
+		justify-items: center;
+		height: 100%;
+		padding: 0 var(--page-gutter) clamp(1.2rem, 4vh, 2.5rem);
+		text-align: center;
+		width: 100%;
+	}
+
+	.tkt-framewrap {
+		grid-row: 2;
+	}
+
+	.tkt-below {
+		grid-row: 3;
+		align-self: start;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: clamp(1.2rem, 3.5vh, 2.4rem);
-		padding: 0 var(--page-gutter);
-		text-align: center;
-		width: 100%;
+		gap: clamp(1rem, 3vh, 2rem);
+		padding-top: clamp(1.2rem, 3.5vh, 2.4rem);
 	}
 
 	.tkt-kicker {
@@ -736,27 +758,30 @@
 		opacity: 0.85;
 	}
 
-	.tkt-framewrap {
-		position: relative;
-		width: 100%;
-		display: flex;
-		justify-content: center;
-	}
-
 	/* ch.1's reading step, handed into the chapter frame */
 	.tkt-frame {
 		position: relative;
 		z-index: 1;
-		border: 1px solid var(--cool);
-		border-radius: 14px;
-		background: rgba(56, 225, 198, 0.04);
-		box-shadow: var(--glow-cool);
 		padding: clamp(1.6rem, 5vw, 3.4rem) clamp(1.2rem, 4.5vw, 3.6rem);
 		min-width: min(88vw, 52rem);
 		max-width: min(92vw, 64rem);
 	}
 
+	/* the frame's visuals live on an overlay so GSAP can keep it
+	   invisible until the tokens have landed (no box sliding over
+	   the ch.1 diagram) */
+	.tkt-frame-chrome {
+		position: absolute;
+		inset: 0;
+		border: 1px solid var(--cool);
+		border-radius: 14px;
+		background: rgba(56, 225, 198, 0.04);
+		box-shadow: var(--glow-cool);
+		pointer-events: none;
+	}
+
 	.tkt-sentence {
+		position: relative;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
