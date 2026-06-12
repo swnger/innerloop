@@ -10,7 +10,7 @@
 	   2. Lede — the claim, lit up word by word on scroll.
 	   3. Why not whole words — triptych.
 	   4. Why numbers — IDs on a number line (a locker number, not
-	      a meaning); then a sentence explodes into a slowly turning
+	      a meaning); then a sentence explodes into a drag-to-rotate
 	      3-D meaning-space: the embedding vectors.
 	   5. The strawberry stumble — horizontal scroll interlude.
 	   6. Token lab — the chapter's toy, earned: the reader now
@@ -104,12 +104,16 @@
 		});
 	})();
 
-	function embProj(x: number, y: number, z: number, yaw: number) {
+	const EMB_PITCH_MAX = 1.35; // keep the orbit shy of the poles
+
+	function embProj(x: number, y: number, z: number, yaw: number, pitch = 0) {
 		const rx = x * Math.cos(yaw) + z * Math.sin(yaw);
-		const rz = z * Math.cos(yaw) - x * Math.sin(yaw);
+		const rz0 = z * Math.cos(yaw) - x * Math.sin(yaw);
+		const ry = y * Math.cos(pitch) - rz0 * Math.sin(pitch);
+		const rz = rz0 * Math.cos(pitch) + y * Math.sin(pitch);
 		return {
 			x: EMB_CX + rx * EMB_R,
-			y: EMB_CY + y * EMB_R * 0.78 - rz * EMB_R * 0.32,
+			y: EMB_CY + ry * EMB_R * 0.78 - rz * EMB_R * 0.32,
 			d: (rz + 1) / 2 // 0 = far, 1 = near
 		};
 	}
@@ -141,6 +145,7 @@
 	onMount(() => {
 		let context: { revert: () => void } | undefined;
 		let disposed = false;
+		let removeEmbDrag: (() => void) | undefined;
 
 		Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([core, st]) => {
 			if (disposed) return;
@@ -399,7 +404,7 @@
 
 				/* ---- 4b · the explosion into meaning-space ----
 				   The sentence sits as a chip row, then flings out to its
-				   embedding positions; the cloud spins slowly forever.
+				   embedding positions; the reader drags to turn the cloud.
 				   Positions are written per-frame (yaw + per-word spread),
 				   so GSAP animates plain values and embRender projects. */
 				gsap.from('.emb-bridge', {
@@ -415,12 +420,12 @@
 				const ghostEls = gsap.utils.toArray('.emb-ghost', rootEl) as SVGTextElement[];
 				const axisEls = gsap.utils.toArray('.emb-axis', rootEl) as SVGLineElement[];
 				const axisLabelEls = gsap.utils.toArray('.emb-axis-label', rootEl) as SVGTextElement[];
-				const view = { yaw: EMB_YAW0 };
+				const view = { yaw: EMB_YAW0, pitch: 0 };
 				const spread = EMB_WORDS.map(() => ({ p: 0 }));
 
 				const embRender = () => {
 					EMB_WORDS.forEach((d, i) => {
-						const t = embProj(d.x, d.y, d.z, view.yaw);
+						const t = embProj(d.x, d.y, d.z, view.yaw, view.pitch);
 						const p = spread[i].p;
 						const px = EMB_ROW[i] + (t.x - EMB_ROW[i]) * p;
 						const py = EMB_CY + (t.y - EMB_CY) * p;
@@ -431,13 +436,13 @@
 					});
 					ghostEls.forEach((el, i) => {
 						const g = EMB_GHOSTS[i];
-						const t = embProj(g.x, g.y, g.z, view.yaw);
+						const t = embProj(g.x, g.y, g.z, view.yaw, view.pitch);
 						el.setAttribute('transform', `translate(${t.x} ${t.y}) scale(${0.72 + 0.42 * t.d})`);
 					});
 					axisEls.forEach((el, i) => {
 						const a = EMB_AXES[i];
-						const e1 = embProj(a.x, a.y, a.z, view.yaw);
-						const e2 = embProj(-a.x, -a.y, -a.z, view.yaw);
+						const e1 = embProj(a.x, a.y, a.z, view.yaw, view.pitch);
+						const e2 = embProj(-a.x, -a.y, -a.z, view.yaw, view.pitch);
 						el.setAttribute('x1', String(e1.x));
 						el.setAttribute('y1', String(e1.y));
 						el.setAttribute('x2', String(e2.x));
@@ -479,19 +484,130 @@
 					// hold the settled cloud before the pin releases
 					.to({}, { duration: 0.7 });
 
-				// the slow turn that makes the space read as 3-D
-				gsap.to(view, {
-					yaw: EMB_YAW0 + Math.PI * 2,
-					duration: 44,
-					repeat: -1,
-					ease: 'none',
-					onUpdate: embRender,
-					scrollTrigger: {
-						trigger: '.emb-stage',
-						start: 'top 90%',
-						toggleActions: 'play pause resume pause'
+				/* ---- 4c · drag to rotate the meaning-space ----
+				   The reader turns the cloud by hand; while they drag, a small
+				   vector tracks the gesture and vanishes on release. */
+				const stage = rootEl.querySelector('.emb-stage') as HTMLElement;
+				stage.tabIndex = 0;
+
+				const svgEl = rootEl.querySelector('.emb-svg') as SVGSVGElement;
+				const dragVec = rootEl.querySelector('.emb-drag-vec') as SVGGElement;
+				const dragLine = rootEl.querySelector('.emb-drag-line') as SVGLineElement;
+				const dragHead = rootEl.querySelector('.emb-drag-head') as SVGPathElement;
+				const toSvg = (e: PointerEvent) => {
+					const r = svgEl.getBoundingClientRect();
+					return { x: ((e.clientX - r.left) / r.width) * 900, y: ((e.clientY - r.top) / r.height) * 520 };
+				};
+				let vecOrigin = { x: 0, y: 0 };
+				let vecShown = false;
+				const drawVec = (e: PointerEvent) => {
+					const p = toSvg(e);
+					const dx = p.x - vecOrigin.x;
+					const dy = p.y - vecOrigin.y;
+					dragLine.setAttribute('x1', String(vecOrigin.x));
+					dragLine.setAttribute('y1', String(vecOrigin.y));
+					dragLine.setAttribute('x2', String(p.x));
+					dragLine.setAttribute('y2', String(p.y));
+					dragHead.setAttribute(
+						'transform',
+						`translate(${p.x} ${p.y}) rotate(${(Math.atan2(dy, dx) * 180) / Math.PI})`
+					);
+					if (!vecShown && Math.hypot(dx, dy) > 4) {
+						vecShown = true;
+						gsap.killTweensOf(dragVec);
+						gsap.to(dragVec, { opacity: 1, duration: 0.15, overwrite: 'auto' });
 					}
-				});
+				};
+				const hideVec = () => {
+					vecShown = false;
+					gsap.to(dragVec, { opacity: 0, duration: 0.3, overwrite: 'auto' });
+				};
+
+				let dragId: number | null = null;
+				let lastX = 0;
+				let lastY = 0;
+				let lastT = 0;
+				let velYaw = 0; // rad per pointermove tick
+				let velPitch = 0;
+				const radPerPx = () => (Math.PI * 1.25) / Math.max(stage.clientWidth, 1);
+				const clampPitch = (p: number) => Math.max(-EMB_PITCH_MAX, Math.min(EMB_PITCH_MAX, p));
+				const onDown = (e: PointerEvent) => {
+					if (e.pointerType === 'mouse' && e.button !== 0) return;
+					dragId = e.pointerId;
+					lastX = e.clientX;
+					lastY = e.clientY;
+					lastT = e.timeStamp;
+					velYaw = 0;
+					velPitch = 0;
+					vecOrigin = toSvg(e);
+					stage.classList.add('emb-grabbing');
+					gsap.killTweensOf(view);
+					try {
+						stage.setPointerCapture(e.pointerId);
+					} catch {
+						// keep dragging uncaptured if the pointer is already gone
+					}
+				};
+				const onMove = (e: PointerEvent) => {
+					if (e.pointerId !== dragId) return;
+					const dx = e.clientX - lastX;
+					const dy = e.clientY - lastY;
+					lastX = e.clientX;
+					lastY = e.clientY;
+					lastT = e.timeStamp;
+					velYaw = dx * radPerPx();
+					// drag down tips the near side of the cloud down
+					velPitch = -dy * radPerPx();
+					view.yaw += velYaw;
+					view.pitch = clampPitch(view.pitch + velPitch);
+					embRender();
+					drawVec(e);
+				};
+				const onUp = (e: PointerEvent) => {
+					if (e.pointerId !== dragId) return;
+					dragId = null;
+					stage.classList.remove('emb-grabbing');
+					hideVec();
+					if (e.timeStamp - lastT > 80) velYaw = velPitch = 0; // held still before release
+					gsap.to(view, {
+						yaw: view.yaw + velYaw * 14,
+						pitch: clampPitch(view.pitch + velPitch * 14),
+						duration: 0.9,
+						ease: 'power2.out',
+						onUpdate: embRender
+					});
+				};
+				const KEY_STEPS: Record<string, { yaw: number; pitch: number }> = {
+					ArrowLeft: { yaw: -0.35, pitch: 0 },
+					ArrowRight: { yaw: 0.35, pitch: 0 },
+					ArrowUp: { yaw: 0, pitch: 0.35 },
+					ArrowDown: { yaw: 0, pitch: -0.35 }
+				};
+				const onKey = (e: KeyboardEvent) => {
+					const step = KEY_STEPS[e.key];
+					if (!step) return;
+					e.preventDefault();
+					gsap.killTweensOf(view);
+					gsap.to(view, {
+						yaw: view.yaw + step.yaw,
+						pitch: clampPitch(view.pitch + step.pitch),
+						duration: 0.45,
+						ease: 'power2.out',
+						onUpdate: embRender
+					});
+				};
+				stage.addEventListener('pointerdown', onDown);
+				stage.addEventListener('pointermove', onMove);
+				stage.addEventListener('pointerup', onUp);
+				stage.addEventListener('pointercancel', onUp);
+				stage.addEventListener('keydown', onKey);
+				removeEmbDrag = () => {
+					stage.removeEventListener('pointerdown', onDown);
+					stage.removeEventListener('pointermove', onMove);
+					stage.removeEventListener('pointerup', onUp);
+					stage.removeEventListener('pointercancel', onUp);
+					stage.removeEventListener('keydown', onKey);
+				};
 
 				/* ---- 5 · strawberry: the horizontal interlude ---- */
 				const track = rootEl.querySelector('.sb-track') as HTMLElement;
@@ -581,6 +697,7 @@
 
 		return () => {
 			disposed = true;
+			removeEmbDrag?.();
 			context?.revert();
 		};
 	});
@@ -752,7 +869,7 @@
 			<div
 				class="emb-stage"
 				role="img"
-			aria-label="The sentence 'kittens and puppies play on Tuesday' exploded into a slowly rotating 3-D meaning space: kittens and puppies land near cat, dog and pets; Tuesday lands near Friday and weekend; filler words like 'and' and 'on' drift off together."
+			aria-label="The sentence 'kittens and puppies play on Tuesday' exploded into a 3-D meaning space; drag in any direction or use the arrow keys to rotate it. Kittens and puppies land near cat, dog and pets; Tuesday lands near Friday and weekend; filler words like 'and' and 'on' drift off together."
 		>
 			<svg class="emb-svg" viewBox="0 0 900 520" aria-hidden="true">
 				{#each EMB_AXES as a (a.label)}
@@ -786,6 +903,11 @@
 						<text>{d.w}</text>
 					</g>
 				{/each}
+
+				<g class="emb-drag-vec">
+					<line class="emb-drag-line" x1="0" y1="0" x2="0" y2="0" />
+					<path class="emb-drag-head" d="M0 0 L-9 -4.5 L-9 4.5 Z" />
+				</g>
 			</svg>
 
 				<footer class="emb-foot mono">
@@ -1440,6 +1562,7 @@
 	}
 
 	.emb-stage {
+		position: relative;
 		margin-inline: auto;
 		border: 1px solid var(--line);
 		border-top: 2px solid var(--brand);
@@ -1448,6 +1571,36 @@
 		box-shadow: var(--panel-shadow);
 		padding: clamp(0.8rem, 2.5vw, 1.6rem) clamp(0.8rem, 2.5vw, 1.6rem) 0.9rem;
 		max-width: 64rem;
+		cursor: grab;
+		touch-action: pan-y; /* horizontal drag rotates, vertical still scrolls */
+		user-select: none;
+	}
+
+	/* class is toggled at runtime, so escape Svelte's unused-selector pruning */
+	.emb-stage:global(.emb-grabbing) {
+		cursor: grabbing;
+	}
+
+	.emb-stage:focus-visible {
+		outline: 2px solid var(--brand);
+		outline-offset: 2px;
+	}
+
+	/* the gesture vector — visible only mid-drag */
+	.emb-drag-vec {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.emb-drag-line {
+		stroke: var(--brand-strong);
+		stroke-width: 1.5;
+		stroke-dasharray: 5 4;
+	}
+
+	.emb-drag-head {
+		fill: var(--brand-strong);
+		filter: drop-shadow(0 0 6px rgba(77, 150, 245, 0.55));
 	}
 
 	.emb-svg {
