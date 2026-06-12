@@ -41,21 +41,25 @@
             cls: "code-append",
             note: "append",
         },
-        { text: "    if response.tool_call:", cls: "code-if" },
         {
-            text: "      out = run_tool(response)",
+            text: "    if not response.has_tool_call:",
+            cls: "code-if",
+            note: "done?",
+        },
+        {
+            text: "      return response",
+            cls: "code-return",
+            note: "to user",
+        },
+        {
+            text: "    out = run_tool(response.tool_call)",
             cls: "code-tool",
             note: "act",
         },
         {
-            text: "      context.append(out)",
+            text: "    context.append(out)",
             cls: "code-toolapp",
             note: "loop",
-        },
-        {
-            text: "    else: return response",
-            cls: "code-return",
-            note: "to user",
         },
     ];
 
@@ -436,6 +440,7 @@
                         )
                         .call(setUsed("4.2k"))
                         .to(q(".code-append"), DIM, "+=0.1")
+                        .to(q(".code-if"), { opacity: 1, duration: 0.2 })
                         .to(q(".code-return"), { opacity: 1, duration: 0.25 })
                         .to(q(".code-return"), { opacity: 1, duration: 0.9 })
                         .to({}, { duration: 1.3 });
