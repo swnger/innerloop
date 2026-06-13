@@ -451,7 +451,7 @@
 	}
 
 	.ctx-step {
-		min-height: 64vh;
+		min-height: 48vh;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
@@ -460,13 +460,13 @@
 	}
 
 	.ctx-step:first-child {
-		min-height: 42vh;
+		min-height: 36vh;
 		justify-content: flex-end;
 		padding-bottom: 6vh;
 	}
 
 	.ctx-step:last-child {
-		min-height: 70vh;
+		min-height: 58vh;
 	}
 
 	.ctx-step:first-child {
@@ -511,7 +511,7 @@
 			z-index: 1;
 		}
 		.ctx-step {
-			min-height: 52vh;
+			min-height: 44vh;
 		}
 		.ctx-step:first-child {
 			min-height: 24vh;
