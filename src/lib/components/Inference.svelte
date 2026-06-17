@@ -1041,7 +1041,7 @@
                     next.
                 </p>
 
-                <div class="open-title">
+                <div class="open-title chapter-head">
                     <p class="eyebrow">Chapter 03 · the machine’s only trick</p>
                     <h2 id="nt-title">Inference</h2>
                 </div>
@@ -1967,9 +1967,11 @@
     }
 
     .open-below {
+        align-self: stretch;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
+        text-align: left;
         gap: clamp(0.8rem, 2.5vh, 1.4rem);
     }
 
@@ -1981,14 +1983,7 @@
         max-width: 26ch;
     }
 
-    .open-title h2 {
-        font-size: clamp(2.6rem, 7vw, 4.6rem);
-        margin-top: 0.3rem;
-    }
-
-    .open-title .eyebrow {
-        color: var(--brand-strong);
-    }
+    /* size/colour come from the shared .chapter-head rules */
 
     :global(html.no-js) .nt-open,
     :global(html.no-js) .nt-anatomy {

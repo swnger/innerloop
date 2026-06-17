@@ -257,7 +257,7 @@
 </script>
 
 <section id="context" class="ctx" data-chapter="04" aria-labelledby="ctx-title">
-	<div class="ctx-head">
+	<div class="ctx-head chapter-head">
 		<p class="eyebrow">Chapter 04 · the mediator</p>
 		<h2 id="ctx-title">The context window is the model’s entire world.</h2>
 		<p class="ctx-intro">
@@ -378,28 +378,10 @@
 		border-top: 1px solid var(--line);
 	}
 
-	.ctx::before {
-		content: '';
-		position: absolute;
-		top: -1px;
-		left: var(--page-gutter);
-		width: clamp(5rem, 12vw, 9rem);
-		height: 3px;
-		background: var(--brand);
-	}
-
-	.ctx-head {
-		max-width: 46rem;
-	}
-
-	.eyebrow {
-		color: var(--brand-strong);
-	}
-
 	.ctx-head h2 {
-		font-size: clamp(1.9rem, 4.6vw, 2.9rem);
-		margin: 0.5rem 0 1rem;
-		max-width: 20ch;
+		/* size/colour come from the shared .chapter-head rules; keep the gap
+		   before the intro paragraph */
+		margin-bottom: 1rem;
 	}
 
 	.ctx-intro {

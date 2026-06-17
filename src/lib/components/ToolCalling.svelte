@@ -389,6 +389,16 @@
 </script>
 
 <section id="tools" class="tc" data-chapter="05" aria-labelledby="tc-title">
+	<div class="tc-head chapter-head">
+		<p class="eyebrow tc-eyebrow">Chapter 05 · the hands</p>
+		<h2 id="tc-title" class="tc-title">It only writes text.<br />So who runs the command?</h2>
+		<p class="tc-lede">
+			The model has no shell, no files, no network — it can only emit tokens (Chapter 3). Yet
+			agents run commands, edit files, hit APIs. The trick is that a “tool call” is just text in an
+			agreed shape, and something else does the running.
+		</p>
+	</div>
+
 	<!-- 1 · HANDOFF — pick the model-response band out of Ch.4's tank, unfold it -->
 	<div class="tc-handoff" bind:this={handoffEl}>
 		<figure class="tc-frame ho-frame">
@@ -432,16 +442,6 @@
 				</g>
 			</svg>
 		</figure>
-
-		<div class="tc-head">
-			<p class="eyebrow tc-eyebrow">Chapter 05 · the hands</p>
-			<h2 id="tc-title" class="tc-title">It only writes text.<br />So who runs the command?</h2>
-			<p class="tc-lede">
-				The model has no shell, no files, no network — it can only emit tokens (Chapter 3). Yet
-				agents run commands, edit files, hit APIs. The trick is that a “tool call” is just text in an
-				agreed shape, and something else does the running.
-			</p>
-		</div>
 	</div>
 
 	<!-- 2 · THE EXCHANGE — reader-stepped round trip -->
@@ -678,16 +678,6 @@
 		padding: clamp(2rem, 4vw, 3rem) var(--page-gutter) 0;
 		border-top: 1px solid var(--line);
 	}
-	.tc::before {
-		content: '';
-		position: absolute;
-		top: -1px;
-		left: var(--page-gutter);
-		width: clamp(5rem, 12vw, 9rem);
-		height: 3px;
-		background: var(--brand);
-	}
-
 	/* shared instrument frame */
 	.tc-frame {
 		margin: 0;
@@ -705,26 +695,17 @@
 		height: auto;
 	}
 
-	/* 1 · handoff */
+	/* 1 · handoff — heading sits above; the figure spans the column below */
 	.tc-handoff {
-		display: grid;
-		grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
-		gap: clamp(1.5rem, 5vw, 4rem);
-		align-items: center;
+		margin-top: clamp(1.5rem, 5vw, 3rem);
 	}
 	.ho-frame {
 		max-width: min(100%, 56rem);
-	}
-	.tc-head {
-		max-width: 34rem;
-	}
-	.tc-eyebrow {
-		color: var(--brand-strong);
+		margin-inline: auto;
 	}
 	.tc-title {
-		font-size: clamp(1.9rem, 4.6vw, 3rem);
-		margin: 0.5rem 0 1rem;
-		line-height: 1.04;
+		/* size/colour come from the shared .chapter-head rules */
+		margin-bottom: 1rem;
 	}
 	.tc-lede {
 		font-size: clamp(1.05rem, 2.4vw, 1.2rem);

@@ -143,6 +143,24 @@ a:hover {
 	color: var(--muted);
 }
 
+/* shared chapter heading — left-aligned eyebrow + title (Ch1 is the reference).
+   Components apply .chapter-head to their heading block and drop any local
+   eyebrow-colour / title-size rules so this drives every chapter identically. */
+.chapter-head {
+	max-width: 44rem;
+}
+
+.chapter-head .eyebrow {
+	color: var(--brand-strong);
+}
+
+.chapter-head h1,
+.chapter-head h2 {
+	font-size: clamp(1.8rem, 5vh, 3rem);
+	line-height: 1.02;
+	margin: 0.2rem 0 0;
+}
+
 .disclaimer {
 	font-family: var(--mono);
 	font-size: 0.72rem;

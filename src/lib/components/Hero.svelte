@@ -456,7 +456,7 @@
 </script>
 
 <section id="machine" class="hero" data-chapter="01" aria-labelledby="hero-title">
-    <div class="intro">
+    <div class="intro chapter-head">
         <p class="eyebrow">Chapter 01 · system overview</p>
         <h1 id="hero-title">One continuous cycle.</h1>
     </div>
@@ -1176,20 +1176,6 @@
         justify-content: center;
         gap: clamp(0.6rem, 1.6vh, 1.2rem);
         padding: clamp(0.75rem, 2vh, 1.5rem) var(--page-gutter);
-    }
-
-    .intro {
-        max-width: 44rem;
-    }
-
-    .eyebrow {
-        color: var(--brand-strong);
-    }
-
-    #hero-title {
-        font-size: clamp(1.8rem, 5vh, 3rem);
-        margin: 0.2rem 0 0;
-        line-height: 1.02;
     }
 
     .stage {

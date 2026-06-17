@@ -784,7 +784,7 @@
 			<div class="tkt-below">
 				<p class="tkt-claim">The model never saw your words.</p>
 
-				<div class="tkt-titleblock">
+				<div class="tkt-titleblock chapter-head">
 					<p class="eyebrow">Chapter 02 · the alphabet of the machine</p>
 					<h2 id="tk-title">Tokenization</h2>
 				</div>
@@ -1137,9 +1137,11 @@
 	.tkt-below {
 		grid-row: 3;
 		align-self: start;
+		justify-self: stretch;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
+		align-items: flex-start;
+		text-align: left;
 		gap: clamp(1rem, 3vh, 2rem);
 		padding-top: clamp(1.2rem, 3.5vh, 2.4rem);
 	}
@@ -1224,14 +1226,7 @@
 		line-height: 1.1;
 	}
 
-	.tkt-titleblock h2 {
-		font-size: clamp(2.6rem, 7vw, 4.6rem);
-		margin-top: 0.3rem;
-	}
-
-	.tkt-titleblock .eyebrow {
-		color: var(--brand-strong);
-	}
+	/* size/colour come from the shared .chapter-head rules */
 
 	/* without JS the pin never runs: show the final, fully-assembled state */
 	:global(html.no-js) .tkt {
