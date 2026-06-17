@@ -86,10 +86,10 @@ The two flow accents are **reserved for token motion** (PRD §6.1, §9) — the 
 
 ### Typography
 
-Distinctive editorial-scientific trio (all Google Fonts). Never substitute Inter/Roboto/Arial/system or Space Grotesk.
+Engineering field-guide trio (all Google Fonts) — technical grotesque + scholarly serif + instrument mono, chosen to read "BMW precision instrument" rather than "Mercedes luxury editorial." Never substitute Inter/Roboto/Arial/system or Space Grotesk.
 
-- **Display / chapter titles — `Instrument Serif`.** High-contrast, characterful, one weight; use large for the "hook" line of each arc and the chapter numerals.
-- **Body / prose — `Newsreader`.** Humanist serif tuned for screen reading. Constrain the reading column to ~62ch; one–two sentences per beat (PRD §8).
+- **Display / chapter titles — `Sora`.** Geometric technical grotesque; engineered, open apertures. Use weight 500 large for the "hook" line of each arc and the chapter numerals — it carries the schematic/chrome register where a high-contrast didone (Instrument Serif) read too luxury-editorial.
+- **Body / prose — `Source Serif 4`.** Sturdy scholarly screen-serif with an optical-size axis; reads as a technical field guide. Constrain the reading column to ~62ch; one–two sentences per beat (PRD §8).
 - **Technical layer — `Spline Sans Mono`.** Every token, diagram label, glossary term, temperature/value readout, and code sample. Tokens rendered as monospace "chips" are a recurring motif; sub-word splits and leading-space artifacts (PRD Ch 2) read naturally in mono.
 
 ### Motion (GSAP)

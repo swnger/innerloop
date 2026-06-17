@@ -8,6 +8,7 @@
     import ToolCalling from "$lib/components/ToolCalling.svelte";
 
     let chapter = $state("01");
+    let loopEl: HTMLElement;
 
     onMount(() => {
         // A thin band around the viewport middle decides the current chapter.
@@ -27,6 +28,56 @@
         }
         return () => observer.disconnect();
     });
+
+    // BMW-blue light chasing through L→O→O→P, looping forever — the wordmark
+    // literally performs a “loop”. Decorative; skipped under reduced-motion.
+    onMount(() => {
+        let disposed = false;
+        let ctx: { revert: () => void } | undefined;
+
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+            return;
+
+        import("gsap").then(({ gsap }) => {
+            if (disposed || !loopEl) return;
+            const letters = loopEl.querySelectorAll("span");
+            if (!letters.length) return;
+
+            const MUTED = "#9BA8B5"; // var(--muted)
+            const BLUE = "#4D96F5"; // var(--brand-strong) — BMW blue
+            const GLOW = "0 0 12px rgba(77,150,245,0.6)";
+
+            ctx = gsap.context(() => {
+                const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.55 });
+                letters.forEach((el, i) => {
+                    tl.to(
+                        el,
+                        {
+                            color: BLUE,
+                            textShadow: GLOW,
+                            duration: 0.35,
+                            ease: "sine.out",
+                        },
+                        i * 0.16,
+                    ).to(
+                        el,
+                        {
+                            color: MUTED,
+                            textShadow: "0 0 0 rgba(77,150,245,0)",
+                            duration: 0.5,
+                            ease: "sine.inOut",
+                        },
+                        i * 0.16 + 0.35,
+                    );
+                });
+            }, loopEl);
+        });
+
+        return () => {
+            disposed = true;
+            ctx?.revert();
+        };
+    });
 </script>
 
 <svelte:head>
@@ -36,11 +87,10 @@
 <header class="site-header">
     <a class="wordmark" href="#machine">
         <span class="ring" aria-hidden="true">
-            <img src="{base}/favicon.svg" alt="" width="30" height="30" />
+            <img src="{base}/favicon.svg" alt="" width="38" height="38" />
         </span>
         <span class="identity">
-            <span class="brand-line">AI SYSTEMS · VISUAL FIELD GUIDE</span>
-            <span class="wordmark-text">THE INNER <em>LOOP</em></span>
+            <span class="wordmark-text">THE INNER <em class="loop" bind:this={loopEl} aria-label="LOOP"><span aria-hidden="true">L</span><span aria-hidden="true">O</span><span aria-hidden="true">O</span><span aria-hidden="true">P</span></em></span>
         </span>
     </a>
     <span class="kicker">Chapter {chapter}/07</span>
@@ -87,7 +137,7 @@
     .wordmark {
         display: flex;
         align-items: center;
-        gap: 0.72rem;
+        gap: 0.9rem;
         text-decoration: none;
         color: var(--paper);
     }
@@ -103,24 +153,21 @@
         line-height: 1.2;
     }
 
-    .brand-line {
-        font-family: var(--mono);
-        font-size: 0.53rem;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        color: var(--brand-strong);
-    }
-
     .wordmark-text {
         font-family: var(--mono);
-        font-size: 0.72rem;
+        font-size: 0.95rem;
         font-weight: 600;
-        letter-spacing: 0.18em;
+        letter-spacing: 0.16em;
     }
 
     .wordmark-text em {
         font-style: normal;
         color: var(--muted);
+    }
+
+    .wordmark-text .loop span {
+        display: inline-block;
+        will-change: color, text-shadow;
     }
 
     .kicker {
@@ -158,12 +205,9 @@
             display: none;
         }
 
-        .brand-line {
-            font-size: 0.48rem;
-        }
-
         .wordmark-text {
-            font-size: 0.65rem;
+            font-size: 0.8rem;
+            letter-spacing: 0.14em;
         }
     }
 

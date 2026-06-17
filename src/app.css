@@ -50,9 +50,9 @@
 }
 
 :root {
-	/* fonts */
-	--display: 'Instrument Serif', Georgia, serif;
-	--serif: 'Newsreader', Georgia, serif;
+	/* fonts — engineering field-guide register (technical grotesque + scholarly serif + instrument mono) */
+	--display: 'Sora', system-ui, sans-serif;
+	--serif: 'Source Serif 4', Georgia, serif;
 	--mono: 'Spline Sans Mono', ui-monospace, 'SFMono-Regular', monospace;
 
 	--reading: 62ch;
@@ -104,7 +104,7 @@ h1,
 h2,
 h3 {
 	font-family: var(--display);
-	font-weight: 400;
+	font-weight: 500;
 	letter-spacing: -0.01em;
 	line-height: 1.04;
 	margin: 0;
