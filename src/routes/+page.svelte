@@ -5,6 +5,7 @@
     import Tokenization from "$lib/components/Tokenization.svelte";
     import Inference from "$lib/components/Inference.svelte";
     import ContextWindow from "$lib/components/ContextWindow.svelte";
+    import ToolCalling from "$lib/components/ToolCalling.svelte";
 
     let chapter = $state("01");
 
@@ -53,6 +54,8 @@
     <Inference />
 
     <ContextWindow />
+
+    <ToolCalling />
 </main>
 
 <footer class="site-footer">

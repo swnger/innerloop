@@ -443,6 +443,19 @@
 					ease: 'power1.inOut'
 				});
 
+				// Reveal the reply in real time as the panel scrolls up into the pin,
+				// so the section never sits blank while entering (the old scrubbed
+				// reveal left a viewport of dead space before the pin engaged).
+				gsap
+					.timeline({
+						scrollTrigger: { trigger: '.nt-open', start: 'top 78%' },
+						defaults: { ease: 'power2.out' }
+					})
+					.from('.open-kicker', { autoAlpha: 0, y: 14, duration: 0.4 })
+					.from('.open-panel', { autoAlpha: 0, y: 24, duration: 0.5 }, '<0.1')
+					.from('.open-tok', { autoAlpha: 0, duration: 0.25, stagger: 0.06 }, '<0.1')
+					.from('.open-caret', { autoAlpha: 0, duration: 0.15 }, '<');
+
 				gsap
 					.timeline({
 						scrollTrigger: {
@@ -456,10 +469,6 @@
 						},
 						defaults: { ease: 'power2.out' }
 					})
-					.from('.open-kicker', { autoAlpha: 0, y: 14, duration: 0.3 })
-					.from('.open-panel', { autoAlpha: 0, y: 24, duration: 0.4 }, '<0.1')
-					.from('.open-tok', { autoAlpha: 0, duration: 0.18, stagger: 0.09 })
-					.from('.open-caret', { autoAlpha: 0, duration: 0.1 }, '<')
 					.addLabel('stream')
 					.to({}, { duration: 0.4 })
 					.from('.open-claim-1', { autoAlpha: 0, y: 20, duration: 0.4 })
@@ -763,6 +772,14 @@
 					scrollTrigger: { trigger: '.nt-outro', start: 'top 82%' }
 				});
 			}, rootEl);
+
+			// Pins are measured at setup, but the web fonts load a beat later and
+			// reflow every section — leaving pin start/end and spacer heights stale
+			// (the symptom: chapters overlapping and dead gaps). Re-measure once the
+			// fonts have settled. ScrollTrigger.refresh() is global and idempotent.
+			document.fonts?.ready.then(() => {
+				if (!disposed) ScrollTrigger.refresh();
+			});
 		});
 
 		return () => {

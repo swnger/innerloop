@@ -733,6 +733,14 @@
 					scrollTrigger: { trigger: '.tk-outro', start: 'top 82%' }
 				});
 			}, rootEl);
+
+			// Pins are measured at setup, but the web fonts load a beat later and
+			// reflow every section — leaving pin start/end and spacer heights stale
+			// (the symptom: chapters overlapping and dead gaps). Re-measure once the
+			// fonts have settled. ScrollTrigger.refresh() is global and idempotent.
+			document.fonts?.ready.then(() => {
+				if (!disposed) ScrollTrigger.refresh();
+			});
 		});
 
 		return () => {

@@ -256,7 +256,7 @@
 	});
 </script>
 
-<section class="ctx" data-chapter="04" aria-labelledby="ctx-title">
+<section id="context" class="ctx" data-chapter="04" aria-labelledby="ctx-title">
 	<div class="ctx-head">
 		<p class="eyebrow">Chapter 04 · the mediator</p>
 		<h2 id="ctx-title">The context window is the model’s entire world.</h2>
