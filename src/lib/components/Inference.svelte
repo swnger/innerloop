@@ -1018,6 +1018,19 @@
                 back inside the machine · the reply you watched stream in
             </p>
 
+            <div class="open-below">
+                <p class="open-claim open-claim-1">It isn’t typing.</p>
+                <p class="open-claim open-claim-2">
+                    It’s guessing — one token at a time, each guess feeding the
+                    next.
+                </p>
+
+                <div class="open-title chapter-head">
+                    <p class="eyebrow">Chapter 03 · the machine’s only trick</p>
+                    <h2 id="nt-title">Inference</h2>
+                </div>
+            </div>
+
             <div class="open-panel">
                 <p class="open-panel-head mono">
                     AGENT → YOU · one turn, closing
@@ -1032,19 +1045,6 @@
                         ><span class="open-caret-inner"></span></span
                     >
                 </p>
-            </div>
-
-            <div class="open-below">
-                <p class="open-claim open-claim-1">It isn’t typing.</p>
-                <p class="open-claim open-claim-2">
-                    It’s guessing — one token at a time, each guess feeding the
-                    next.
-                </p>
-
-                <div class="open-title chapter-head">
-                    <p class="eyebrow">Chapter 03 · the machine’s only trick</p>
-                    <h2 id="nt-title">Inference</h2>
-                </div>
             </div>
         </div>
     </div>
@@ -1898,17 +1898,20 @@
     }
 
     .nt-open-stage {
+        /* the reply panel stays vertically centered; kicker + headings are
+           overlaid top-left so they can drop down without shifting it */
+        position: relative;
         height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: clamp(1.4rem, 4vh, 2.6rem);
+        display: grid;
+        place-items: center;
         padding: 0 var(--page-gutter);
         text-align: center;
     }
 
     .open-kicker {
+        position: absolute;
+        top: clamp(4.5rem, 11vh, 7rem);
+        left: var(--page-gutter);
         font-size: 0.72rem;
         letter-spacing: 0.18em;
         text-transform: uppercase;
@@ -1967,7 +1970,10 @@
     }
 
     .open-below {
-        align-self: stretch;
+        position: absolute;
+        top: clamp(7rem, 18vh, 12rem);
+        left: var(--page-gutter);
+        right: var(--page-gutter);
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -1993,7 +1999,7 @@
 
     /* ---------- 2 · lede ---------- */
     .nt-head {
-        padding: clamp(2.5rem, 7vw, 5rem) var(--page-gutter) 0;
+        padding: clamp(1.2rem, 3vw, 2.2rem) var(--page-gutter) 0;
         text-align: center;
     }
 

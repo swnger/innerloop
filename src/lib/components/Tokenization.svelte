@@ -767,6 +767,15 @@
 				the reading step, up close · what did the model actually receive?
 			</p>
 
+			<div class="tkt-below">
+				<p class="tkt-claim">The model never saw your words.</p>
+
+				<div class="tkt-titleblock chapter-head">
+					<p class="eyebrow">Chapter 02 · the alphabet of the machine</p>
+					<h2 id="tk-title">Tokenization</h2>
+				</div>
+			</div>
+
 			<div class="tkt-framewrap">
 				<div class="tkt-frame">
 					<div class="tkt-frame-chrome" aria-hidden="true"></div>
@@ -778,15 +787,6 @@
 							</span>
 						{/each}
 					</div>
-				</div>
-			</div>
-
-			<div class="tkt-below">
-				<p class="tkt-claim">The model never saw your words.</p>
-
-				<div class="tkt-titleblock chapter-head">
-					<p class="eyebrow">Chapter 02 · the alphabet of the machine</p>
-					<h2 id="tk-title">Tokenization</h2>
 				</div>
 			</div>
 		</div>
@@ -1119,31 +1119,27 @@
 	}
 
 	.tkt-stage {
-		/* frame pinned to the vertical center — below the diagram's token
-		   row, so the hand-off reads as a downward drop */
+		/* the frame stays vertically centered; the headings are overlaid
+		   top-left so they can drop down without shifting the frame */
+		position: relative;
 		display: grid;
-		grid-template-rows: 1fr auto 1fr;
-		justify-items: center;
+		place-items: center;
 		height: 100%;
-		padding: 0 var(--page-gutter) clamp(1.2rem, 4vh, 2.5rem);
+		padding: 0 var(--page-gutter);
 		text-align: center;
 		width: 100%;
 	}
 
-	.tkt-framewrap {
-		grid-row: 2;
-	}
-
 	.tkt-below {
-		grid-row: 3;
-		align-self: start;
-		justify-self: stretch;
+		position: absolute;
+		top: clamp(7rem, 18vh, 12rem);
+		left: var(--page-gutter);
+		right: var(--page-gutter);
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
 		text-align: left;
-		gap: clamp(1rem, 3vh, 2rem);
-		padding-top: clamp(1.2rem, 3.5vh, 2.4rem);
+		gap: clamp(0.8rem, 2.4vh, 1.5rem);
 	}
 
 	.tkt-kicker {
@@ -1235,7 +1231,7 @@
 	}
 	/* ---------- 2 · lede ---------- */
 	.tk-head {
-		padding: clamp(2.5rem, 7vw, 5rem) var(--page-gutter) 0;
+		padding: clamp(1.2rem, 3vw, 2.2rem) var(--page-gutter) 0;
 		text-align: center;
 	}
 
