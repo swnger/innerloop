@@ -692,7 +692,7 @@
                         0.86,
                     )
                     .to(q(".tx-chip"), { autoAlpha: 0, duration: 0.02 }, 0.96)
-                    .to(q(".tc-head"), { autoAlpha: 1, y: 0, duration: 0.08 }, 0.9);
+                    .to(q(".tc-head"), { autoAlpha: 1, y: 0, duration: 0.1 }, 0.04);
 
                 const st = ScrollTrigger.create({
                     trigger: transitionEl.querySelector(".tx-frame"),
@@ -738,6 +738,22 @@
 <section id="tools" class="tc" data-chapter="05" aria-labelledby="tc-title">
     <!-- 1 · TRANSITION — Ch.4's tool-definition band becomes Ch.5's schema contract -->
     <div class="tc-tx" bind:this={transitionEl}>
+        <div class="tc-head chapter-head">
+            <p class="tx-kicker mono">
+                <span>the menu, carried forward</span> — what rode in the window
+            </p>
+            <p class="eyebrow tc-eyebrow">Chapter 05 · the hands</p>
+            <h2 id="tc-title" class="tc-title">
+                It only writes text.<br />So who runs the command?
+            </h2>
+            <p class="tc-lede">
+                The model has no shell, no files, no network — it can only emit
+                tokens (Chapter 3). Yet agents run commands, edit files, hit
+                APIs. The trick is that a “tool call” is just text that matches
+                a schema contract, and something else does the running.
+            </p>
+        </div>
+
         <figure class="tx-frame">
             <svg
                 viewBox="0 0 1000 470"
@@ -753,34 +769,34 @@
                 >
                     <rect
                         class="tx-schema-body"
-                        x="70"
-                        y="50"
-                        width="470"
-                        height="340"
+                        x="30"
+                        y="22"
+                        width="430"
+                        height="332"
                         rx="5"
                         fill="var(--cat-tools-fill)"
                         stroke="var(--cat-tools)"
                         stroke-width="1.4"
                     />
                     <rect
-                        x="70"
-                        y="50"
+                        x="30"
+                        y="22"
                         width="3"
-                        height="340"
+                        height="332"
                         fill="var(--cat-tools)"
                     />
                     <rect
-                        x="70"
-                        y="50"
-                        width="470"
+                        x="30"
+                        y="22"
+                        width="430"
                         height="34"
                         rx="5"
                         fill="rgba(179,148,230,.12)"
                     />
-                    <line x1="70" y1="84" x2="540" y2="84" stroke={LINE} />
+                    <line x1="30" y1="56" x2="460" y2="56" stroke={LINE} />
                     <text
-                        x="90"
-                        y="72"
+                        x="50"
+                        y="44"
                         font-family="var(--mono)"
                         font-size="11"
                         font-weight="600"
@@ -792,8 +808,8 @@
                         {#each RUN_SHELL_SCHEMA as line, i}
                             <text
                                 class="tx-schema-line"
-                                x="90"
-                                y={110 + i * 21}
+                                x="50"
+                                y={82 + i * 21}
                                 font-family="var(--mono)"
                                 font-size="12.5"
                                 fill={PAPER}
@@ -806,9 +822,9 @@
                 <g class="tx-emitted">
                     <rect
                         x="560"
-                        y="232"
+                        y="252"
                         width="400"
-                        height="200"
+                        height="180"
                         rx="5"
                         fill="var(--surface)"
                         stroke={WARM}
@@ -816,7 +832,7 @@
                     />
                     <rect
                         x="560"
-                        y="232"
+                        y="252"
                         width="400"
                         height="30"
                         rx="5"
@@ -824,7 +840,7 @@
                     />
                     <text
                         x="578"
-                        y="252"
+                        y="272"
                         font-family="var(--mono)"
                         font-size="10.5"
                         font-weight="600"
@@ -834,7 +850,7 @@
                     {#each RUN_SHELL_CALL as line, i}
                         <text
                             x="582"
-                            y={296 + i * 24}
+                            y={316 + i * 24}
                             font-family="var(--mono)"
                             font-size="13"
                             fill={PAPER}
@@ -854,7 +870,7 @@
                 <path
                     id="tx-connect"
                     class="tx-connect"
-                    d="M 540 318 C 582 314, 590 250, 622 240"
+                    d="M 460 296 C 502 304, 522 320, 560 326"
                     fill="none"
                     stroke={WARM}
                     stroke-width="1.3"
@@ -886,22 +902,6 @@
                 </g>
             </svg>
         </figure>
-
-        <div class="tc-head chapter-head">
-            <p class="tx-kicker mono">
-                <span>the menu, carried forward</span> — what rode in the window
-            </p>
-            <p class="eyebrow tc-eyebrow">Chapter 05 · the hands</p>
-            <h2 id="tc-title" class="tc-title">
-                It only writes text.<br />So who runs the command?
-            </h2>
-            <p class="tc-lede">
-                The model has no shell, no files, no network — it can only emit
-                tokens (Chapter 3). Yet agents run commands, edit files, hit
-                APIs. The trick is that a “tool call” is just text that matches
-                a schema contract, and something else does the running.
-            </p>
-        </div>
     </div>
 
     <!-- 2 · THE EXCHANGE — reader-stepped round trip -->
