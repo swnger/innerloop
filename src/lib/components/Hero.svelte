@@ -455,7 +455,7 @@
     });
 </script>
 
-<section id="machine" class="hero" data-chapter="01" aria-labelledby="hero-title">
+<section id="agent-loop" class="hero" data-chapter="01" aria-labelledby="hero-title">
     <div class="intro chapter-head">
         <p class="eyebrow">Chapter 01 · system overview</p>
         <h1 id="hero-title">One continuous cycle.</h1>

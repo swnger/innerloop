@@ -95,7 +95,7 @@
 </svelte:head>
 
 <header class="site-header">
-    <a class="wordmark" href="#machine">
+    <a class="wordmark" href="#agent-loop">
         <span class="ring" aria-hidden="true">
             <img src="{base}/favicon.svg" alt="" width="38" height="38" />
         </span>

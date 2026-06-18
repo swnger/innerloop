@@ -157,7 +157,7 @@
 				/* ---- 1a · hand off ch.1's real token row ---- */
 				// the hero lives outside this component, so reach it by element
 				// (gsap.context scopes string selectors to rootEl)
-				const hero = document.querySelector('#machine') as HTMLElement | null;
+				const hero = document.querySelector('#agent-loop') as HTMLElement | null;
 				const h = (sel: string) => hero?.querySelectorAll(sel) ?? [];
 				if (hero) {
 					const tktSec = rootEl.querySelector('.tkt') as HTMLElement;
