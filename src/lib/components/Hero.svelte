@@ -1168,6 +1168,8 @@
         --header: 4.35rem;
         --ratio: 1.746; /* 1100 / 630 svg aspect */
         --hero-chrome: clamp(19rem, 30svh, 24rem);
+        --hero-pad-y: clamp(0.75rem, 2vh, 1.5rem);
+        --hero-start-clearance: clamp(3rem, 5vh, 3.5rem);
         width: 100%;
         margin: 0 auto;
         min-height: calc(100svh - var(--header));
@@ -1175,7 +1177,8 @@
         flex-direction: column;
         justify-content: center;
         gap: clamp(0.6rem, 1.6vh, 1.2rem);
-        padding: clamp(0.75rem, 2vh, 1.5rem) var(--page-gutter);
+        padding: calc(var(--hero-pad-y) + var(--hero-start-clearance))
+            var(--page-gutter) var(--hero-pad-y);
     }
 
     .stage {

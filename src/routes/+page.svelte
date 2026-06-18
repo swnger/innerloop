@@ -139,7 +139,9 @@
         position: sticky;
         top: 0;
         z-index: 10;
-        background: var(--header-bg);
+        background:
+            linear-gradient(var(--header-bg), var(--header-bg)),
+            var(--ink);
         backdrop-filter: blur(16px) saturate(1.15);
         box-shadow: 0 8px 30px -26px var(--paper);
     }
