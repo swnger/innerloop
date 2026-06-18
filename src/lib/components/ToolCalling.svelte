@@ -83,7 +83,7 @@
         {
             k: "it writes a tool call",
             title: "The model writes a tool call — as text",
-            body: "It does the only thing it can do: predict tokens (Chapter 3). Here those tokens spell a small, structured block naming a tool and its arguments. Nothing has run. The text matches the schema contract.",
+            body: "It does the only thing it can do: predict tokens. Here those tokens spell a small, structured block naming a tool and its arguments. Nothing has run. The text matches the schema contract.",
             dir: "out",
             lit: "llm",
             cardLabel: "MODEL OUTPUT · just predicted tokens",
@@ -552,14 +552,17 @@
                 gsap.set(q(".tx-schema-shell"), { autoAlpha: 1 });
                 gsap.set(q(".tx-schema-line"), { autoAlpha: 1, y: 0 });
                 gsap.set(q(".tx-emitted"), { autoAlpha: 1, y: 0 });
-                gsap.set(q(".tx-connect"), { attr: { "stroke-dashoffset": 0 } });
+                gsap.set(q(".tx-connect"), {
+                    attr: { "stroke-dashoffset": 0 },
+                });
                 gsap.set(q(".tx-chip"), { autoAlpha: 0 });
                 gsap.set(q(".tc-head"), { autoAlpha: 1, y: 0 });
             };
 
             // --- the morph SOURCE is the real Ch.4 tool-definitions band ---
-            const ctxTank =
-                document.querySelector<HTMLElement>("#context .ctx-sticky");
+            const ctxTank = document.querySelector<HTMLElement>(
+                "#context .ctx-sticky",
+            );
             const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
             const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
             const smooth = (n: number) => n * n * (3 - 2 * n);
@@ -567,7 +570,12 @@
                 clamp01((p - a) / (b - a));
             const rectOf = (el: Element) => {
                 const r = el.getBoundingClientRect();
-                return { x: r.left, y: r.top, width: r.width, height: r.height };
+                return {
+                    x: r.left,
+                    y: r.top,
+                    width: r.width,
+                    height: r.height,
+                };
             };
 
             let overlay: SVGSVGElement | undefined;
@@ -665,13 +673,21 @@
                 txTl = gsap
                     .timeline({ paused: true, defaults: { ease: "none" } })
                     .to({}, { duration: 1 }, 0)
-                    .to(q(".tx-schema-shell"), { autoAlpha: 1, duration: 0.05 }, 0.64)
+                    .to(
+                        q(".tx-schema-shell"),
+                        { autoAlpha: 1, duration: 0.05 },
+                        0.64,
+                    )
                     .to(
                         q(".tx-schema-line"),
                         { autoAlpha: 1, y: 0, duration: 0.12, stagger: 0.008 },
                         0.66,
                     )
-                    .to(q(".tx-emitted"), { autoAlpha: 1, y: 0, duration: 0.07 }, 0.8)
+                    .to(
+                        q(".tx-emitted"),
+                        { autoAlpha: 1, y: 0, duration: 0.07 },
+                        0.8,
+                    )
                     .to(
                         q(".tx-connect"),
                         {
@@ -692,7 +708,11 @@
                         0.86,
                     )
                     .to(q(".tx-chip"), { autoAlpha: 0, duration: 0.02 }, 0.96)
-                    .to(q(".tc-head"), { autoAlpha: 1, y: 0, duration: 0.1 }, 0.04);
+                    .to(
+                        q(".tc-head"),
+                        { autoAlpha: 1, y: 0, duration: 0.12 },
+                        0.76,
+                    );
 
                 const st = ScrollTrigger.create({
                     trigger: transitionEl.querySelector(".tx-frame"),
@@ -739,18 +759,15 @@
     <!-- 1 · TRANSITION — Ch.4's tool-definition band becomes Ch.5's schema contract -->
     <div class="tc-tx" bind:this={transitionEl}>
         <div class="tc-head chapter-head">
-            <p class="tx-kicker mono">
-                <span>the menu, carried forward</span> — what rode in the window
-            </p>
             <p class="eyebrow tc-eyebrow">Chapter 05 · the hands</p>
             <h2 id="tc-title" class="tc-title">
                 It only writes text.<br />So who runs the command?
             </h2>
             <p class="tc-lede">
                 The model has no shell, no files, no network — it can only emit
-                tokens (Chapter 3). Yet agents run commands, edit files, hit
-                APIs. The trick is that a “tool call” is just text that matches
-                a schema contract, and something else does the running.
+                tokens. Yet agents run commands, edit files, hit APIs. The trick
+                is that a “tool call” is just text that matches a schema
+                contract, and something else does the running.
             </p>
         </div>
 
@@ -1784,16 +1801,6 @@
     }
     .tc-tx .tc-head {
         max-width: 48rem;
-    }
-    .tx-kicker {
-        font-size: 0.72rem;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--faint);
-        margin-bottom: 0.6rem;
-    }
-    .tx-kicker span {
-        color: var(--brand-strong);
     }
     .tc-title {
         /* size/colour come from the shared .chapter-head rules */
