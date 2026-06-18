@@ -1639,15 +1639,18 @@
 	}
 
 	.emb-axis {
-		stroke: var(--line-bright);
-		stroke-width: 1;
+		stroke: var(--brand-strong);
+		stroke-width: 1.25;
+		stroke-dasharray: 7 6;
+		stroke-linecap: round;
+		filter: drop-shadow(0 0 5px rgba(28, 105, 212, 0.35));
 	}
 
 	.emb-axis-label {
 		font-family: var(--mono);
 		font-size: 11px;
-		letter-spacing: 0.08em;
-		fill: var(--faint);
+		letter-spacing: 0.1em;
+		fill: var(--brand-strong);
 		text-anchor: middle;
 	}
 
@@ -1657,8 +1660,10 @@
 	}
 
 	.emb-vec {
-		stroke: var(--line-bright);
-		stroke-width: 1;
+		stroke: var(--paper);
+		stroke-width: 1.35;
+		stroke-linecap: round;
+		filter: drop-shadow(0 0 4px rgba(241, 244, 247, 0.18));
 	}
 
 	.emb-ghost {
