@@ -710,14 +710,14 @@
                     .to(q(".tx-chip"), { autoAlpha: 0, duration: 0.02 }, 0.96)
                     .to(
                         q(".tc-head"),
-                        { autoAlpha: 1, y: 0, duration: 0.12 },
-                        0.76,
+                        { autoAlpha: 1, y: 0, duration: 0.2 },
+                        0.12,
                     );
 
                 const st = ScrollTrigger.create({
                     trigger: transitionEl.querySelector(".tx-frame"),
                     start: "top bottom",
-                    end: "top 24%",
+                    end: "top 45%",
                     scrub: 0.5,
                     invalidateOnRefresh: true,
                     onUpdate: (self: { progress: number }) => {
