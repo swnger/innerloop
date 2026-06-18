@@ -11,13 +11,23 @@
     let loopEl: HTMLElement;
 
     onMount(() => {
+        const setChapterAnchor = (section: HTMLElement) => {
+            const nextHash = `#${section.id}`;
+            if (!section.id || window.location.hash === nextHash) return;
+
+            const url = new URL(window.location.href);
+            url.hash = nextHash;
+            history.replaceState(history.state, "", url);
+        };
+
         // A thin band around the viewport middle decides the current chapter.
         const observer = new IntersectionObserver(
             (entries) => {
                 for (const entry of entries) {
                     if (entry.isIntersecting) {
-                        chapter =
-                            (entry.target as HTMLElement).dataset.chapter ?? chapter;
+                        const section = entry.target as HTMLElement;
+                        chapter = section.dataset.chapter ?? chapter;
+                        setChapterAnchor(section);
                     }
                 }
             },

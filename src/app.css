@@ -89,6 +89,10 @@ body {
 	text-rendering: optimizeLegibility;
 }
 
+main > section[id] {
+	scroll-margin-top: 5.5rem;
+}
+
 /* subtle full-page film-grain overlay */
 .film-grain {
 	pointer-events: none;
@@ -173,4 +177,3 @@ a:hover {
 	outline-offset: 3px;
 	border-radius: 2px;
 }
-

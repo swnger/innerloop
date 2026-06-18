@@ -997,7 +997,7 @@
 </script>
 
 <section
-    id="prediction"
+    id="inference"
     class="nt"
     data-chapter="03"
     bind:this={rootEl}
