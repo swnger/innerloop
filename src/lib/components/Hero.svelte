@@ -540,7 +540,7 @@
                 <g class="hero-flows">
                 <path
                     id="input-path"
-                    d="M 360 272 C 410 286, 432 314, 470 324"
+                    d="M 420 272 C 438 286, 450 314, 470 324"
                     fill="none"
                     stroke={COOL}
                     stroke-width="1.2"
@@ -558,7 +558,7 @@
                 />
                 <path
                     id="tool-path"
-                    d="M 360 428 C 414 416, 438 404, 470 402"
+                    d="M 420 428 C 440 416, 452 404, 470 402"
                     fill="none"
                     stroke={COOL}
                     stroke-width="1.2"
@@ -590,7 +590,7 @@
                 <rect
                     x="40"
                     y="150"
-                    width="320"
+                    width="380"
                     height="388"
                     rx="18"
                     fill={SURFACE}
@@ -613,7 +613,7 @@
                     font-size="10"
                     fill={FAINT}>user_message = "fix the failing test"</text
                 >
-                <line x1="64" y1="220" x2="336" y2="220" stroke={LINE} />
+                <line x1="64" y1="220" x2="396" y2="220" stroke={LINE} />
 
                 {#each CODE as line, i}
                     {@const y = 246 + i * 26}
@@ -628,7 +628,7 @@
                         >
                         {#if line.note}
                             <text
-                                x="336"
+                                x="396"
                                 {y}
                                 text-anchor="end"
                                 font-family="var(--mono)"
@@ -639,7 +639,7 @@
                     </g>
                 {/each}
 
-                <line x1="64" y1="470" x2="336" y2="470" stroke={LINE} />
+                <line x1="64" y1="470" x2="396" y2="470" stroke={LINE} />
                 <text
                     x="64"
                     y="500"
@@ -653,7 +653,7 @@
                 <g class="hero-ctx">
                 <text
                     x="552"
-                    y="184"
+                    y="169"
                     text-anchor="middle"
                     font-family="var(--mono)"
                     font-size="11"
@@ -663,7 +663,7 @@
                 >
                 <text
                     x="552"
-                    y="199"
+                    y="185"
                     text-anchor="middle"
                     font-family="var(--mono)"
                     font-size="9"
