@@ -1820,6 +1820,9 @@
         margin-top: clamp(2rem, 6vw, 4rem);
         align-items: start;
     }
+    .tc-tx + .tc-scrolly {
+        margin-top: clamp(24rem, 62vh, 34rem);
+    }
     .tc-sticky {
         position: sticky;
         top: 7vh;
