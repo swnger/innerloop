@@ -30,14 +30,19 @@
         SURFACE = "var(--diagram-surface)";
 
     const RUN_SHELL_SCHEMA = [
-        '{ "name": "run_shell",',
-        '  "description": "Run a shell command,',
-        '                  return its output",',
+        "{",
+        '  "name": "run_shell",',
+        '  "description": "Run a shell command",',
         '  "input_schema": {',
         '    "type": "object",',
         '    "properties": {',
-        '      "command": { "type": "string" } },',
-        '    "required": ["command"] } }',
+        '      "command": {',
+        '        "type": "string"',
+        "      }",
+        "    },",
+        '    "required": ["command"]',
+        "  }",
+        "}",
     ];
     const RUN_SHELL_CALL = [
         "{",
@@ -169,6 +174,11 @@
     );
     const llmLit = $derived(stage.lit === "llm" || stage.lit === "both");
     const machineLit = $derived(stage.lit === "machine");
+    // the schema card is taller than the rest — tighten its line grid to fit
+    const exLong = $derived(stage.card.length > 9);
+    const exLineH = $derived(exLong ? 13.4 : 20);
+    const exFontSize = $derived(exLong ? 9.5 : 10.5);
+    const exCardY0 = $derived(exLong ? 360 : 364);
 
     // Chapter 1's agent routine, reused verbatim so the loop reads as the same
     // machine. The detail view to the right is a zoom into run_tool()/has_tool_call.
@@ -465,7 +475,7 @@
         let txContext: { revert: () => void } | undefined;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let txTl: any;
-        let removeTxOverlay = () => {};
+        let cleanupTx = () => {};
 
         Promise.all([
             import("gsap"),
@@ -523,168 +533,189 @@
                 .forEach((el) => mio?.observe(el));
 
             const q = gsap.utils.selector(transitionEl);
-            let txOverlay: SVGSVGElement | undefined;
-            let txSourceStart:
-                | { x: number; y: number; width: number; height: number }
-                | undefined;
-            const toBox = (r: DOMRect) => ({
-                x: r.left,
-                y: r.top,
-                width: r.width,
-                height: r.height,
-            });
-            const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
-            const removeOverlay = () => {
-                txOverlay?.remove();
-                txOverlay = undefined;
+            const reduced = window.matchMedia(
+                "(prefers-reduced-motion: reduce)",
+            ).matches;
+
+            // --- Ch.5 schema/connector/heading reveal states ---
+            const setTransitionInitial = () => {
+                gsap.set(q(".tx-schema-shell"), { autoAlpha: 0 });
+                gsap.set(q(".tx-schema-line"), { autoAlpha: 0, y: 8 });
+                gsap.set(q(".tx-emitted"), { autoAlpha: 0, y: 12 });
+                gsap.set(q(".tx-connect"), {
+                    attr: { "stroke-dasharray": 200, "stroke-dashoffset": 200 },
+                });
+                gsap.set(q(".tx-chip"), { autoAlpha: 0, x: 0, y: 0 });
+                gsap.set(q(".tc-head"), { autoAlpha: 0, y: 18 });
             };
-            removeTxOverlay = removeOverlay;
-            const createBandOverlay = () => {
+            const setTransitionFinal = () => {
+                gsap.set(q(".tx-schema-shell"), { autoAlpha: 1 });
+                gsap.set(q(".tx-schema-line"), { autoAlpha: 1, y: 0 });
+                gsap.set(q(".tx-emitted"), { autoAlpha: 1, y: 0 });
+                gsap.set(q(".tx-connect"), { attr: { "stroke-dashoffset": 0 } });
+                gsap.set(q(".tx-chip"), { autoAlpha: 0 });
+                gsap.set(q(".tc-head"), { autoAlpha: 1, y: 0 });
+            };
+
+            // --- the morph SOURCE is the real Ch.4 tool-definitions band ---
+            const ctxTank =
+                document.querySelector<HTMLElement>("#context .ctx-sticky");
+            const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
+            const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
+            const smooth = (n: number) => n * n * (3 - 2 * n);
+            const span = (p: number, a: number, b: number) =>
+                clamp01((p - a) / (b - a));
+            const rectOf = (el: Element) => {
+                const r = el.getBoundingClientRect();
+                return { x: r.left, y: r.top, width: r.width, height: r.height };
+            };
+
+            let overlay: SVGSVGElement | undefined;
+            let ovHatch: Element | null = null;
+            let ovLabel: Element | null = null;
+            let ovCount: Element | null = null;
+            const removeOverlay = () => {
+                overlay?.remove();
+                overlay = undefined;
+            };
+            // a fixed-position clone of the live Ch.4 band — visually identical,
+            // so fading the real tank reads as "the band itself lifted out".
+            const buildOverlay = () => {
                 removeOverlay();
                 const band = document.querySelector<SVGGElement>(
                     '#context [data-band="tools"]',
                 );
-                const body = band?.querySelector<SVGRectElement>(".band-body");
-                if (!band || !body) return undefined;
-                const box = band.getBBox();
-                const overlay = document.createElementNS(
+                const body = band?.querySelector(".band-body");
+                if (!band || !body) return false;
+                const bbox = band.getBBox();
+                const svg = document.createElementNS(
                     "http://www.w3.org/2000/svg",
                     "svg",
                 );
-                overlay.setAttribute(
+                svg.setAttribute(
                     "viewBox",
-                    `${box.x} ${box.y} ${box.width} ${box.height}`,
+                    `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`,
                 );
-                overlay.setAttribute("aria-hidden", "true");
-                overlay.classList.add("tx-band-overlay");
+                svg.setAttribute("preserveAspectRatio", "none");
+                svg.setAttribute("aria-hidden", "true");
+                svg.classList.add("tx-band-overlay");
                 const defs = document.createElementNS(
                     "http://www.w3.org/2000/svg",
                     "defs",
                 );
                 defs.innerHTML =
-                    '<pattern id="tx-overlay-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="var(--paper)" stroke-width="1" opacity="0.06" /></pattern>';
+                    '<pattern id="tx-ov-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="var(--paper)" stroke-width="1" opacity="0.06" /></pattern>';
                 const clone = band.cloneNode(true) as SVGGElement;
+                clone.removeAttribute("opacity");
                 clone
                     .querySelectorAll('[fill="url(#ctx-fixed-hatch)"]')
                     .forEach((el) =>
-                        el.setAttribute("fill", "url(#tx-overlay-hatch)"),
+                        el.setAttribute("fill", "url(#tx-ov-hatch)"),
                     );
-                overlay.append(defs, clone);
-                document.body.appendChild(overlay);
-                txOverlay = overlay;
-                return { overlay, body };
+                svg.append(defs, clone);
+                document.body.appendChild(svg);
+                overlay = svg;
+                ovHatch = clone.querySelector(".band-hatch");
+                ovLabel = clone.querySelector(".band-label");
+                ovCount = clone.querySelector(".band-count");
+                return true;
             };
-            const setTransitionInitial = () => {
-                gsap.set(q(".tx-schema-line"), { autoAlpha: 0, y: 8 });
-                gsap.set(q(".tx-schema-shell"), { autoAlpha: 0 });
-                gsap.set(q(".tx-emitted"), { autoAlpha: 0, y: 10 });
-                gsap.set(q(".tx-connect"), {
-                    attr: { "stroke-dasharray": 420, "stroke-dashoffset": 420 },
+
+            // scroll progress drives: the clone flying band → schema box, its
+            // label/hatch fading out in flight, and the Ch.4 tank fading behind.
+            const updateMorph = (p: number) => {
+                if (!overlay && !buildOverlay()) return;
+                const band = document.querySelector(
+                    '#context [data-band="tools"] .band-body',
+                );
+                const target = transitionEl.querySelector(".tx-schema-body");
+                if (!overlay || !band || !target) return;
+                const from = rectOf(band);
+                const to = rectOf(target);
+                const tp = smooth(clamp01(p / 0.72)); // arrives by 0.72
+                gsap.set(overlay, {
+                    x: lerp(from.x, to.x, tp),
+                    y: lerp(from.y, to.y, tp),
+                    width: lerp(from.width, to.width, tp),
+                    height: lerp(from.height, to.height, tp),
+                    autoAlpha: 1 - span(p, 0.6, 0.74), // fade as schema fills in
                 });
-                gsap.set(q(".tx-chip"), { autoAlpha: 0, x: 0, y: 0 });
-                gsap.set(q(".tx-claim"), { autoAlpha: 0, y: 10 });
-                gsap.set(q(".tc-head"), { autoAlpha: 0, y: 18 });
+                const tex = 1 - span(p, 0, 0.22); // lose the Ch.4 texture early
+                if (ovHatch) gsap.set(ovHatch, { autoAlpha: tex });
+                if (ovLabel) gsap.set(ovLabel, { autoAlpha: tex });
+                if (ovCount) gsap.set(ovCount, { autoAlpha: tex });
+                if (ctxTank)
+                    gsap.set(ctxTank, {
+                        autoAlpha: 1 - 0.82 * span(p, 0.02, 0.42),
+                    });
             };
-            const buildRevealTimeline = () => {
-                txTl?.kill();
+            const resetMorph = () => {
+                removeOverlay();
+                if (ctxTank) gsap.set(ctxTank, { autoAlpha: 1 });
+            };
+            cleanupTx = resetMorph;
+
+            txContext = gsap.context(() => {
+                if (reduced) {
+                    setTransitionFinal();
+                    return;
+                }
                 setTransitionInitial();
+                // scrubbed reveal of the Ch.5 box, played as the clone arrives
                 txTl = gsap
                     .timeline({ paused: true, defaults: { ease: "none" } })
                     .to({}, { duration: 1 }, 0)
-                    .to(
-                        q(".tx-schema-shell"),
-                        { autoAlpha: 1, duration: 0.04 },
-                        0.78,
-                    )
+                    .to(q(".tx-schema-shell"), { autoAlpha: 1, duration: 0.05 }, 0.64)
                     .to(
                         q(".tx-schema-line"),
-                        { autoAlpha: 1, y: 0, duration: 0.08, stagger: 0.006 },
-                        0.8,
+                        { autoAlpha: 1, y: 0, duration: 0.12, stagger: 0.008 },
+                        0.66,
                     )
-                    .to(
-                        q(".tx-emitted"),
-                        { autoAlpha: 1, y: 0, duration: 0.08 },
-                        0.86,
-                    )
+                    .to(q(".tx-emitted"), { autoAlpha: 1, y: 0, duration: 0.07 }, 0.8)
                     .to(
                         q(".tx-connect"),
                         {
                             attr: { "stroke-dashoffset": 0 },
-                            duration: 0.08,
+                            duration: 0.07,
                             ease: "power1.inOut",
                         },
-                        0.9,
+                        0.84,
                     )
-                    .set(q(".tx-chip"), { autoAlpha: 1 }, 0.9)
+                    .set(q(".tx-chip"), { autoAlpha: 1 }, 0.86)
                     .to(
                         q(".tx-chip"),
                         {
-                            duration: 0.08,
+                            duration: 0.09,
                             ease: "power1.inOut",
                             ...motionPath("#tx-connect"),
                         },
-                        0.9,
+                        0.86,
                     )
-                    .to(q(".tx-chip"), { autoAlpha: 0, duration: 0.02 }, 0.98)
-                    .to(
-                        q(".tx-claim"),
-                        { autoAlpha: 1, y: 0, duration: 0.04 },
-                        0.94,
-                    )
-                    .to(
-                        q(".tc-head"),
-                        { autoAlpha: 1, y: 0, duration: 0.04 },
-                        0.96,
-                    );
-                return txTl;
-            };
-            const updateTransition = (progress: number) => {
-                const overlay = txOverlay ?? createBandOverlay()?.overlay;
-                const target =
-                    transitionEl.querySelector<SVGRectElement>(
-                        ".tx-schema-body",
-                    );
-                const sourceBody = document.querySelector<SVGRectElement>(
-                    '#context [data-band="tools"] .band-body',
-                );
-                if (!overlay || !target || !sourceBody) return;
-                if (!txSourceStart || progress <= 0.001)
-                    txSourceStart = toBox(sourceBody.getBoundingClientRect());
-                const targetBox = toBox(target.getBoundingClientRect());
-                const fade =
-                    progress < 0.86
-                        ? 1
-                        : Math.max(0, 1 - (progress - 0.86) / 0.12);
-                gsap.set(overlay, {
-                    autoAlpha: fade,
-                    x: lerp(txSourceStart.x, targetBox.x, progress),
-                    y: lerp(txSourceStart.y, targetBox.y, progress),
-                    width: lerp(txSourceStart.width, targetBox.width, progress),
-                    height: lerp(
-                        txSourceStart.height,
-                        targetBox.height,
-                        progress,
-                    ),
-                });
-                txTl?.progress(progress);
-            };
-            txContext = gsap.context(() => {
-                setTransitionInitial();
-                buildRevealTimeline();
-                ScrollTrigger.create({
-                    trigger: transitionEl,
+                    .to(q(".tx-chip"), { autoAlpha: 0, duration: 0.02 }, 0.96)
+                    .to(q(".tc-head"), { autoAlpha: 1, y: 0, duration: 0.08 }, 0.9);
+
+                const st = ScrollTrigger.create({
+                    trigger: transitionEl.querySelector(".tx-frame"),
                     start: "top bottom",
-                    end: "top 20%",
-                    scrub: 0.35,
+                    end: "top 24%",
+                    scrub: 0.5,
                     invalidateOnRefresh: true,
-                    onUpdate: (self: { progress: number }) =>
-                        updateTransition(self.progress),
+                    onUpdate: (self: { progress: number }) => {
+                        updateMorph(self.progress);
+                        txTl.progress(self.progress);
+                    },
                     onLeaveBack: () => {
-                        txSourceStart = undefined;
-                        gsap.set(txOverlay, { autoAlpha: 0 });
+                        txTl.progress(0);
                         setTransitionInitial();
+                        resetMorph();
                     },
                 });
+                // deep-linked / reloaded already inside the range: sync state
+                if (st.progress > 0) {
+                    updateMorph(st.progress);
+                    txTl.progress(st.progress);
+                }
+
                 if (document.fonts) {
                     document.fonts.ready.then(() => {
                         if (!disposed) ScrollTrigger.refresh();
@@ -698,7 +729,7 @@
             io?.disconnect();
             mio?.disconnect();
             txTl?.kill();
-            removeTxOverlay();
+            cleanupTx();
             txContext?.revert();
         };
     });
@@ -707,128 +738,114 @@
 <section id="tools" class="tc" data-chapter="05" aria-labelledby="tc-title">
     <!-- 1 · TRANSITION — Ch.4's tool-definition band becomes Ch.5's schema contract -->
     <div class="tc-tx" bind:this={transitionEl}>
-        <figure class="tc-frame tx-frame">
+        <figure class="tx-frame">
             <svg
-                viewBox="0 0 1000 460"
+                viewBox="0 0 1000 470"
                 role="img"
-                aria-label="The violet tool definitions band from the context window detaches into a schema box; the model then emits warm text that matches the schema contract."
+                aria-label="The tool-definitions layer carried forward from the context window unfolds and enlarges into a tool-definition schema box; a chip then connects it to the text the model actually emitted — a tool call that matches the schema's contract."
             >
-                <text
-                    x="72"
-                    y="34"
-                    font-family="var(--mono)"
-                    font-size="10"
-                    font-weight="600"
-                    letter-spacing="0.1em"
-                    fill={BRAND}>THE MENU, CARRIED FORWARD</text
-                >
-                <text
-                    x="72"
-                    y="53"
-                    font-family="var(--mono)"
-                    font-size="9"
-                    fill={FAINT}>what rode in the window</text
-                >
-
+                <!-- The morph SOURCE is the real Ch.4 tool-definitions band:
+                     a fixed-position clone of it is flown in from the tank and
+                     crossfades into this schema box (see onMount). -->
                 <g
                     class="tx-schema-shell"
-                    style="filter: drop-shadow(0 0 12px rgba(179,148,230,.34))"
+                    style="filter: drop-shadow(0 0 14px rgba(179,148,230,.34))"
                 >
                     <rect
                         class="tx-schema-body"
-                        x="366"
-                        y="80"
-                        width="356"
-                        height="168"
+                        x="70"
+                        y="50"
+                        width="470"
+                        height="340"
                         rx="5"
                         fill="var(--cat-tools-fill)"
                         stroke="var(--cat-tools)"
-                        stroke-width="1.2"
+                        stroke-width="1.4"
                     />
                     <rect
-                        x="366"
-                        y="80"
+                        x="70"
+                        y="50"
                         width="3"
-                        height="168"
+                        height="340"
                         fill="var(--cat-tools)"
                     />
                     <rect
-                        x="366"
-                        y="80"
-                        width="356"
-                        height="30"
+                        x="70"
+                        y="50"
+                        width="470"
+                        height="34"
                         rx="5"
                         fill="rgba(179,148,230,.12)"
                     />
-                    <line x1="366" y1="110" x2="722" y2="110" stroke={LINE} />
+                    <line x1="70" y1="84" x2="540" y2="84" stroke={LINE} />
                     <text
-                        x="382"
-                        y="99"
+                        x="90"
+                        y="72"
                         font-family="var(--mono)"
-                        font-size="10"
+                        font-size="11"
                         font-weight="600"
                         letter-spacing="0.07em"
                         fill="var(--cat-tools)"
                         >TOOL DEFINITION · SCHEMA CONTRACT</text
                     >
-                </g>
-                <g>
-                    {#each RUN_SHELL_SCHEMA as line, i}
-                        <text
-                            class="tx-schema-line"
-                            x="386"
-                            y={132 + i * 14}
-                            font-family="var(--mono)"
-                            font-size="10.4"
-                            fill={PAPER}
-                            xml:space="preserve">{line}</text
-                        >
-                    {/each}
+                    <g>
+                        {#each RUN_SHELL_SCHEMA as line, i}
+                            <text
+                                class="tx-schema-line"
+                                x="90"
+                                y={110 + i * 21}
+                                font-family="var(--mono)"
+                                font-size="12.5"
+                                fill={PAPER}
+                                xml:space="preserve">{line}</text
+                            >
+                        {/each}
+                    </g>
                 </g>
 
                 <g class="tx-emitted">
                     <rect
-                        x="520"
-                        y="286"
-                        width="390"
-                        height="126"
+                        x="560"
+                        y="232"
+                        width="400"
+                        height="200"
                         rx="5"
                         fill="var(--surface)"
                         stroke={WARM}
-                        stroke-width="1.2"
+                        stroke-width="1.4"
                     />
                     <rect
-                        x="520"
-                        y="286"
-                        width="390"
-                        height="27"
+                        x="560"
+                        y="232"
+                        width="400"
+                        height="30"
                         rx="5"
                         fill="var(--warm-soft)"
                     />
                     <text
-                        x="536"
-                        y="304"
+                        x="578"
+                        y="252"
                         font-family="var(--mono)"
-                        font-size="10"
+                        font-size="10.5"
                         font-weight="600"
                         letter-spacing="0.06em"
                         fill={WARM}>WHAT THE MODEL ACTUALLY EMITTED · TEXT</text
                     >
                     {#each RUN_SHELL_CALL as line, i}
                         <text
-                            x="540"
-                            y={338 + i * 18}
+                            x="582"
+                            y={296 + i * 24}
                             font-family="var(--mono)"
-                            font-size="11.5"
+                            font-size="13"
                             fill={PAPER}
                             xml:space="preserve">{line}</text
                         >
                     {/each}
                     <text
-                        x="540"
-                        y="396"
+                        x="582"
+                        y="414"
                         font-family="var(--mono)"
-                        font-size="9"
+                        font-size="9.5"
                         fill={FAINT}
                         >characters, not a command · validated by the harness</text
                     >
@@ -837,10 +854,10 @@
                 <path
                     id="tx-connect"
                     class="tx-connect"
-                    d="M 624 250 C 632 276, 684 264, 712 286"
+                    d="M 540 318 C 582 314, 590 250, 622 240"
                     fill="none"
                     stroke={WARM}
-                    stroke-width="1.2"
+                    stroke-width="1.3"
                     opacity="0.58"
                     stroke-linecap="round"
                 />
@@ -849,10 +866,10 @@
                     style="filter: drop-shadow(var(--glow-warm))"
                 >
                     <rect
-                        x="-42"
-                        y="-12"
-                        width="84"
-                        height="24"
+                        x="-44"
+                        y="-13"
+                        width="88"
+                        height="26"
                         rx="5"
                         fill="var(--warm-soft)"
                         stroke={WARM}
@@ -862,7 +879,7 @@
                         text-anchor="middle"
                         dominant-baseline="middle"
                         font-family="var(--mono)"
-                        font-size="8.5"
+                        font-size="9"
                         font-weight="600"
                         fill={WARM}>predicts text</text
                     >
@@ -871,6 +888,9 @@
         </figure>
 
         <div class="tc-head chapter-head">
+            <p class="tx-kicker mono">
+                <span>the menu, carried forward</span> — what rode in the window
+            </p>
             <p class="eyebrow tc-eyebrow">Chapter 05 · the hands</p>
             <h2 id="tc-title" class="tc-title">
                 It only writes text.<br />So who runs the command?
@@ -1243,9 +1263,9 @@
                     {#each stage.card as line, li}
                         <text
                             x="374"
-                            y={364 + li * 20}
+                            y={exCardY0 + li * exLineH}
                             font-family="var(--mono)"
-                            font-size="10.5"
+                            font-size={exFontSize}
                             fill={line.startsWith("✓") ? COOL : PAPER}
                             xml:space="preserve">{line}</text
                         >
@@ -1728,30 +1748,52 @@
         height: auto;
     }
 
-    /* 1 · transition — normal document flow; ScrollTrigger only plays/reverses */
+    /* 1 · transition — normal document flow; the morph plays once on enter.
+       Content-height (no forced 100svh) so the figure follows Ch.4 closely
+       instead of sitting behind a screenful of dead space. */
     .tc-tx {
-        min-height: 100svh;
         display: grid;
-        align-content: center;
         gap: clamp(1.4rem, 4vw, 2.8rem);
-        padding: clamp(1rem, 4vw, 3rem) 0 clamp(2rem, 5vw, 4rem);
+        padding: clamp(1.5rem, 5vh, 3.5rem) 0 clamp(3rem, 9vh, 6rem);
     }
+    /* no instrument frame: the schema + emitted boxes float on the page */
     .tx-frame {
-        max-width: min(100%, 62rem);
-        margin-inline: auto;
+        width: 100%;
+        max-width: min(100%, 64rem);
+        margin: 0 auto;
+        padding: 0;
+        border: 0;
+        background: none;
+        box-shadow: none;
     }
+    .tx-frame svg {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+    /* the flying clone of Ch.4's tool-definitions band (built in JS) */
     :global(.tx-band-overlay) {
         position: fixed;
         left: 0;
         top: 0;
-        z-index: 20;
+        z-index: 30;
         pointer-events: none;
         overflow: visible;
-        filter: drop-shadow(0 0 12px rgba(179, 148, 230, 0.34));
+        filter: drop-shadow(0 0 14px rgba(179, 148, 230, 0.34));
         will-change: transform, width, height, opacity;
     }
     .tc-tx .tc-head {
         max-width: 48rem;
+    }
+    .tx-kicker {
+        font-size: 0.72rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin-bottom: 0.6rem;
+    }
+    .tx-kicker span {
+        color: var(--brand-strong);
     }
     .tc-title {
         /* size/colour come from the shared .chapter-head rules */
@@ -1942,11 +1984,7 @@
             padding-inline: clamp(0.75rem, 3.5vw, 1rem);
         }
         .tc-tx {
-            min-height: 92svh;
             gap: 1.2rem;
-        }
-        .tx-frame {
-            padding: 0.7rem;
         }
         .tc-tx .tc-head {
             margin-inline: 0.2rem;
@@ -1984,7 +2022,6 @@
     :global(html.no-js) .tx-schema-line,
     :global(html.no-js) .tx-schema-shell,
     :global(html.no-js) .tx-emitted,
-    :global(html.no-js) .tx-claim,
     :global(html.no-js) .tc-tx .tc-head {
         opacity: 1;
         visibility: visible;
