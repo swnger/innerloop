@@ -14,7 +14,7 @@
 	   4. Fork — one different draw rewrites everything after it.
 	============================================================ */
 
-    const WARM = "#FF9D4D";
+    const WARM = "#8c5f0e"; // ochre — var(--concept-response)
 
     /* — open: the reply from ch.1, as the user saw it stream in — */
     const REPLY = [
@@ -536,8 +536,8 @@
                     .to({}, { duration: 0.3 })
                     // the chip chrome surfaces: the reply was guesses all along
                     .to(".open-tok", {
-                        borderColor: "rgba(255,157,77,.5)",
-                        backgroundColor: "rgba(255,157,77,.08)",
+                        borderColor: "rgba(140,95,14,.55)",
+                        backgroundColor: "rgba(140,95,14,.1)",
                         color: WARM,
                         duration: 0.5,
                         stagger: 0.04,
@@ -601,7 +601,7 @@
 				   is the argument: a fresh guess (warm) becomes plain context
 				   (neutral) the moment the loop runs again. */
                 const pulse = () => ({
-                    stroke: "#F1F4F7",
+                    stroke: "#1c222b",
                     duration: 0.25,
                     yoyo: true,
                     repeat: 1,
@@ -677,7 +677,7 @@
                         ease: "back.out(1.2)",
                     })
                     .to(".d1 .row-1 .bar-rect", {
-                        fill: "rgba(255,157,77,.14)",
+                        fill: "rgba(140,95,14,.14)",
                         stroke: WARM,
                         duration: 0.3,
                     })
@@ -727,13 +727,13 @@
                     // beat 5 · run the whole thing again — the guess cools into context
                     .to(".cap-append", { autoAlpha: 0, duration: 0.25 })
                     .to(".an-slot1-fill rect", {
-                        fill: "#1A2634",
-                        stroke: "#4B5C6E",
+                        fill: "#e9edf2",
+                        stroke: "#b7bec7",
                         duration: 0.5,
                     })
                     .to(
                         ".an-slot1-fill text",
-                        { fill: "#F1F4F7", duration: 0.5 },
+                        { fill: "#1c222b", duration: 0.5 },
                         "<",
                     )
                     .from(".an-slot2", { autoAlpha: 0, duration: 0.3 })
@@ -753,7 +753,7 @@
                     )
                     .from(".d2 .bar-tail", { autoAlpha: 0, duration: 0.25 })
                     .to(".d2 .row-0 .bar-rect", {
-                        fill: "rgba(255,157,77,.14)",
+                        fill: "rgba(140,95,14,.14)",
                         stroke: WARM,
                         duration: 0.25,
                     })
@@ -791,13 +791,13 @@
                     // beat 6 · a stop token wins — the reply ships back, warm
                     .to(".cap-again", { autoAlpha: 0, duration: 0.25 })
                     .to(".an-slot2-fill rect", {
-                        fill: "#1A2634",
-                        stroke: "#4B5C6E",
+                        fill: "#e9edf2",
+                        stroke: "#b7bec7",
                         duration: 0.35,
                     })
                     .to(
                         ".an-slot2-fill text",
-                        { fill: "#F1F4F7", duration: 0.35 },
+                        { fill: "#1c222b", duration: 0.35 },
                         "<",
                     )
                     .to(".d2", { opacity: 0, duration: 0.3 })
@@ -815,7 +815,7 @@
                     )
                     .from(".d3 .bar-tail", { autoAlpha: 0, duration: 0.25 })
                     .to(".d3 .row-0 .bar-rect", {
-                        fill: "rgba(255,157,77,.14)",
+                        fill: "rgba(140,95,14,.14)",
                         stroke: WARM,
                         duration: 0.3,
                     })
@@ -1228,7 +1228,7 @@
                         width="254"
                         height="36"
                         rx="4"
-                        fill="rgba(255,157,77,.07)"
+                        fill="rgba(140,95,14,.08)"
                         stroke="var(--warm)"
                     />
                     <text
@@ -2187,7 +2187,7 @@
         padding: 1rem;
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: rgba(10, 13, 22, 0.55);
+        background: oklch(0.945 0.008 255 / 0.7);
     }
 
     .gl-chip {
@@ -2236,7 +2236,7 @@
         padding: 1rem;
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: rgba(10, 13, 22, 0.55);
+        background: oklch(0.945 0.008 255 / 0.7);
     }
 
     .gl-dist-title {
@@ -2512,7 +2512,7 @@
     .mini-chip {
         font-size: 0.74rem;
         color: var(--paper);
-        background: #1b2434;
+        background: var(--c-sunken);
         border: 1px solid var(--line-bright);
         border-radius: 5px;
         padding: 0.18rem 0.45rem;
@@ -2568,7 +2568,7 @@
     }
 
     .freq-fill.top {
-        background: #3d5571;
+        background: var(--brand);
     }
 
     .freq-val {
@@ -2605,7 +2605,7 @@
         border-radius: 3px;
         padding: 0.25rem 0.6rem;
         transform: rotate(-3deg);
-        background: rgba(255, 157, 77, 0.06);
+        background: oklch(0.945 0.04 75 / 0.6);
     }
 
     /* ---------- outro ---------- */

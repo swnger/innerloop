@@ -132,7 +132,7 @@
             y: 382,
             h: 40,
             fill: "var(--cat-tool-fill)",
-            accent: COOL,
+            accent: "var(--cat-tool)",
             cls: "band-toolout",
         },
         {

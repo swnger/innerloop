@@ -53,31 +53,21 @@
             const letters = loopEl.querySelectorAll("span");
             if (!letters.length) return;
 
-            const MUTED = "#9BA8B5"; // var(--muted)
-            const BLUE = "#4D96F5"; // var(--brand-strong) — BMW blue
-            const GLOW = "0 0 12px rgba(77,150,245,0.6)";
+            const REST = "#4c535e"; // var(--muted)
+            // L · O · O · P → blue · violet · red · blue (the M tricolor wraps)
+            const M = ["#036eae", "#6e4199", "#c53637", "#036eae"];
 
             ctx = gsap.context(() => {
-                const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.55 });
+                const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.7 });
                 letters.forEach((el, i) => {
                     tl.to(
                         el,
-                        {
-                            color: BLUE,
-                            textShadow: GLOW,
-                            duration: 0.35,
-                            ease: "sine.out",
-                        },
-                        i * 0.16,
+                        { color: M[i], duration: 0.34, ease: "sine.out" },
+                        i * 0.17,
                     ).to(
                         el,
-                        {
-                            color: MUTED,
-                            textShadow: "0 0 0 rgba(77,150,245,0)",
-                            duration: 0.5,
-                            ease: "sine.inOut",
-                        },
-                        i * 0.16 + 0.35,
+                        { color: REST, duration: 0.55, ease: "sine.inOut" },
+                        i * 0.17 + 0.36,
                     );
                 });
             }, loopEl);
@@ -119,7 +109,7 @@
 </main>
 
 <footer class="site-footer">
-    <span class="mono">THE INNER <em>LOOP</em></span>
+    <span class="fmark">THE INNER <em>LOOP</em></span>
     <span class="disclaimer"
         >Internal field guide · explanatory demos are illustrative, not
         production systems.</span
@@ -134,16 +124,28 @@
         gap: 1rem;
         min-height: 4.35rem;
         padding: 0.55rem var(--page-gutter);
-        border-top: 3px solid var(--brand);
         border-bottom: 1px solid var(--line);
         position: sticky;
         top: 0;
         z-index: 10;
-        background:
-            linear-gradient(var(--header-bg), var(--header-bg)),
-            var(--ink);
-        backdrop-filter: blur(16px) saturate(1.15);
-        box-shadow: 0 8px 30px -26px var(--paper);
+        background: var(--header-bg);
+        backdrop-filter: blur(16px) saturate(1.1);
+        box-shadow: 0 1px 0 var(--line), 0 14px 30px -28px oklch(0.25 0.02 260 / 0.5);
+    }
+
+    /* The BMW M tricolor as a thin spine accent across the masthead — the
+       loop motif, and the static fallback for the wordmark chase. */
+    .site-header::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 2px;
+        background: linear-gradient(
+            90deg,
+            var(--m-blue) 0 33.34%,
+            var(--m-violet) 33.34% 66.67%,
+            var(--m-red) 66.67% 100%
+        );
     }
 
     .wordmark {
@@ -166,10 +168,11 @@
     }
 
     .wordmark-text {
-        font-family: var(--mono);
-        font-size: 0.95rem;
-        font-weight: 600;
-        letter-spacing: 0.16em;
+        font-family: var(--display);
+        font-size: 1.02rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--paper);
     }
 
     .wordmark-text em {
@@ -184,10 +187,10 @@
 
     .kicker {
         font-family: var(--mono);
-        font-size: 0.7rem;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--faint);
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        color: var(--muted);
     }
 
     /* footer */
@@ -202,9 +205,16 @@
         gap: 1rem;
         flex-wrap: wrap;
         font-size: 0.78rem;
-        letter-spacing: 0.1em;
         color: var(--muted);
-        background: color-mix(in srgb, var(--surface) 74%, transparent);
+        background: var(--surface);
+    }
+
+    .fmark {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 0.92rem;
+        letter-spacing: 0.08em;
+        color: var(--paper);
     }
 
     .site-footer em {
@@ -218,8 +228,8 @@
         }
 
         .wordmark-text {
-            font-size: 0.8rem;
-            letter-spacing: 0.14em;
+            font-size: 0.86rem;
+            letter-spacing: 0.06em;
         }
     }
 

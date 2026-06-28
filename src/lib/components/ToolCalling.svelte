@@ -782,7 +782,7 @@
                      crossfades into this schema box (see onMount). -->
                 <g
                     class="tx-schema-shell"
-                    style="filter: drop-shadow(0 0 14px rgba(179,148,230,.34))"
+                    style="filter: drop-shadow(0 2px 8px oklch(0.47 0.14 305 / 0.22))"
                 >
                     <rect
                         class="tx-schema-body"
@@ -808,7 +808,7 @@
                         width="430"
                         height="34"
                         rx="5"
-                        fill="rgba(179,148,230,.12)"
+                        fill="oklch(0.47 0.14 305 / 0.1)"
                     />
                     <line x1="30" y1="56" x2="460" y2="56" stroke={LINE} />
                     <text
@@ -1796,7 +1796,7 @@
         z-index: 30;
         pointer-events: none;
         overflow: visible;
-        filter: drop-shadow(0 0 14px rgba(179, 148, 230, 0.34));
+        filter: drop-shadow(0 2px 10px oklch(0.47 0.14 305 / 0.22));
         will-change: transform, width, height, opacity;
     }
     .tc-tx .tc-head {

@@ -1,61 +1,109 @@
 :root {
-	color-scheme: dark;
+	color-scheme: light;
 
-	/* Precision observatory: black glass, mineral chrome, electric blue. */
-	--ink: #080b0f;
-	--surface: #10161d;
-	--diagram-surface: #10161d;
-	--surface-raised: #17202a;
-	--line: #26323f;
-	--line-bright: #4b5c6e;
-	--paper: #f1f4f7;
-	--muted: #9ba8b5;
-	--faint: #667586;
-	--brand: #1c69d4;
-	--brand-strong: #4d96f5;
-	--brand-soft: rgba(28, 105, 212, 0.14);
-	--glow-brand: 0 0 12px rgba(28, 105, 212, 0.45);
+	/* ===================================================================
+	   The Inner Loop — light Isotype system · "BMW in daylight" (DESIGN.md)
+	   Canonical tokens are the source of truth. Legacy aliases below keep
+	   the chapter components working; note the deliberate ink↔paper
+	   inversion (the old dark theme used --ink as the page ground and
+	   --paper as text — the light theme swaps their roles).
+	   =================================================================== */
 
-	/* Flow accents stay reserved for token motion. */
-	--cool: #38e1c6;
-	--warm: #ff9d4d;
-	--cool-soft: rgba(56, 225, 198, 0.12);
-	--warm-soft: rgba(255, 157, 77, 0.14);
-	--glow-cool: 0 0 12px rgba(56, 225, 198, 0.45);
-	--glow-warm: 0 0 12px rgba(255, 157, 77, 0.45);
+	/* Surfaces & ink */
+	--c-paper: oklch(0.985 0.004 255);
+	--c-surface: oklch(0.966 0.006 255);
+	--c-sunken: oklch(0.945 0.008 255);
+	--c-ink: oklch(0.25 0.02 260);
+	--c-ink-muted: oklch(0.44 0.02 260);
+	--c-faint: oklch(0.5 0.02 260);
+	--c-line: oklch(0.9 0.01 255);
+	--c-line-strong: oklch(0.8 0.015 255);
+	--c-brand: oklch(0.52 0.15 255);
+	--c-brand-strong: oklch(0.45 0.16 255);
 
-	--cat-system: #8798d0;
-	--cat-system-fill: #1b2438;
-	--cat-tools: #b394e6;
-	--cat-tools-fill: #292342;
-	--cat-history: #63b6e1;
-	--cat-history-fill: #143242;
-	--cat-user: #6bd0a2;
-	--cat-user-fill: #16342a;
-	--cat-tool: var(--cool);
-	--cat-tool-fill: #103632;
-	--cat-response: var(--warm);
-	--cat-response-fill: #382716;
+	/* Concept role-hues — learn once, read everywhere. Each *-ink clears
+	   AA (≥4.5:1) on its own *-fill so even small labels stay legible. */
+	--concept-system: oklch(0.5 0.04 250);
+	--concept-system-fill: oklch(0.945 0.012 250);
+	--concept-history: oklch(0.51 0.13 245);
+	--concept-history-fill: oklch(0.935 0.03 245);
+	--concept-user: oklch(0.5 0.1 195);
+	--concept-user-fill: oklch(0.94 0.03 195);
+	--concept-tools: oklch(0.47 0.14 305);
+	--concept-tools-fill: oklch(0.935 0.035 305);
+	--concept-tool-output: oklch(0.53 0.16 25);
+	--concept-tool-output-fill: oklch(0.94 0.035 25);
+	--concept-response: oklch(0.52 0.105 75);
+	--concept-response-fill: oklch(0.945 0.04 75);
 
-	--panel-gradient: linear-gradient(155deg, #0b1016 0%, var(--surface) 58%, #111c29 100%);
-	--panel-shadow: 0 30px 70px -42px rgba(0, 0, 0, 0.9);
-	--header-bg: rgba(8, 11, 15, 0.88);
-	--grid-color: rgba(75, 92, 110, 0.17);
-	--token-fill: #1a2634;
-	--transformer-fill: #17212d;
-	--bar-fill: #26384d;
-	--liquid: #4b5c6e;
-	--grain-opacity: 0.035;
-	--grain-blend: overlay;
+	/* BMW M tricolor — reserved for the loop-spine motif, used as an
+	   ordered set, once per context, never scattered. */
+	--m-blue: oklch(0.52 0.13 245);
+	--m-violet: oklch(0.47 0.14 305);
+	--m-red: oklch(0.55 0.18 25);
+
+	/* ---- legacy aliases (components still read these names) ---- */
+	--paper: var(--c-ink); /* primary foreground / text */
+	--muted: var(--c-ink-muted); /* secondary text — AA on every surface */
+	--faint: var(--c-faint); /* tertiary labels — still ≥4.5:1 small */
+	--ink: var(--c-sunken); /* deepest light well used as a fill */
+	--surface: var(--c-surface);
+	--surface-raised: var(--c-paper);
+	--diagram-surface: var(--c-surface);
+	--line: var(--c-line);
+	--line-bright: var(--c-line-strong);
+	--brand: var(--c-brand);
+	--brand-strong: var(--c-brand-strong);
+	--brand-soft: oklch(0.93 0.04 255);
+
+	/* directional flow accents: context flows in (blue), reply returns (ochre) */
+	--cool: var(--m-blue);
+	--warm: var(--concept-response);
+	--cool-soft: var(--concept-history-fill);
+	--warm-soft: var(--concept-response-fill);
+
+	/* Isotype category accents + pale fills */
+	--cat-system: var(--concept-system);
+	--cat-system-fill: var(--concept-system-fill);
+	--cat-tools: var(--concept-tools);
+	--cat-tools-fill: var(--concept-tools-fill);
+	--cat-history: var(--concept-history);
+	--cat-history-fill: var(--concept-history-fill);
+	--cat-user: var(--concept-user);
+	--cat-user-fill: var(--concept-user-fill);
+	--cat-tool: var(--concept-tool-output);
+	--cat-tool-fill: var(--concept-tool-output-fill);
+	--cat-response: var(--concept-response);
+	--cat-response-fill: var(--concept-response-fill);
+
+	/* diagram primitives */
+	--token-fill: var(--c-sunken);
+	--transformer-fill: oklch(0.955 0.006 255);
+	--bar-fill: var(--c-sunken);
+	--liquid: oklch(0.62 0.06 245);
+
+	/* Quiet depth — ink on good paper, not glowing glass. A single soft,
+	   low, tinted shadow. Valid in both box-shadow and drop-shadow()
+	   (single layer, no spread), so every legacy --glow-* call degrades
+	   to tasteful elevation instead of neon. */
+	--glow-brand: 0 2px 9px oklch(0.52 0.15 255 / 0.3);
+	--glow-cool: 0 2px 8px oklch(0.52 0.13 245 / 0.26);
+	--glow-warm: 0 2px 8px oklch(0.52 0.105 75 / 0.28);
+
+	--panel-gradient: linear-gradient(165deg, oklch(0.972 0.005 255), oklch(0.956 0.007 255));
+	--panel-shadow: 0 1px 2px oklch(0.25 0.02 260 / 0.05),
+		0 20px 44px -30px oklch(0.25 0.02 260 / 0.4);
+	--header-bg: oklch(0.985 0.004 255 / 0.82);
 }
 
 :root {
-	/* fonts — engineering field-guide register (technical grotesque + scholarly serif + instrument mono) */
-	--display: 'Sora', system-ui, sans-serif;
-	--serif: 'Source Serif 4', Georgia, serif;
+	/* One family does the work: Hanken Grotesk (display + body via weight).
+	   Spline Sans Mono is reserved for real tokens, code, and data only. */
+	--display: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+	--serif: var(--display); /* compat alias — the serif is gone */
 	--mono: 'Spline Sans Mono', ui-monospace, 'SFMono-Regular', monospace;
 
-	--reading: 62ch;
+	--reading: 66ch;
 	--page-gutter: clamp(1rem, 4vw, 6rem);
 }
 
@@ -73,18 +121,15 @@ html {
 body {
 	margin: 0;
 	min-height: 100vh;
-	background-color: var(--ink);
-	background-image:
-		linear-gradient(var(--grid-color) 1px, transparent 1px),
-		linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
-		radial-gradient(circle at 84% 2%, var(--brand-soft), transparent 28rem);
-	background-size: 36px 36px, 36px 36px, auto;
-	background-position: -1px -1px, -1px -1px, 0 0;
-	color: var(--paper);
-	font-family: var(--serif);
-	font-size: 1.125rem;
-	line-height: 1.65;
-	font-weight: 300;
+	/* clip (not hidden) guards against off-screen decorative transforms —
+	   e.g. the rotated strawberry stamp — without breaking position: sticky */
+	overflow-x: clip;
+	background-color: var(--c-paper);
+	color: var(--c-ink);
+	font-family: var(--display);
+	font-size: 1.0625rem;
+	line-height: 1.6;
+	font-weight: 400;
 	-webkit-font-smoothing: antialiased;
 	text-rendering: optimizeLegibility;
 }
@@ -93,29 +138,20 @@ main > section[id] {
 	scroll-margin-top: 5.5rem;
 }
 
-/* subtle full-page film-grain overlay */
-.film-grain {
-	pointer-events: none;
-	position: fixed;
-	inset: 0;
-	z-index: 9999;
-	opacity: var(--grain-opacity);
-	mix-blend-mode: var(--grain-blend);
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
 h1,
 h2,
 h3 {
 	font-family: var(--display);
-	font-weight: 500;
-	letter-spacing: -0.01em;
+	font-weight: 700;
+	letter-spacing: -0.02em;
 	line-height: 1.04;
 	margin: 0;
+	text-wrap: balance;
 }
 
 p {
 	margin: 0;
+	text-wrap: pretty;
 }
 
 a {
@@ -130,7 +166,7 @@ a:hover {
 
 ::selection {
 	background: var(--brand);
-	color: #fff;
+	color: var(--c-paper);
 }
 
 /* shared utility text registers */
@@ -139,17 +175,18 @@ a:hover {
 	font-feature-settings: 'ss01';
 }
 
+/* Chapter / section label. Deliberately NOT the old tracked-uppercase-mono
+   eyebrow: sentence-case Hanken, brand-weighted — wayfinding, not costume. */
 .eyebrow {
-	font-family: var(--mono);
-	font-size: 0.72rem;
-	letter-spacing: 0.22em;
-	text-transform: uppercase;
+	font-family: var(--display);
+	font-size: 0.82rem;
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
 	color: var(--muted);
 }
 
-/* shared chapter heading — left-aligned eyebrow + title (Ch1 is the reference).
-   Components apply .chapter-head to their heading block and drop any local
-   eyebrow-colour / title-size rules so this drives every chapter identically. */
+/* shared chapter heading — left-aligned label + title (Ch1 is the reference). */
 .chapter-head {
 	max-width: 44rem;
 }
@@ -161,8 +198,9 @@ a:hover {
 .chapter-head h1,
 .chapter-head h2 {
 	font-size: clamp(1.8rem, 5vh, 3rem);
-	line-height: 1.02;
-	margin: 0.2rem 0 0;
+	line-height: 1.04;
+	letter-spacing: -0.02em;
+	margin: 0.4rem 0 0;
 }
 
 .disclaimer {
@@ -175,5 +213,11 @@ a:hover {
 :focus-visible {
 	outline: 2px solid var(--brand);
 	outline-offset: 3px;
-	border-radius: 2px;
+	border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
 }
