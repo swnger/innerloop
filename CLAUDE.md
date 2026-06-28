@@ -11,6 +11,12 @@
 - Keep terms distinct: **context engineering** chooses what enters each model call; **harness engineering** is the surrounding loop, tools, retries, orchestration, and guardrails.
 - Be accurate and plain-spoken. Label simplified demos as illustrative; avoid hype, false precision, and implying the model remembers between calls.
 
+## Design Context
+
+- See `PRODUCT.md` (impeccable). Register: **brand** (design IS the product). North star: **calm clarity / demystified** — least-technical reader first.
+- Anti-refs: marketing/SaaS, generic dev-docs, childish, false precision. A11y: WCAG AA, motion-as-core (every animation needs a reduced-motion fallback that still teaches).
+- Current dark "observatory" aesthetic is flagged for redesign — treat as a departure point, not the target.
+
 ## Hosting / Stack
 
 - Target hosting: GitHub Pages, so the app must build to static files.
