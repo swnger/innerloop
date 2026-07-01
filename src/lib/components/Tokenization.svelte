@@ -18,7 +18,8 @@
 	      knows the rules and gets to break them.
 	============================================================ */
 
-	const WARM = '#FF9D4D';
+	// Ochre + resting-char colors for the GSAP strawberry sequence resolve
+	// per-theme inside onMount (see THEME-AWARE block).
 
 	/* — transition: the very sentence ch.1's machine just read — */
 	const TRANSITION_TOKENS = tokenize('fix the failing test');
@@ -154,6 +155,15 @@
 			gsap.registerPlugin(ScrollTrigger);
 
 			context = gsap.context(() => {
+				/* ---- THEME-AWARE highlight colors ----
+				   GSAP tweens SVG/text color to concrete values; resolve the
+				   ochre flare + cooled resting char from the theme at mount.
+				   (A theme flip mid-chapter re-tints on the next scroll.) */
+				const dark = document.documentElement.dataset.theme === 'dark';
+				const WARM = dark ? '#eeb154' : '#8c5f0e'; // var(--concept-response)
+				const REST_INK = dark ? '#9fa5ae' : '#5d646f'; // cooled char → muted
+				const WARM_GLOW = dark ? 'rgba(238,177,84,.42)' : 'rgba(140,95,14,.4)';
+
 				/* ---- 1a · hand off ch.1's real token row ---- */
 				// the hero lives outside this component, so reach it by element
 				// (gsap.context scopes string selectors to rootEl)
@@ -665,7 +675,7 @@
 							{
 								color: WARM,
 								scale: 1.18,
-								textShadow: '0 0 18px rgba(255,157,77,.6)',
+								textShadow: `0 0 16px ${WARM_GLOW}`,
 								duration: 0.45,
 								stagger: 0.2
 							},
@@ -688,10 +698,10 @@
 						// …the letters dim inside; only the IDs stay lit
 						.to(
 							'.sb-r',
-							{ color: '#667586', scale: 1, textShadow: 'none', duration: 0.5 },
+							{ color: REST_INK, scale: 1, textShadow: 'none', duration: 0.5 },
 							'shut+=0.5'
 						)
-						.to('.sb-ch', { color: '#667586', duration: 0.5 }, '<')
+						.to('.sb-ch', { color: REST_INK, duration: 0.5 }, '<')
 						.fromTo(
 							'.sb-grp-id',
 							{ autoAlpha: 0, y: 8 },
@@ -1174,7 +1184,7 @@
 		inset: 0;
 		border: 1px solid var(--brand);
 		border-radius: 14px;
-		background: rgba(28, 105, 212, 0.05);
+		background: color-mix(in oklab, var(--brand) 8%, transparent);
 		box-shadow: var(--glow-brand);
 		pointer-events: none;
 	}
@@ -1197,7 +1207,7 @@
 		padding: 0.6rem 0.8rem 0.5rem;
 		border: 1px solid var(--line-bright);
 		border-radius: 8px;
-		background: #1b2434;
+		background: var(--c-sunken);
 	}
 
 	.tkt-chip-text {
@@ -1378,7 +1388,7 @@
 		padding: 1rem;
 		border: 1px solid var(--line);
 		border-radius: 10px;
-		background: rgba(10, 13, 22, 0.55);
+		background: var(--surface);
 	}
 
 	.tok-chip {
@@ -1389,11 +1399,11 @@
 		padding: 0.4rem 0.55rem 0.3rem;
 		border: 1px solid var(--line-bright);
 		border-radius: 7px;
-		background: #1b2434;
+		background: var(--c-sunken);
 	}
 
 	.tok-chip.alt {
-		background: #232c3e;
+		background: var(--concept-system-fill);
 	}
 
 	.tok-chip-text {
@@ -1526,7 +1536,7 @@
 	.mini-chip {
 		font-size: 0.78rem;
 		color: var(--paper);
-		background: #1b2434;
+		background: var(--c-sunken);
 		border: 1px solid var(--line-bright);
 		border-radius: 5px;
 		padding: 0.18rem 0.45rem;
@@ -1629,7 +1639,6 @@
 
 	.emb-drag-head {
 		fill: var(--brand-strong);
-		filter: drop-shadow(0 0 6px rgba(77, 150, 245, 0.55));
 	}
 
 	.emb-svg {
@@ -1643,7 +1652,6 @@
 		stroke-width: 1.25;
 		stroke-dasharray: 7 6;
 		stroke-linecap: round;
-		filter: drop-shadow(0 0 5px rgba(28, 105, 212, 0.35));
 	}
 
 	.emb-axis-label {
@@ -1656,14 +1664,13 @@
 
 	.emb-origin {
 		fill: var(--brand-strong);
-		filter: drop-shadow(0 0 6px rgba(28, 105, 212, 0.6));
 	}
 
 	.emb-vec {
 		stroke: var(--paper);
 		stroke-width: 1.35;
 		stroke-linecap: round;
-		filter: drop-shadow(0 0 4px rgba(241, 244, 247, 0.18));
+		opacity: 0.55;
 	}
 
 	.emb-ghost {
@@ -1803,14 +1810,14 @@
 	}
 
 	.sb-big em {
-		color: var(--warm, #ff9d4d);
+		color: var(--warm);
 		font-style: italic;
 	}
 
 	.sb-word-inline {
 		font-family: var(--mono);
 		font-size: 0.85em;
-		background: #1b2434;
+		background: var(--c-sunken);
 		border: 1px solid var(--line-bright);
 		border-radius: 8px;
 		padding: 0.05em 0.25em;
@@ -1840,11 +1847,11 @@
 	}
 
 	.sb-stamp {
-		font-size: 0.78rem;
-		letter-spacing: 0.14em;
+		font-size: clamp(0.66rem, 2.6vw, 0.78rem);
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		color: #ff9d4d;
-		border: 1px solid #ff9d4d;
+		color: var(--warm);
+		border: 1px solid var(--warm);
 		border-radius: 4px;
 		padding: 0.4rem 0.9rem;
 		transform: rotate(-3deg);
@@ -1882,8 +1889,8 @@
 		inset: 0;
 		border: 1px solid var(--line-bright);
 		border-radius: 0.18em;
-		background: #1b2434;
-		box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.8);
+		background: var(--c-sunken);
+		box-shadow: 0 8px 24px -14px oklch(0.25 0.02 260 / 0.45);
 	}
 
 	.sb-ch {

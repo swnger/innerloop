@@ -14,7 +14,9 @@
 	   4. Fork — one different draw rewrites everything after it.
 	============================================================ */
 
-    const WARM = "#FF9D4D";
+    // Highlight ochre + cooled-chip colors used by GSAP-driven SVG tweens
+    // are resolved per-theme inside onMount (see THEME-AWARE block); the
+    // static diagram itself reads CSS tokens and themes live.
 
     /* — open: the reply from ch.1, as the user saw it stream in — */
     const REPLY = [
@@ -480,6 +482,28 @@
                     inertia: false,
                 };
 
+                /* ---- THEME-AWARE highlight colors ----
+                   GSAP tweens SVG fill/stroke to concrete values, so the
+                   inline targets below resolve from the theme active at
+                   mount. Light literals kept 1:1; dark maps to the lifted
+                   ochre + graphite tokens. (A theme flip mid-chapter re-tints
+                   on the next scroll through the pinned diagram.) */
+                const dark =
+                    document.documentElement.dataset.theme === "dark";
+                const WARM = dark ? "#eeb154" : "#8c5f0e"; // var(--concept-response)
+                const INK = dark ? "#e3e8f0" : "#1c222b"; // var(--c-ink)
+                const COOL_FILL = dark ? "#10141a" : "#e9edf2"; // cooled → var(--c-sunken)
+                const COOL_STROKE = dark ? "#2a2e34" : "#b7bec7"; // var(--c-line)
+                const WARM_WASH = dark
+                    ? "rgba(238,177,84,.16)"
+                    : "rgba(140,95,14,.14)";
+                const WARM_FILL_10 = dark
+                    ? "rgba(238,177,84,.12)"
+                    : "rgba(140,95,14,.1)";
+                const WARM_BORDER = dark
+                    ? "rgba(238,177,84,.5)"
+                    : "rgba(140,95,14,.55)";
+
                 /* ---- 1 · open: the streamed reply decomposes ---- */
                 gsap.to(".open-caret-inner", {
                     opacity: 0.15,
@@ -536,8 +560,8 @@
                     .to({}, { duration: 0.3 })
                     // the chip chrome surfaces: the reply was guesses all along
                     .to(".open-tok", {
-                        borderColor: "rgba(255,157,77,.5)",
-                        backgroundColor: "rgba(255,157,77,.08)",
+                        borderColor: WARM_BORDER,
+                        backgroundColor: WARM_FILL_10,
                         color: WARM,
                         duration: 0.5,
                         stagger: 0.04,
@@ -601,7 +625,7 @@
 				   is the argument: a fresh guess (warm) becomes plain context
 				   (neutral) the moment the loop runs again. */
                 const pulse = () => ({
-                    stroke: "#F1F4F7",
+                    stroke: INK,
                     duration: 0.25,
                     yoyo: true,
                     repeat: 1,
@@ -677,7 +701,7 @@
                         ease: "back.out(1.2)",
                     })
                     .to(".d1 .row-1 .bar-rect", {
-                        fill: "rgba(255,157,77,.14)",
+                        fill: WARM_WASH,
                         stroke: WARM,
                         duration: 0.3,
                     })
@@ -727,13 +751,13 @@
                     // beat 5 · run the whole thing again — the guess cools into context
                     .to(".cap-append", { autoAlpha: 0, duration: 0.25 })
                     .to(".an-slot1-fill rect", {
-                        fill: "#1A2634",
-                        stroke: "#4B5C6E",
+                        fill: COOL_FILL,
+                        stroke: COOL_STROKE,
                         duration: 0.5,
                     })
                     .to(
                         ".an-slot1-fill text",
-                        { fill: "#F1F4F7", duration: 0.5 },
+                        { fill: INK, duration: 0.5 },
                         "<",
                     )
                     .from(".an-slot2", { autoAlpha: 0, duration: 0.3 })
@@ -753,7 +777,7 @@
                     )
                     .from(".d2 .bar-tail", { autoAlpha: 0, duration: 0.25 })
                     .to(".d2 .row-0 .bar-rect", {
-                        fill: "rgba(255,157,77,.14)",
+                        fill: WARM_WASH,
                         stroke: WARM,
                         duration: 0.25,
                     })
@@ -791,13 +815,13 @@
                     // beat 6 · a stop token wins — the reply ships back, warm
                     .to(".cap-again", { autoAlpha: 0, duration: 0.25 })
                     .to(".an-slot2-fill rect", {
-                        fill: "#1A2634",
-                        stroke: "#4B5C6E",
+                        fill: COOL_FILL,
+                        stroke: COOL_STROKE,
                         duration: 0.35,
                     })
                     .to(
                         ".an-slot2-fill text",
-                        { fill: "#F1F4F7", duration: 0.35 },
+                        { fill: INK, duration: 0.35 },
                         "<",
                     )
                     .to(".d2", { opacity: 0, duration: 0.3 })
@@ -815,7 +839,7 @@
                     )
                     .from(".d3 .bar-tail", { autoAlpha: 0, duration: 0.25 })
                     .to(".d3 .row-0 .bar-rect", {
-                        fill: "rgba(255,157,77,.14)",
+                        fill: WARM_WASH,
                         stroke: WARM,
                         duration: 0.3,
                     })
@@ -1228,7 +1252,7 @@
                         width="254"
                         height="36"
                         rx="4"
-                        fill="rgba(255,157,77,.07)"
+                        fill="var(--warm-soft)"
                         stroke="var(--warm)"
                     />
                     <text
@@ -2187,7 +2211,7 @@
         padding: 1rem;
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: rgba(10, 13, 22, 0.55);
+        background: var(--surface);
     }
 
     .gl-chip {
@@ -2236,7 +2260,7 @@
         padding: 1rem;
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: rgba(10, 13, 22, 0.55);
+        background: var(--surface);
     }
 
     .gl-dist-title {
@@ -2512,7 +2536,7 @@
     .mini-chip {
         font-size: 0.74rem;
         color: var(--paper);
-        background: #1b2434;
+        background: var(--c-sunken);
         border: 1px solid var(--line-bright);
         border-radius: 5px;
         padding: 0.18rem 0.45rem;
@@ -2568,7 +2592,7 @@
     }
 
     .freq-fill.top {
-        background: #3d5571;
+        background: var(--brand);
     }
 
     .freq-val {
@@ -2605,7 +2629,7 @@
         border-radius: 3px;
         padding: 0.25rem 0.6rem;
         transform: rotate(-3deg);
-        background: rgba(255, 157, 77, 0.06);
+        background: var(--warm-soft);
     }
 
     /* ---------- outro ---------- */

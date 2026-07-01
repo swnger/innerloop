@@ -28,7 +28,7 @@
 	const TOOLS = { accent: 'var(--cat-tools)', fill: 'var(--cat-tools-fill)' };
 	const HISTORY = { accent: 'var(--cat-history)', fill: 'var(--cat-history-fill)' };
 	const USER = { accent: 'var(--cat-user)', fill: 'var(--cat-user-fill)' };
-	const TOOLOUT = { accent: COOL, fill: 'var(--cat-tool-fill)' };
+	const TOOLOUT = { accent: 'var(--cat-tool)', fill: 'var(--cat-tool-fill)' };
 	const RESPONSE = { accent: WARM, fill: 'var(--cat-response-fill)' };
 
 	const B: Record<string, Band> = {
@@ -305,7 +305,9 @@
 							fill={b.fill}
 							stroke={b.isNew ? b.accent : LINE}
 							stroke-width={b.isNew ? 1.4 : 0.8}
-							style:filter={b.isNew ? `drop-shadow(0 0 5px ${b.accent})` : 'none'}
+							style:filter={b.isNew
+								? 'drop-shadow(0 2px 4px oklch(0.25 0.02 260 / 0.18))'
+								: 'none'}
 						/>
 						{#if b.kind === 'fixed'}
 							<rect class="band-hatch" x={VX + 4} y={b.y} width={VW - 8} height={Math.max(0, b.h - 2)} rx="3" fill="url(#ctx-fixed-hatch)" />

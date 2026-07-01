@@ -6,6 +6,8 @@
     import Inference from "$lib/components/Inference.svelte";
     import ContextWindow from "$lib/components/ContextWindow.svelte";
     import ToolCalling from "$lib/components/ToolCalling.svelte";
+    import ThemeToggle from "$lib/components/ThemeToggle.svelte";
+    import { theme } from "$lib/theme.svelte";
 
     let chapter = $state("01");
     let loopEl: HTMLElement;
@@ -39,52 +41,50 @@
         return () => observer.disconnect();
     });
 
-    // BMW-blue light chasing through L→O→O→P, looping forever — the wordmark
-    // literally performs a “loop”. Decorative; skipped under reduced-motion.
-    onMount(() => {
-        let disposed = false;
+    // BMW light chasing through L→O→O→P, looping forever — the wordmark
+    // literally performs a “loop”. Decorative; skipped under reduced-motion
+    // (where the letters keep their token color and theme automatically).
+    // Resting + tricolor hexes are per-theme so the chase reads on either
+    // ground; the effect rebuilds when the reader flips the theme.
+    const LOOP_PALETTE = {
+        light: { rest: "#4c535e", m: ["#036eae", "#6e4199", "#c53637", "#036eae"] },
+        dark: { rest: "#9fa5ae", m: ["#2b99e7", "#a36fd9", "#ec5b57", "#2b99e7"] },
+    } as const;
+
+    $effect(() => {
+        const palette = LOOP_PALETTE[theme.current]; // re-runs on theme flip
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (!loopEl) return;
+
+        let cancelled = false;
         let ctx: { revert: () => void } | undefined;
 
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-            return;
-
         import("gsap").then(({ gsap }) => {
-            if (disposed || !loopEl) return;
+            if (cancelled || !loopEl) return;
             const letters = loopEl.querySelectorAll("span");
             if (!letters.length) return;
 
-            const MUTED = "#9BA8B5"; // var(--muted)
-            const BLUE = "#4D96F5"; // var(--brand-strong) — BMW blue
-            const GLOW = "0 0 12px rgba(77,150,245,0.6)";
-
             ctx = gsap.context(() => {
-                const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.55 });
+                // Seat every letter at the theme's resting color first, so
+                // letters mid-cycle don't keep a stale hex across the swap.
+                gsap.set(letters, { color: palette.rest });
+                const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.7 });
                 letters.forEach((el, i) => {
                     tl.to(
                         el,
-                        {
-                            color: BLUE,
-                            textShadow: GLOW,
-                            duration: 0.35,
-                            ease: "sine.out",
-                        },
-                        i * 0.16,
+                        { color: palette.m[i], duration: 0.34, ease: "sine.out" },
+                        i * 0.17,
                     ).to(
                         el,
-                        {
-                            color: MUTED,
-                            textShadow: "0 0 0 rgba(77,150,245,0)",
-                            duration: 0.5,
-                            ease: "sine.inOut",
-                        },
-                        i * 0.16 + 0.35,
+                        { color: palette.rest, duration: 0.55, ease: "sine.inOut" },
+                        i * 0.17 + 0.36,
                     );
                 });
             }, loopEl);
         });
 
         return () => {
-            disposed = true;
+            cancelled = true;
             ctx?.revert();
         };
     });
@@ -103,7 +103,10 @@
             <span class="wordmark-text">THE INNER <em class="loop" bind:this={loopEl} aria-label="LOOP"><span aria-hidden="true">L</span><span aria-hidden="true">O</span><span aria-hidden="true">O</span><span aria-hidden="true">P</span></em></span>
         </span>
     </a>
-    <span class="kicker">Chapter {chapter}/07</span>
+    <div class="header-actions">
+        <span class="kicker">Chapter {chapter}/07</span>
+        <ThemeToggle />
+    </div>
 </header>
 
 <main>
@@ -119,7 +122,7 @@
 </main>
 
 <footer class="site-footer">
-    <span class="mono">THE INNER <em>LOOP</em></span>
+    <span class="fmark">THE INNER <em>LOOP</em></span>
     <span class="disclaimer"
         >Internal field guide · explanatory demos are illustrative, not
         production systems.</span
@@ -134,16 +137,28 @@
         gap: 1rem;
         min-height: 4.35rem;
         padding: 0.55rem var(--page-gutter);
-        border-top: 3px solid var(--brand);
         border-bottom: 1px solid var(--line);
         position: sticky;
         top: 0;
         z-index: 10;
-        background:
-            linear-gradient(var(--header-bg), var(--header-bg)),
-            var(--ink);
-        backdrop-filter: blur(16px) saturate(1.15);
-        box-shadow: 0 8px 30px -26px var(--paper);
+        background: var(--header-bg);
+        backdrop-filter: blur(16px) saturate(1.1);
+        box-shadow: 0 1px 0 var(--line), 0 14px 30px -28px oklch(0.25 0.02 260 / 0.5);
+    }
+
+    /* The BMW M tricolor as a thin spine accent across the masthead — the
+       loop motif, and the static fallback for the wordmark chase. */
+    .site-header::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 2px;
+        background: linear-gradient(
+            90deg,
+            var(--m-blue) 0 33.34%,
+            var(--m-violet) 33.34% 66.67%,
+            var(--m-red) 66.67% 100%
+        );
     }
 
     .wordmark {
@@ -166,10 +181,11 @@
     }
 
     .wordmark-text {
-        font-family: var(--mono);
-        font-size: 0.95rem;
-        font-weight: 600;
-        letter-spacing: 0.16em;
+        font-family: var(--display);
+        font-size: 1.02rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--paper);
     }
 
     .wordmark-text em {
@@ -182,12 +198,18 @@
         will-change: color, text-shadow;
     }
 
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
     .kicker {
         font-family: var(--mono);
-        font-size: 0.7rem;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--faint);
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        color: var(--muted);
     }
 
     /* footer */
@@ -202,9 +224,16 @@
         gap: 1rem;
         flex-wrap: wrap;
         font-size: 0.78rem;
-        letter-spacing: 0.1em;
         color: var(--muted);
-        background: color-mix(in srgb, var(--surface) 74%, transparent);
+        background: var(--surface);
+    }
+
+    .fmark {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 0.92rem;
+        letter-spacing: 0.08em;
+        color: var(--paper);
     }
 
     .site-footer em {
@@ -218,8 +247,8 @@
         }
 
         .wordmark-text {
-            font-size: 0.8rem;
-            letter-spacing: 0.14em;
+            font-size: 0.86rem;
+            letter-spacing: 0.06em;
         }
     }
 
