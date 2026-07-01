@@ -18,7 +18,8 @@
 	      knows the rules and gets to break them.
 	============================================================ */
 
-	const WARM = '#8c5f0e'; // ochre — var(--concept-response)
+	// Ochre + resting-char colors for the GSAP strawberry sequence resolve
+	// per-theme inside onMount (see THEME-AWARE block).
 
 	/* — transition: the very sentence ch.1's machine just read — */
 	const TRANSITION_TOKENS = tokenize('fix the failing test');
@@ -154,6 +155,15 @@
 			gsap.registerPlugin(ScrollTrigger);
 
 			context = gsap.context(() => {
+				/* ---- THEME-AWARE highlight colors ----
+				   GSAP tweens SVG/text color to concrete values; resolve the
+				   ochre flare + cooled resting char from the theme at mount.
+				   (A theme flip mid-chapter re-tints on the next scroll.) */
+				const dark = document.documentElement.dataset.theme === 'dark';
+				const WARM = dark ? '#eeb154' : '#8c5f0e'; // var(--concept-response)
+				const REST_INK = dark ? '#9fa5ae' : '#5d646f'; // cooled char → muted
+				const WARM_GLOW = dark ? 'rgba(238,177,84,.42)' : 'rgba(140,95,14,.4)';
+
 				/* ---- 1a · hand off ch.1's real token row ---- */
 				// the hero lives outside this component, so reach it by element
 				// (gsap.context scopes string selectors to rootEl)
@@ -665,7 +675,7 @@
 							{
 								color: WARM,
 								scale: 1.18,
-								textShadow: '0 0 16px rgba(140,95,14,.4)',
+								textShadow: `0 0 16px ${WARM_GLOW}`,
 								duration: 0.45,
 								stagger: 0.2
 							},
@@ -688,10 +698,10 @@
 						// …the letters dim inside; only the IDs stay lit
 						.to(
 							'.sb-r',
-							{ color: '#5d646f', scale: 1, textShadow: 'none', duration: 0.5 },
+							{ color: REST_INK, scale: 1, textShadow: 'none', duration: 0.5 },
 							'shut+=0.5'
 						)
-						.to('.sb-ch', { color: '#5d646f', duration: 0.5 }, '<')
+						.to('.sb-ch', { color: REST_INK, duration: 0.5 }, '<')
 						.fromTo(
 							'.sb-grp-id',
 							{ autoAlpha: 0, y: 8 },
@@ -1174,7 +1184,7 @@
 		inset: 0;
 		border: 1px solid var(--brand);
 		border-radius: 14px;
-		background: oklch(0.52 0.15 255 / 0.06);
+		background: color-mix(in oklab, var(--brand) 8%, transparent);
 		box-shadow: var(--glow-brand);
 		pointer-events: none;
 	}
@@ -1378,7 +1388,7 @@
 		padding: 1rem;
 		border: 1px solid var(--line);
 		border-radius: 10px;
-		background: oklch(0.945 0.008 255 / 0.7);
+		background: var(--surface);
 	}
 
 	.tok-chip {
@@ -1393,7 +1403,7 @@
 	}
 
 	.tok-chip.alt {
-		background: oklch(0.93 0.012 250);
+		background: var(--concept-system-fill);
 	}
 
 	.tok-chip-text {

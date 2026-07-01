@@ -96,6 +96,68 @@
 	--header-bg: oklch(0.985 0.004 255 / 0.82);
 }
 
+/* ===================================================================
+   Dark register — "BMW at night" (DESIGN.md, night variant).
+   The daylight Isotype system after hours: a deep COOL graphite ground
+   (never near-black, never the old observatory neon), concept fills
+   inverted to dark tints, concept inks + M-tricolor lifted so every
+   pairing still clears WCAG AA. Only the canonical --c-* layer and the
+   few aliases that carry their own literals are redefined here; every
+   other legacy alias references --c-*, so the cascade does the rest.
+   Depth in dark comes from surface LIGHTNESS, not shadow.
+   =================================================================== */
+:root[data-theme='dark'] {
+	color-scheme: dark;
+
+	/* Surfaces & ink — elevation rises with lightness (paper darkest). */
+	--c-paper: oklch(0.165 0.013 260);
+	--c-surface: oklch(0.215 0.014 260);
+	--c-sunken: oklch(0.19 0.014 260);
+	--c-ink: oklch(0.93 0.012 255); /* ~15.7:1 on paper */
+	--c-ink-muted: oklch(0.72 0.014 258); /* ~7.8:1 — AA body */
+	--c-faint: oklch(0.64 0.014 258); /* ~5.7:1 — AA small */
+	--c-line: oklch(0.3 0.012 260);
+	--c-line-strong: oklch(0.4 0.015 260);
+	--c-brand: oklch(0.66 0.14 255);
+	--c-brand-strong: oklch(0.74 0.13 255); /* ~8.4:1 — links on paper */
+
+	/* Concept role-hues — fills go dark-tinted, inks go bright; each
+	   *-ink clears AA (≥5.9:1) on its own *-fill and ≥7.5:1 on paper. */
+	--concept-system: oklch(0.72 0.05 250);
+	--concept-system-fill: oklch(0.235 0.018 250);
+	--concept-history: oklch(0.72 0.13 245);
+	--concept-history-fill: oklch(0.27 0.045 245);
+	--concept-user: oklch(0.74 0.11 195);
+	--concept-user-fill: oklch(0.25 0.04 195);
+	--concept-tools: oklch(0.73 0.15 305);
+	--concept-tools-fill: oklch(0.26 0.05 305);
+	--concept-tool-output: oklch(0.73 0.16 25);
+	--concept-tool-output-fill: oklch(0.27 0.05 25);
+	--concept-response: oklch(0.8 0.13 75);
+	--concept-response-fill: oklch(0.27 0.05 75);
+
+	/* BMW M tricolor — lifted for the dark ground; loop-spine motif. */
+	--m-blue: oklch(0.66 0.15 245);
+	--m-violet: oklch(0.64 0.16 305);
+	--m-red: oklch(0.66 0.18 25);
+
+	/* aliases that carry their own literals (the rest inherit via --c-*) */
+	--brand-soft: oklch(0.28 0.05 255);
+	--transformer-fill: oklch(0.205 0.012 260);
+	--liquid: oklch(0.62 0.12 245);
+
+	/* Quiet lift, not neon: low-alpha tinted shadow — calm instrument
+	   glow, never the banned observatory halo. */
+	--glow-brand: 0 2px 12px oklch(0.66 0.14 255 / 0.18);
+	--glow-cool: 0 2px 12px oklch(0.66 0.15 245 / 0.18);
+	--glow-warm: 0 2px 12px oklch(0.8 0.13 75 / 0.16);
+
+	--panel-gradient: linear-gradient(165deg, oklch(0.227 0.014 260), oklch(0.198 0.013 260));
+	--panel-shadow: 0 1px 2px oklch(0 0 0 / 0.4),
+		0 24px 50px -32px oklch(0 0 0 / 0.8);
+	--header-bg: oklch(0.165 0.013 260 / 0.72);
+}
+
 :root {
 	/* One family does the work: Hanken Grotesk (display + body via weight).
 	   Spline Sans Mono is reserved for real tokens, code, and data only. */
@@ -216,8 +278,25 @@ a:hover {
 	border-radius: 4px;
 }
 
+/* Theme switch — a calm whole-page crossfade via the View Transitions
+   API (progressive enhancement; browsers without it swap instantly).
+   GSAP can't tween a custom-property cascade across the whole DOM, so a
+   platform crossfade is the right tool here. */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 0.34s;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;
+	}
+
+	/* Reduced motion: no crossfade — the theme flips instantly. */
+	::view-transition-group(*),
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation: none !important;
 	}
 }

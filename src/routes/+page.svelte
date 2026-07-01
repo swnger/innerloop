@@ -6,6 +6,8 @@
     import Inference from "$lib/components/Inference.svelte";
     import ContextWindow from "$lib/components/ContextWindow.svelte";
     import ToolCalling from "$lib/components/ToolCalling.svelte";
+    import ThemeToggle from "$lib/components/ThemeToggle.svelte";
+    import { theme } from "$lib/theme.svelte";
 
     let chapter = $state("01");
     let loopEl: HTMLElement;
@@ -39,34 +41,42 @@
         return () => observer.disconnect();
     });
 
-    // BMW-blue light chasing through L→O→O→P, looping forever — the wordmark
-    // literally performs a “loop”. Decorative; skipped under reduced-motion.
-    onMount(() => {
-        let disposed = false;
+    // BMW light chasing through L→O→O→P, looping forever — the wordmark
+    // literally performs a “loop”. Decorative; skipped under reduced-motion
+    // (where the letters keep their token color and theme automatically).
+    // Resting + tricolor hexes are per-theme so the chase reads on either
+    // ground; the effect rebuilds when the reader flips the theme.
+    const LOOP_PALETTE = {
+        light: { rest: "#4c535e", m: ["#036eae", "#6e4199", "#c53637", "#036eae"] },
+        dark: { rest: "#9fa5ae", m: ["#2b99e7", "#a36fd9", "#ec5b57", "#2b99e7"] },
+    } as const;
+
+    $effect(() => {
+        const palette = LOOP_PALETTE[theme.current]; // re-runs on theme flip
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (!loopEl) return;
+
+        let cancelled = false;
         let ctx: { revert: () => void } | undefined;
 
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-            return;
-
         import("gsap").then(({ gsap }) => {
-            if (disposed || !loopEl) return;
+            if (cancelled || !loopEl) return;
             const letters = loopEl.querySelectorAll("span");
             if (!letters.length) return;
 
-            const REST = "#4c535e"; // var(--muted)
-            // L · O · O · P → blue · violet · red · blue (the M tricolor wraps)
-            const M = ["#036eae", "#6e4199", "#c53637", "#036eae"];
-
             ctx = gsap.context(() => {
+                // Seat every letter at the theme's resting color first, so
+                // letters mid-cycle don't keep a stale hex across the swap.
+                gsap.set(letters, { color: palette.rest });
                 const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.7 });
                 letters.forEach((el, i) => {
                     tl.to(
                         el,
-                        { color: M[i], duration: 0.34, ease: "sine.out" },
+                        { color: palette.m[i], duration: 0.34, ease: "sine.out" },
                         i * 0.17,
                     ).to(
                         el,
-                        { color: REST, duration: 0.55, ease: "sine.inOut" },
+                        { color: palette.rest, duration: 0.55, ease: "sine.inOut" },
                         i * 0.17 + 0.36,
                     );
                 });
@@ -74,7 +84,7 @@
         });
 
         return () => {
-            disposed = true;
+            cancelled = true;
             ctx?.revert();
         };
     });
@@ -93,7 +103,10 @@
             <span class="wordmark-text">THE INNER <em class="loop" bind:this={loopEl} aria-label="LOOP"><span aria-hidden="true">L</span><span aria-hidden="true">O</span><span aria-hidden="true">O</span><span aria-hidden="true">P</span></em></span>
         </span>
     </a>
-    <span class="kicker">Chapter {chapter}/07</span>
+    <div class="header-actions">
+        <span class="kicker">Chapter {chapter}/07</span>
+        <ThemeToggle />
+    </div>
 </header>
 
 <main>
@@ -183,6 +196,12 @@
     .wordmark-text .loop span {
         display: inline-block;
         will-change: color, text-shadow;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
     }
 
     .kicker {

@@ -3,9 +3,10 @@ version: alpha
 name: The Inner Loop
 description: >-
   Isotype-style information-design system for an internal BMW field guide to LLMs
-  and coding agents. Light, precise, calm. Structure is made legible through a
-  learn-once color code anchored in the BMW M tricolor. Replaces the prior dark
-  "observatory" aesthetic.
+  and coding agents. Precise and calm, with a learn-once color code anchored in
+  the BMW M tricolor. Ships in two registers: a default light "BMW in daylight"
+  and a sanctioned dark "BMW at night" (reader-toggled, system-aware). Both
+  depart from — and never revive — the prior "precision observatory" aesthetic.
 colors:
   paper: "oklch(0.985 0.004 255)"
   surface: "oklch(0.966 0.006 255)"
@@ -34,6 +35,36 @@ colors:
   m-blue: "oklch(0.52 0.13 245)"
   m-violet: "oklch(0.47 0.14 305)"
   m-red: "oklch(0.55 0.18 25)"
+# Dark register — "BMW at night". Applied under :root[data-theme='dark'];
+# overrides only the canonical --c-* layer + concept hues, so every derived
+# alias inherits. Depth comes from surface LIGHTNESS, not shadow. Fills invert
+# to dark tints, inks/tricolor lift; every pairing re-checked ≥4.5:1 (AA).
+colorsDark:
+  paper: "oklch(0.165 0.013 260)"       # deep cool graphite, never near-black
+  surface: "oklch(0.215 0.014 260)"     # raised panel (lighter = elevated)
+  surface-sunken: "oklch(0.190 0.014 260)"
+  ink: "oklch(0.93 0.012 255)"          # ~15.7:1 on paper
+  ink-muted: "oklch(0.72 0.014 258)"    # ~7.8:1 (AA body)
+  faint: "oklch(0.64 0.014 258)"        # ~5.7:1 (AA small)
+  line: "oklch(0.30 0.012 260)"
+  line-strong: "oklch(0.40 0.015 260)"
+  brand: "oklch(0.66 0.14 255)"
+  brand-strong: "oklch(0.74 0.13 255)"  # ~8.4:1 links on paper
+  concept-system: "oklch(0.72 0.05 250)"
+  concept-system-fill: "oklch(0.235 0.018 250)"
+  concept-history: "oklch(0.72 0.13 245)"
+  concept-history-fill: "oklch(0.27 0.045 245)"
+  concept-user: "oklch(0.74 0.11 195)"
+  concept-user-fill: "oklch(0.25 0.04 195)"
+  concept-tools: "oklch(0.73 0.15 305)"
+  concept-tools-fill: "oklch(0.26 0.05 305)"
+  concept-tool-output: "oklch(0.73 0.16 25)"
+  concept-tool-output-fill: "oklch(0.27 0.05 25)"
+  concept-response: "oklch(0.80 0.13 75)"
+  concept-response-fill: "oklch(0.27 0.05 75)"
+  m-blue: "oklch(0.66 0.15 245)"
+  m-violet: "oklch(0.64 0.16 305)"
+  m-red: "oklch(0.66 0.18 25)"
 typography:
   display:
     fontFamily: "Hanken Grotesk"
@@ -161,6 +192,35 @@ Concept hues carry meaning through fills, borders, and large labels — and are
 **always paired with a text label** (never color alone), for color-blind and AA
 compliance.
 
+### Theming — light & dark registers
+
+Light ("BMW in daylight") is the default and the brand's front door. Dark ("BMW
+at night") is a sanctioned peer register — the *same* Isotype system after
+hours, not a different identity and **never** a revival of the banned
+observatory look (see [Don't](#dos-and-donts)).
+
+- **One token layer, two grounds.** All UI reads canonical `--c-*` tokens (plus
+  concept hues); the dark register overrides only that layer under
+  `:root[data-theme='dark']`, so every derived alias inherits for free. See
+  `colorsDark` in the frontmatter for the resolved values.
+- **Dark is not inverted light.** The ground is a deep *cool graphite*
+  (`oklch(0.165 …)`), never near-black. Depth comes from surface **lightness**
+  (raised = lighter), not shadow. Concept `*-fill`s invert to low-lightness
+  tints; `*-ink`s and the M tricolor lift so each pairing still clears AA
+  (≥4.5:1 body, verified: ink 15.7:1, muted 7.8:1, every concept label ≥6:1 on
+  its fill). No neon glow — the old glows become quiet, low-alpha tinted lifts.
+- **Selection.** First paint is resolved by a blocking script in `app.html`: an
+  explicit stored choice wins, otherwise the OS `prefers-color-scheme`; the page
+  then follows the OS live until the reader toggles. This prevents a light-flash
+  on dark devices (the site is fully static — no server to pick for us).
+- **The toggle** is a single sun/moon icon button in the masthead (far right).
+  The switch is a calm whole-page crossfade via the View Transitions API, with
+  an instant fallback under `prefers-reduced-motion` and on unsupported
+  browsers. The choice persists in `localStorage`.
+- **GSAP-driven SVG highlights** (the few inline `fill`/`stroke`/`color` tweens
+  in the chapter diagrams) resolve theme-aware hexes at mount, since GSAP tweens
+  concrete colors; the static diagram itself reads live CSS tokens.
+
 ## Typography
 
 **One family does the work: Hanken Grotesk** — a humanist grotesque that echoes
@@ -260,7 +320,9 @@ giant rounded-corner icon tiles above headings (template tell).
 
 **Do**
 
-- Keep it light, cool, and spacious — BMW in daylight.
+- Default to light, cool, and spacious — BMW in daylight. The dark register is
+  its sanctioned night twin: same system, deep cool graphite ground, depth via
+  surface lightness (not glow). See [Theming](#theming--light--dark-registers).
 - Make color mean something; keep the concept→hue mapping constant; always pair
   hue with a label.
 - Use the M-tricolor as one disciplined motif (the loop), not scattered stripes.
@@ -270,8 +332,10 @@ giant rounded-corner icon tiles above headings (template tell).
 
 **Don't**
 
-- No dark theme, no neon glow, no blueprint-grid background, no film-grain
-  overlay — the prior aesthetic's tells.
+- No revival of the "precision observatory": no neon/electric-blue glow, no
+  blueprint-grid background, no film-grain overlay, no near-black ground. These
+  are the banned tells — the sanctioned dark register avoids every one of them
+  (deep cool graphite, quiet lifts, learn-once color code intact).
 - No cream / sand / warm-neutral `paper`. Cool near-white only.
 - No monospace as a "technical" costume; mono is for tokens and code only.
 - No tracked uppercase eyebrow above every section (`letter-spacing: 0.22em`

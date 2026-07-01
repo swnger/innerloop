@@ -8,11 +8,29 @@
 			name="description"
 			content="The Inner Loop — a field guide to how large language models and coding agents actually work."
 		/>
-		<meta name="color-scheme" content="light" />
+		<meta name="color-scheme" content="light dark" />
 		<meta name="theme-color" content="#f8fafd" />
 		<script>
 			document.documentElement.classList.remove('no-js');
 			document.documentElement.classList.add('js');
+			// Resolve the theme before first paint: an explicit stored choice
+			// wins, otherwise follow the OS. Setting data-theme here is what
+			// prevents a light-flash on dark-preferring devices (the page is
+			// fully static, so there is no server to pick the theme for us).
+			(function () {
+				try {
+					var stored = localStorage.getItem('theme');
+					var theme =
+						stored === 'light' || stored === 'dark'
+							? stored
+							: window.matchMedia('(prefers-color-scheme: dark)').matches
+								? 'dark'
+								: 'light';
+					document.documentElement.dataset.theme = theme;
+					var meta = document.querySelector('meta[name="theme-color"]');
+					if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b0e14' : '#f8fafd');
+				} catch (e) {}
+			})();
 		</script>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

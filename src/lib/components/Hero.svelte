@@ -209,6 +209,28 @@
         let context: { revert: () => void } | undefined;
         let disposed = false;
 
+        // The stage's themed properties (background / shadow / border-color, all
+        // driven by CSS custom properties) get frozen as inline styles at mount
+        // — inline then shadows the tokens, so the panel stays locked to the
+        // mount-time theme when the reader toggles. Nothing here animates those
+        // properties, so strip them whenever they reappear and let the
+        // theme-reactive stylesheet stay authoritative.
+        const FROZEN_PROPS = [
+            "background",
+            "background-image",
+            "box-shadow",
+            "border-color",
+            "border-top-color",
+        ];
+        const stripFrozen = () => {
+            for (const p of FROZEN_PROPS) {
+                if (stageEl.style.getPropertyValue(p)) stageEl.style.removeProperty(p);
+            }
+        };
+        stripFrozen();
+        const styleGuard = new MutationObserver(stripFrozen);
+        styleGuard.observe(stageEl, { attributes: true, attributeFilter: ["style"] });
+
         Promise.all([import("gsap"), import("gsap/MotionPathPlugin")]).then(
             ([core, motion]) => {
                 if (disposed) return;
@@ -450,6 +472,7 @@
 
         return () => {
             disposed = true;
+            styleGuard.disconnect();
             context?.revert();
         };
     });
