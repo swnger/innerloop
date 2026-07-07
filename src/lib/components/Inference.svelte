@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
+    import { macroCapable } from "$lib/loop.svelte";
 
     /* ============================================================
 	   Chapter 03 — Inference (PRD §7.1)
@@ -472,6 +473,8 @@
             const ScrollTrigger = st.ScrollTrigger ?? st.default;
             const MotionPathPlugin = mp.MotionPathPlugin ?? mp.default;
             gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
+            const masterWorld = macroCapable();
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
             context = gsap.context(() => {
                 const snap = {
@@ -543,9 +546,9 @@
                         start: "top top",
                         end: "+=220%",
                         scrub: 1,
-                        pin: true,
-                        anticipatePin: 1,
-                        snap,
+                        pin: !masterWorld,
+                        anticipatePin: masterWorld ? 0 : 1,
+                        snap: masterWorld ? false : snap,
                     },
                     defaults: { ease: "power2.out" },
                 })
@@ -637,9 +640,9 @@
                         start: "top top",
                         end: "+=340%",
                         scrub: 1,
-                        pin: true,
-                        anticipatePin: 1,
-                        snap,
+                        pin: !masterWorld,
+                        anticipatePin: masterWorld ? 0 : 1,
+                        snap: masterWorld ? false : snap,
                     },
                     defaults: { ease: "power2.out" },
                 });
@@ -1023,7 +1026,7 @@
 <section
     id="inference"
     class="nt"
-    data-chapter="03"
+    data-chapter="04"
     bind:this={rootEl}
     aria-labelledby="nt-title"
 >
@@ -1039,7 +1042,7 @@
     <div class="nt-open">
         <div class="nt-open-stage">
             <p class="open-kicker mono">
-                back inside the machine · the reply you watched stream in
+                the tokens are in · now the model does its only trick
             </p>
 
             <div class="open-below">
@@ -1050,7 +1053,7 @@
                 </p>
 
                 <div class="open-title chapter-head">
-                    <p class="eyebrow">Chapter 03 · the machine’s only trick</p>
+                    <p class="eyebrow">Chapter 04 · the machine’s only trick</p>
                     <h2 id="nt-title">Inference</h2>
                 </div>
             </div>

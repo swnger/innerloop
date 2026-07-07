@@ -1,172 +1,133 @@
-# Design Brief — Loop-spine navigation (handoff)
+# Design Brief — Loop-spine navigation, v2 (shared 2D world)
 
-> Planning artifact from an `/impeccable shape` session. **Not implemented —**
-> this is intent of record for a future build session. Depends on the visual
-> re-skin in `DESIGN_BRIEF.md` (shipped) and completes two items that brief's
-> §10 flagged as deferred: the persistent loop mini-map and the generalized
-> GSAP `Flip` hand-off / `ScrollTrigger` orchestration layer.
-> Stack constraints live in `CLAUDE.md` (SvelteKit + TS + adapter-static, **GSAP
-> only**, bun, build via Vite, GitHub Pages static). Reuse the dev server on
-> 5173. Read `DESIGN.md`'s Motion section before starting — this brief is that
-> section's "connective through-line" spec, finally being built.
+> Intent of record from an `/impeccable shape` session. **v2 supersedes v1**,
+> whose contradiction ("stations at coordinates" + "chunked pins / hand back to
+> document flow") produced vertically stacked stations with isolated,
+> misaligned transition vignettes. A first build attempt exists on
+> `refactor/flow` — mine it, don't preserve it (see §9).
+> Stack constraints live in `CLAUDE.md` (SvelteKit + TS + adapter-static,
+> **GSAP only**, bun, Vite, GitHub Pages static). Reuse the dev server on 5173.
+> Read `DESIGN.md`'s Motion section before starting.
 
 ## 1. Summary
 
-Replace the site's five independent vertical chapters with one continuous
-**loop-spine**: scrolling becomes the literal path data takes through the agent
-loop — right, right, right, down, left, left, left, down, repeating — instead
-of a simple top-to-bottom stack. Each station teaches exactly one concept,
-fully and self-contained; the connective narrative and object hand-offs live
-in the *transition* between stations, so understanding builds progressively.
-The full assembled loop is only revealed at the very end, as a synthesized
-recap — the "oh, that's all it is" payoff `PRODUCT.md` defines as success.
-Scoped to the 5 chapters that exist today; chapters 6–7 (context engineering,
-harness engineering) stay deferred, as in `DESIGN_BRIEF.md` §5/§10.
+One continuous **loop-spine**: all five station stages live at real 2D
+coordinates on one shared world canvas, and a single pinned camera travels the
+agent loop — right, right, right, down, left, left, left — between and
+*through* them. Alignment is solved by construction: route, arrows, stations,
+and shared objects share one coordinate space, so there is nothing to
+misalign. Each station teaches exactly one concept, self-contained; connective
+narrative lives in the transitions. The full assembled loop is revealed only
+at the end, by a camera zoom-out — the "oh, that's all it is" payoff. Scoped
+to the 5 existing chapters; ch.6–7 stay deferred.
 
 ## 2. Primary user action
 
-Scroll — ordinary vertical wheel/trackpad/touch, **never** sideways-only input
-— to travel the loop. Within a station, keep scrolling to read its
-self-contained explanation. At each boundary, a short transition beat carries
-a shared object and a bridging caption toward the next station before it
-begins.
+Scroll — ordinary vertical wheel/trackpad/touch, **never** sideways-only
+input. Scroll scrubs the camera along the path; lateral legs *feel* horizontal
+because the camera moves sideways, not the input. Within a station the camera
+travels vertically down that station's column at 1:1 scroll speed, so reading
+feels like normal scrolling.
 
-## 3. Decisions locked in this session
+## 3. Decisions locked
 
 | Topic | Decision |
 |---|---|
-| Register / identity | brand, unchanged — inherits `DESIGN.md` fully (BMW daylight/night, Hanken Grotesk, concept hues, M-tricolor). No re-skin work here. |
-| Mechanism | Pinned-camera path: GSAP `ScrollTrigger` pin + `Flip`. Vertical scroll input only — never horizontal-scroll-jacking (fights trackpad/touch conventions, especially on mobile). |
-| Station structure | **Self-contained.** Each station explains exactly one concept fully. No unexplained preview/placeholder content sits in view while another concept is being taught. |
-| Connective tissue | Lives **at transitions only** — a shared object (token/chip/code line) travels or Flip-morphs toward the next station's position, paired with a short caption that hints or names what's coming. |
-| Node depth | Existing long-form internal scroll narratives are kept as-is. Tokenization, Inference, and Tool Calling keep their current depth (~8,000 lines of built content/motion combined) — the loop is macro-navigation *between* stations, not a rewrite of what's inside them. |
-| Visible route | The M-tricolor path is drawn **literally** — reuse and extend Hero's existing flow-path beziers (`input-path`, `send-path`, `tool-path`, `return-path-1`, `return-path-2`) to reach the new station positions, rather than building a new overlay. |
-| Opener adaptation | Tokenization / Inference / Tool Calling's current scroll-into-view fade-in openers get adapted so arriving via camera-pan reads as an arrival, not a re-triggered reveal. |
-| Lap close | The lap reassembles into Hero's current fully-detailed diagram — relocated from opener to finale — which resumes its auto-loop as a recap, then hands off to the footer. |
-| Build scope | The spine across the 5 existing chapters only. Ch.6–7 stay deferred per `DESIGN_BRIEF.md` §5/§10. |
-| Fidelity | Production-ready. This is a live shipped page, not a spike. |
+| Register / identity | brand, unchanged — inherits `DESIGN.md` fully (BMW daylight/night, Hanken Grotesk, concept hues, M-tricolor). No re-skin. |
+| World model | **Shared 2D world.** Stations at real coordinates on one canvas; one master pin for the whole journey; camera = transform-only polyline scrub. Supersedes v1's chunked pins + document-flow handoff. |
+| Station structure | Self-contained. Each station explains exactly one concept fully. Concepts debut **only** at their own stations — station 1 shows no context/model visuals. Neighbors sit outside the camera frame; route legs are revealed as traveled. |
+| Connective tissue | World-space transition beats: the **real departing DOM element** Flip-morphs along the actual route leg and lands pixel-aligned on the arriving station's opener, paired with one bridging caption. No private per-vignette coordinate systems. |
+| Station 1 (Hero) | Code panel teaching **both loops** — the outer user-input `while` loop and the inner tool-calling `while` loop — with the live beat being "fix the broken test" **typed into the input**. Nothing else on stage. |
+| Node depth | Existing long-form internal narratives kept in substance; their ScrollTriggers convert to `containerAnimation`/timeline segments (see §4). |
+| Visible route | One world-level M-tricolor SVG spine connecting real station anchors — extend Hero's existing flow-path beziers to world scale. |
+| Lap close | Camera **zooms out** over the traveled world — whole loop visible, all stations lit — settling into the fully-detailed auto-looping diagram, then footer. Supersedes v1's "second Hero instance". |
+| Build scope | 5 existing chapters. Ch.6–7 deferred. |
+| Fidelity | Production-ready. Live shipped page, not a spike. |
 
-## 4. The mechanism
+## 4. Mechanism
 
-**Two nested scroll grammars.** *Macro* travel between stations is a pinned,
-`ScrollTrigger`-scrubbed camera pan (or `Flip` zoom, see below) along the
-visible route. *Micro* reading within a station is that chapter's existing
-normal in-flow scroll narrative. Arriving at a station's coordinates un-pins
-the macro camera and hands off to normal document flow; reaching the end of
-the station's content re-pins and resumes macro travel to the next stop.
-
-**Pans vs. zooms.** Lateral moves at the same "zoom level" (Agent → Context
-Window, Context Window → Tool Calling) are camera **pans**. Moves that reveal
-internal detail — the user's "down" beats (LLM → Inference) — are **zoom /
-`Flip` morphs**: a compact element from the parent station literally becomes
-the child station's opening composition. This is `DESIGN.md`'s own line,
-previously unbuilt: *"shared objects persist and morph across each boundary."*
+- **Base DOM stays the vertical stack** (reading order, keyboard, screen
+  reader, fallback). An enhancement layer — applied only when motion +
+  viewport allow — transforms each station to its world position and pins one
+  full-viewport camera wrapper for the entire journey.
+- **Master scrub:** scroll → camera polyline: down through station 1 → right
+  to station 2 → down through it → … following the loop compass. Vertical
+  legs at 1:1 scroll ratio (asserted — reading speed unchanged).
+- **Station internals:** existing ScrollTriggers inside Tokenization /
+  Inference / ToolCalling convert to `containerAnimation`-driven triggers or
+  flat timeline segments. ⚠️ **Biggest risk:** `containerAnimation` does not
+  support nested pins — any internal pin becomes a scrubbed-in-place beat.
+  Convert one station at a time.
+- **Camera scale** constant during travel; only the recap zooms out, plus a
+  modest zoom on the Tokenization → Inference "down into the model" beat
+  (asserted).
+- **Perf:** transform-only camera, `will-change` on the world, off-screen
+  stations culled via `autoAlpha`.
+- **Deep links** (`#inference`, …): hash → progress value on the master scrub.
+- **Mini-map** replaces the "Chapter n/07" kicker; reads camera progress from
+  `loop.svelte.ts`.
 
 **Station sequence (confirmed lap):**
 
-1. **Agent / cold open** (`Hero.svelte`) — self-contained hook. Keeps its code
-   panel (`turn()` loop) essentially as-is; the concepts it names ("context,"
-   "the model") stay black-boxed here, not detailed.
-2. **Context Window** — first visit, full `ContextWindow.svelte` depth. The
-   strata concept is taught once, here.
-3. **Tokenization** — self-contained: text becomes tokens entering the model.
-4. **Inference** — self-contained: reads → weighs → predicts. This station
-   *is* "the LLM in action" — there is no separate LLM component, so the
-   user's "arrive at the LLM, then down to inference" beat is one continuous
-   station, introduced by the transition out of Tokenization, not a 4th
-   distinct content stop. (Asserted judgment call — see §7.)
-5. **Context Window, revisit** — compact beat only. Reuses Hero's existing
-   `STRATA` band-fill animation (`scaleY 0→1` on `.band-toolcall` /
-   `.band-toolout` / `.band-answer`) to show the response/tool-call appended.
-   Not a replay of station 2's full narrative.
-6. **Tool Calling** — self-contained: the agent runs the tool, loops back.
-7. **Repeat once** — right to Inference again (the model is re-called with the
-   updated context), left to Context Window for the final answer — mirroring
-   Hero's existing two-`forwardPass` timeline (`"read"` then `"Fixed"`).
-8. **Lap close / recap** — everything reassembles into Hero's current
-   fully-detailed diagram (relocated here from the opener), which resumes its
-   auto-loop as the synthesizing "here's the whole cycle" payoff, then hands
-   off to the footer.
+1. **Agent / cold open** (`Hero.svelte`) — two-loop code panel, "fix the
+   broken test" typed in. No context/model visuals.
+2. **Context Window** — first visit, full depth; strata taught once, here.
+3. **Tokenization** — text becomes tokens entering the model.
+4. **Inference** — reads → weighs → predicts; this station *is* "the LLM"
+   (no separate LLM stop; the transition out of Tokenization introduces it).
+5. **Context Window, revisit** — compact beat: response/tool-call appended
+   via the existing band-fill animation, not a full replay.
+6. **Tool Calling** — the agent runs the tool, loops back.
+7. **Repeat once** — right to Inference (model re-called with updated
+   context), left to Context Window for the final answer.
+8. **Lap close / recap** — camera zoom-out, whole lit loop, detailed diagram
+   resumes its auto-loop, hand-off to footer.
 
-**Requirements carried through every station:**
+## 5. Fallbacks (unchanged from v1)
 
-- **Reduced motion** — full fallback to today's vertical stacked reading
-  order; the mini-map renders as a static path summary. No pinned-camera work
-  runs under `prefers-reduced-motion: reduce`.
-- **Small viewport / coarse pointer** — same fallback as reduced motion:
-  vertical stack, no pinned 2D camera. Consistent with `DESIGN.md`'s existing
-  "reflow to vertical stack on mobile" policy, generalized from diagrams to
-  the whole nav.
-- **Keyboard / screen reader** — DOM order must match a sane linear reading
-  order regardless of visual camera path.
-- **Deep links** (`#inference`, etc.) — must snap the camera to that station's
-  position, not just scroll to a Y offset.
-- **Chunked pins** — avoid one page-spanning pin; pin per station so
-  `ScrollTrigger` start/end math stays sane against each chapter's own
-  variable content height.
-- **Header** — the "Chapter n/07" kicker in `+page.svelte` is replaced by the
-  loop mini-map (see `DESIGN_BRIEF.md` §10 — previously deferred, this brief
-  is where it finally gets built). A static counter would misrepresent a path
-  that revisits nodes.
+- **Reduced motion** — base vertical stack; mini-map as static path summary;
+  static "carried from →" connectors. No pinned-camera work under
+  `prefers-reduced-motion: reduce`.
+- **Touch-primary pointer OR viewport <768px** — same vertical-stack fallback.
+- **Keyboard / screen reader** — DOM order = sane linear reading order
+  regardless of camera path (guaranteed by the base-stack architecture).
 
-## 5. Station mapping (existing → loop position)
+## 6. Build sequence
 
-| Order | Component | Role on the path |
-|---|---|---|
-| 1 (start) | `Hero.svelte` | Cold open, self-contained. Its current fully-detailed diagram is extracted to become the finale/recap — station 1 needs new, leaner content that keeps the code panel but drops the detailed context/LLM internals. |
-| 2 | `ContextWindow.svelte` | First full station — strata, taught once. |
-| 3 | `Tokenization.svelte` | Text → tokens, entering the model. |
-| 4 | `Inference.svelte` | Reads / weighs / predicts — "the LLM," self-contained. |
-| 5 (revisit) | `ContextWindow.svelte` (compact beat) | Response/tool-call appended — existing band-fill animation, not a full replay. |
-| 6 | `ToolCalling.svelte` | Runs the tool, loops back. |
-| repeat | `Inference.svelte` → `ContextWindow.svelte` | Second forward pass, final answer appended — mirrors Hero's existing timeline. |
-| close | Hero's diagram, relocated | Full lap reassembles into the fully-detailed auto-looping diagram, then footer. |
-| deferred | — | Ch.6–7 (context engineering, harness engineering) — not built, out of scope here. |
-
-## 6. Build sequence (recommended)
-
-1. **Shared layer first:** persistent loop mini-map component; generalized
-   GSAP `Flip` hand-off + `ScrollTrigger` orchestration util; reduced-motion
-   guard. (Both flagged "not built" in `DESIGN_BRIEF.md` §10 — this is where
-   they get built for real.)
-2. **Split Hero:** extract its current fully-detailed diagram to become the
-   lap-close recap; build new, leaner station-1 content (code panel kept,
-   context/LLM internals dropped).
-3. **Wire the pinned-camera macro path** across the stations in §5, chunked
-   per-station.
-4. **Build the transition/handoff beats** at each boundary (~7–8 total):
-   shared object travel/`Flip` + one bridging caption per transition.
-5. **Adapt existing openers** (Tokenization, Inference, Tool Calling) to read
-   as arrivals rather than scroll-into-view reveals.
-6. **Build the lap-close/recap sequence** reusing Hero's relocated diagram;
-   wire the auto-loop resume and hand-off to the footer.
-7. **Reduced-motion + mobile/touch fallback:** verify the vertical-stack
-   fallback (today's current experience) still teaches completely on its own.
-8. **Rearchitect `+page.svelte`:** replace the `IntersectionObserver`/hash
-   "Chapter n/07" logic with the mini-map; verify `#hash` deep-links snap to
-   pinned positions correctly.
-9. **Verify with `agent-browser`:** desktop + mobile, reduced-motion, keyboard
-   nav, hash deep-links, AA contrast on new transition captions,
+1. **World layout:** station coordinates, master pin, camera polyline —
+   verified with placeholder blocks before touching content.
+2. **Rebuild station-1 Hero** (two-loop code panel + typed input).
+3. **Convert station internals** station-by-station: ContextWindow →
+   Tokenization → Inference → ToolCalling.
+4. **World-space transition beats** + bridging captions.
+5. **Context revisit beat + repeat lap.**
+6. **Recap zoom-out** + detailed diagram + footer handoff.
+7. **Fallbacks, deep links, mini-map.**
+8. **Verify with `agent-browser`:** desktop + mobile, reduced-motion,
+   keyboard, hash deep-links, AA contrast on transition captions,
    `svelte-check` clean, `vite build` → static `build/` OK.
 
-## 7. Open questions (asserted defaults — override if needed)
+## 7. Asserted defaults (override if needed)
 
-- **LLM has no dedicated component** — its "arrival" is folded into
-  `Inference.svelte`'s opening beat rather than a separate content station.
-  Override if you want the LLM to get its own distinct pause before Inference.
-- **Lap close hands off to the existing quiet footer**, no forward-reference
-  to ch.6–7. Nothing in `PRODUCT.md` asks to tease unbuilt chapters. Override
-  if you want a "coming soon" cue.
-- **Hero's relocated recap diagram** defaults to a second instance visually
-  matched to station 1 and connected via `Flip` only at the two journey
-  boundaries (start, close) — not one literal DOM node kept mounted across the
-  entire scroll distance. Revisit if performance testing says otherwise.
-- **Mobile/touch fallback threshold** defaults to any touch-primary pointer OR
-  viewport `<768px`, matching `DESIGN.md`'s existing diagram-reflow policy
-  generalized to the whole nav.
+- Vertical camera legs run at 1:1 scroll ratio.
+- Constant camera scale during travel; zoom only at recap + the
+  Tokenization→Inference beat.
+- Lap close hands off to the existing quiet footer; no ch.6–7 tease.
 
 ## 8. Useful impeccable references during build
 
-`animate.md` (core — this is a choreography build) · `layout.md` (2D map
-composition) · `interaction-design.md` (scroll-driven interaction patterns) ·
-`adapt.md` (mobile/reduced-motion fallback).
+`animate.md` (core) · `layout.md` (2D world composition) ·
+`interaction-design.md` (scroll-driven patterns) · `adapt.md`
+(mobile/reduced-motion fallback).
+
+## 9. Salvage from the v1 attempt (`refactor/flow` working tree)
+
+- `loop.svelte.ts` — station state + capability gate: keep as the camera
+  progress store.
+- `LoopTransition.svelte` — keep the bridging captions and shared-object
+  copy; **drop** its private SVG coordinate systems entirely.
+- `ContextRevisit.svelte` — beat concept and band-fill reuse are right;
+  re-anchor into world space.
+- `LoopRecap.svelte` — becomes the zoom-out destination's detailed diagram;
+  no longer a second free-standing instance.
+- Slimmed `Hero.svelte` — replaced by the two-loop code-panel station (§3).

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { tokenize, display, idFor } from '$lib/tokenizer';
+	import { macroCapable, loop, type CameraTimeline } from '$lib/loop.svelte';
 
 	/* ============================================================
 	   Chapter 02 — Tokenization (PRD §7.1)
@@ -144,16 +145,29 @@
 	}
 
 	onMount(() => {
-		let context: { revert: () => void } | undefined;
-		let disposed = false;
-		let removeEmbDrag: (() => void) | undefined;
+	let context: { revert: () => void } | undefined;
+	let disposed = false;
+	let removeEmbDrag: (() => void) | undefined;
+	let unregister: (() => void) | undefined;
 
-		Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([core, st]) => {
+	Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([core, st]) => {
+		if (disposed) return;
+		gsap = core.gsap ?? core.default;
+		const ScrollTrigger = st.ScrollTrigger ?? st.default;
+		gsap.registerPlugin(ScrollTrigger);
+		const masterWorld = macroCapable();
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+		// World mode defers trigger creation until the page publishes the
+		// master camera timeline (and rebuilds on every resize-rebuild of
+		// it) so containerAnimation scrubs track the lens, not window-scroll
+		// through the transformed camera. Fallback builds immediately with
+		// pins (masterTl undefined).
+		const rebuild = (masterTl: CameraTimeline | undefined) => {
 			if (disposed) return;
-			gsap = core.gsap ?? core.default;
-			const ScrollTrigger = st.ScrollTrigger ?? st.default;
-			gsap.registerPlugin(ScrollTrigger);
-
+			if (masterWorld && !masterTl) return;
+			context?.revert();
+			removeEmbDrag?.();
 			context = gsap.context(() => {
 				/* ---- THEME-AWARE highlight colors ----
 				   GSAP tweens SVG/text color to concrete values; resolve the
@@ -164,138 +178,105 @@
 				const REST_INK = dark ? '#9fa5ae' : '#5d646f'; // cooled char → muted
 				const WARM_GLOW = dark ? 'rgba(238,177,84,.42)' : 'rgba(140,95,14,.4)';
 
-				/* ---- 1a · hand off ch.1's real token row ---- */
-				// the hero lives outside this component, so reach it by element
-				// (gsap.context scopes string selectors to rootEl)
-				const hero = document.querySelector('#agent-loop') as HTMLElement | null;
-				const h = (sel: string) => hero?.querySelectorAll(sel) ?? [];
-				if (hero) {
+				/* ---- 1a · arrival: the sentence splits into tokens ---- */
+				// Self-contained (the loop-spine transition delivers the
+				// reader here): the message starts as plain typed text, then
+				// literally splits into the chips the model actually receives.
+				{
 					const tktSec = rootEl.querySelector('.tkt') as HTMLElement;
-					const heroTokens = Array.from(hero.querySelectorAll<SVGGElement>('.read-tk:not(.read-ellipsis)'));
-					const heroEllipsis = hero.querySelector('.read-ellipsis');
-					const transitionSentence = rootEl.querySelector('.tkt-sentence') as HTMLElement;
 					const transitionTokens = Array.from(rootEl.querySelectorAll<HTMLElement>('.tkt-chip'));
-					const heroTokenRow = heroEllipsis ? [...heroTokens, heroEllipsis] : heroTokens;
+					// Same gate as the loop-spine camera: no pinned beat under
+					// reduced motion, coarse pointers, or narrow viewports —
+					// the CSS static register shows the end-state instead.
+					const macroOk =
+						!masterWorld &&
+						!window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+						window.matchMedia('(pointer: fine)').matches &&
+						window.innerWidth >= 768;
 
-					ScrollTrigger.create({
-						trigger: hero,
-						start: 'top top',
-						end: () =>
-							tktSec.getBoundingClientRect().top + window.scrollY + window.innerHeight * 0.8,
-						pin: true,
-						pinSpacing: false,
-						anticipatePin: 1,
-						invalidateOnRefresh: true,
-						onUpdate: (self: { progress: number }) => {
-							const loop = gsap.getById('hero-loop');
-							if (!loop) return;
-							if (self.progress > 0.03 && !loop.paused()) loop.pause();
-							else if (self.progress <= 0.03 && loop.paused()) loop.resume();
+					// Shift each chip so its text butts against the previous
+					// chip's text: the row reads as one ordinary sentence.
+					// Measured from the real text rects (chips unshifted).
+					const measureCollapse = () => {
+						const texts = transitionTokens.map((chip) =>
+							(chip.querySelector('.tkt-chip-text') as HTMLElement).getBoundingClientRect()
+						);
+						const shifts = [0];
+						for (let i = 1; i < texts.length; i++) {
+							shifts.push(shifts[i - 1] + texts[i - 1].right - texts[i].left);
 						}
-					});
+						const center = (shifts[0] + shifts[shifts.length - 1]) / 2;
+						return shifts.map((s) => s - center);
+					};
 
-					const measureSourceTransforms = () => {
-						const heroRect = hero.getBoundingClientRect();
-						const tktRect = tktSec.getBoundingClientRect();
+					if (!macroOk) {
+						// static end-state: chips, ids, claim and title all
+						// present — the concept reads without the pin
+						gsap.set('.tkt-frame-chrome', { autoAlpha: 1 });
+					} else {
+						let collapse = measureCollapse();
+						gsap.set('.tkt-frame-chrome', { autoAlpha: 0 });
 
-						return transitionTokens.map((target, index) => {
-							const source = heroTokens[index]?.getBoundingClientRect();
-							const targetRect = target.getBoundingClientRect();
-							if (!source) return { x: 0, y: 0, scaleX: 1, scaleY: 1 };
-
-							return {
-								x:
-									source.left + source.width / 2 - heroRect.left -
-									(targetRect.left + targetRect.width / 2 - tktRect.left),
-								y:
-									source.top + source.height / 2 - heroRect.top -
-									(targetRect.top + targetRect.height / 2 - tktRect.top),
-								scaleX: source.width / targetRect.width,
-								scaleY: source.height / targetRect.height
-							};
+						const tkt = gsap.timeline({
+							scrollTrigger: {
+								trigger: tktSec,
+								start: 'top top',
+								end: '+=170%',
+								scrub: 1,
+								pin: !masterWorld,
+								anticipatePin: masterWorld ? 0 : 1,
+								invalidateOnRefresh: true,
+								onRefreshInit: () => {
+									gsap.set(transitionTokens, { x: 0 });
+									collapse = measureCollapse();
+								}
+							},
+							defaults: { ease: 'power2.out' }
 						});
-					};
 
-					gsap.set(transitionTokens, { transformOrigin: 'center center' });
-					gsap.set(transitionSentence, { autoAlpha: 0 });
-					gsap.set('.tkt-frame-chrome', { autoAlpha: 0 });
-					let sourceTransforms = measureSourceTransforms();
-					const showTransitionTokens = (show: boolean) => {
-						gsap.set(transitionSentence, { autoAlpha: show ? 1 : 0 });
-						gsap.set(heroTokenRow, { autoAlpha: show ? 0 : 1 });
-					};
+						tkt
+							.fromTo('.tkt-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35 }, 0)
+							// one plain sentence… (chrome hidden, pieces flush)
+							.fromTo(
+								transitionTokens,
+								{ x: (index: number) => collapse[index] },
+								{
+									// …splits into the pieces the model receives
+									x: 0,
+									duration: 1,
+									stagger: 0.02,
+									ease: 'power2.inOut'
+								},
+								0.25
+							)
+							.fromTo(
+								'.tkt-chip-chrome',
+								{ opacity: 0 },
+								{ opacity: 1, duration: 0.8, stagger: 0.02 },
+								0.35
+							)
+							.fromTo(
+								'.tkt-chip-id',
+								{ opacity: 0, y: 6 },
+								{ opacity: 1, y: 0, duration: 0.35, stagger: 0.06 },
+								'>-0.15'
+							)
+							// the frame draws itself around the settled chips
+							.fromTo('.tkt-frame-chrome', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.45 }, '<')
+							.fromTo('.tkt-claim', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.55 }, '<0.1')
+							.to('.tkt-kicker', { opacity: 0.25, duration: 0.35 }, '<')
+							.fromTo(
+								'.tkt-titleblock',
+								{ opacity: 0, y: 34 },
+								{ opacity: 1, y: 0, duration: 0.65 },
+								'+=0.3'
+							)
+							.to({}, { duration: 0.6 });
 
-					const tkt = gsap.timeline({
-						scrollTrigger: {
-							trigger: tktSec,
-							start: 'top top',
-							end: '+=200%',
-							scrub: 1,
-							pin: true,
-							anticipatePin: 1,
-							invalidateOnRefresh: true,
-							onEnter: () => showTransitionTokens(true),
-							onLeaveBack: () => showTransitionTokens(false),
-							onRefreshInit: () => {
-								gsap.set(transitionTokens, { x: 0, y: 0, scaleX: 1, scaleY: 1 });
-								sourceTransforms = measureSourceTransforms();
-							},
-							onRefresh: (self: { progress: number }) => showTransitionTokens(self.progress > 0)
-						},
-						defaults: { ease: 'power2.out' }
-					});
-
-					tkt
-						.fromTo(
-							transitionTokens,
-							{
-								x: (index: number) => sourceTransforms[index].x,
-								y: (index: number) => sourceTransforms[index].y,
-								scaleX: (index: number) => sourceTransforms[index].scaleX,
-								scaleY: (index: number) => sourceTransforms[index].scaleY
-							},
-							{
-								x: 0,
-								y: 0,
-								scaleX: 1,
-								scaleY: 1,
-								duration: 1,
-								stagger: 0.025,
-								ease: 'power2.inOut'
-							},
-							0
-						)
-						.to(h('.intro, .caption, .note'), { opacity: 0, duration: 0.35 }, 0.05)
-						.to(h('.hero-bg, .hero-agent, .hero-ctx, .hero-flows'), { opacity: 0, duration: 0.65 }, 0.08)
-						.to(h('.hero-llm'), { opacity: 0, duration: 0.65 }, 0.18)
-						.to(
-							h('.stage'),
-							{
-								borderColor: 'rgba(0,0,0,0)',
-								boxShadow: '0 30px 70px -42px rgba(0,0,0,0)',
-								duration: 0.5
-							},
-							0.2
-						)
-						.set(h('.stage'), { background: 'transparent' }, 0.75)
-						// the frame draws itself around the tokens as they settle
-						.fromTo('.tkt-frame-chrome', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.45 }, 0.7)
-						.fromTo('.tkt-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35 }, 0.55)
-						.to({}, { duration: 0.3 })
-						.fromTo(
-							'.tkt-chip-id',
-							{ opacity: 0, y: 6 },
-							{ opacity: 1, y: 0, duration: 0.35, stagger: 0.06 }
-						)
-						.fromTo('.tkt-claim', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.55 }, '<0.1')
-						.to('.tkt-kicker', { opacity: 0.25, duration: 0.35 }, '<')
-						.fromTo(
-							'.tkt-titleblock',
-							{ opacity: 0, y: 34 },
-							{ opacity: 1, y: 0, duration: 0.65 },
-							'+=0.3'
-						)
-						.to({}, { duration: 0.6 });
+						// this pin changes every position below it — re-sync
+						// all triggers once it exists
+						requestAnimationFrame(() => ScrollTrigger.refresh());
+					}
 				}
 
 				/* ---- 2 · lede: the claim lights up word by word ---- */
@@ -470,8 +451,8 @@
 						start: 'center center',
 						end: '+=130%',
 						scrub: 1,
-						pin: true,
-						anticipatePin: 1,
+						pin: !masterWorld,
+						anticipatePin: masterWorld ? 0 : 1,
 						invalidateOnRefresh: true
 					},
 					defaults: { ease: 'power2.out' },
@@ -632,13 +613,13 @@
 							start: 'top top',
 							end: '+=280%',
 							scrub: 1,
-							pin: true,
-							anticipatePin: 1,
+							pin: !masterWorld,
+							anticipatePin: masterWorld ? 0 : 1,
 							// no invalidateOnRefresh: re-capturing mid-scrub would
 							// poison the from/to states when earlier pins refresh
 							// inertia:false — snap to the nearest beat, not where a
 							// fast flick would have landed
-							snap: { snapTo: 'labels', duration: 0.5, ease: 'power1.inOut', delay: 0.1, inertia: false }
+							...(masterWorld ? {} : { snap: { snapTo: 'labels', duration: 0.5, ease: 'power1.inOut', delay: 0.1, inertia: false } })
 						},
 						defaults: { ease: 'power2.out' }
 					});
@@ -743,11 +724,18 @@
 					scrollTrigger: { trigger: '.tk-outro', start: 'top 82%' }
 				});
 			}, rootEl);
+				ScrollTrigger.refresh();
+			};
+
+			if (masterWorld) {
+				unregister = loop.registerWorldTriggers({ rebuild });
+			} else {
+				rebuild(undefined);
+			}
 
 			// Pins are measured at setup, but the web fonts load a beat later and
-			// reflow every section — leaving pin start/end and spacer heights stale
-			// (the symptom: chapters overlapping and dead gaps). Re-measure once the
-			// fonts have settled. ScrollTrigger.refresh() is global and idempotent.
+			// reflow every section — leaving trigger start/end stale. Re-measure
+			// once the fonts have settled. Global + idempotent.
 			document.fonts?.ready.then(() => {
 				if (!disposed) ScrollTrigger.refresh();
 			});
@@ -755,13 +743,14 @@
 
 		return () => {
 			disposed = true;
+			unregister?.();
 			removeEmbDrag?.();
 			context?.revert();
 		};
 	});
 </script>
 
-<section id="tokenization" class="tk" data-chapter="02" bind:this={rootEl} aria-labelledby="tk-title">
+<section id="tokenization" class="tk" data-chapter="03" bind:this={rootEl} aria-labelledby="tk-title">
 	{#snippet seam()}
 		<div class="tk-seam" aria-hidden="true">
 			<span class="seam-line seam-l"></span>
@@ -774,14 +763,14 @@
 	<div class="tkt">
 		<div class="tkt-stage">
 			<p class="tkt-kicker mono">
-				the reading step, up close · what did the model actually receive?
+				out of the window, into the model · what does it actually receive?
 			</p>
 
 			<div class="tkt-below">
 				<p class="tkt-claim">The model never saw your words.</p>
 
 				<div class="tkt-titleblock chapter-head">
-					<p class="eyebrow">Chapter 02 · the alphabet of the machine</p>
+					<p class="eyebrow">Chapter 03 · the alphabet of the machine</p>
 					<h2 id="tk-title">Tokenization</h2>
 				</div>
 			</div>
@@ -792,6 +781,7 @@
 					<div class="tkt-sentence">
 						{#each TRANSITION_TOKENS as token (token.text)}
 							<span class="tkt-chip">
+								<span class="tkt-chip-chrome" aria-hidden="true"></span>
 								<span class="tkt-chip-text">{display(token.text)}</span>
 								<span class="tkt-chip-id">{token.id}</span>
 							</span>
@@ -1200,14 +1190,27 @@
 	}
 
 	.tkt-chip {
+		position: relative;
 		display: inline-flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 0.35rem;
 		padding: 0.6rem 0.8rem 0.5rem;
+	}
+
+	/* Chip chrome lives on an overlay so the opener can crossfade it in
+	   (GSAP tweens its opacity — no color interpolation involved). */
+	.tkt-chip-chrome {
+		position: absolute;
+		inset: 0;
 		border: 1px solid var(--line-bright);
 		border-radius: 8px;
 		background: var(--c-sunken);
+		pointer-events: none;
+	}
+
+	.tkt-chip > :not(.tkt-chip-chrome) {
+		position: relative;
 	}
 
 	.tkt-chip-text {
@@ -1238,6 +1241,39 @@
 	:global(html.no-js) .tkt {
 		height: auto;
 		padding: 4rem 0;
+	}
+
+	/* Static register (mobile / coarse pointer / reduced motion): no pinned
+	   beat — the opener reads top-to-bottom as kicker → claim → chips. */
+	@media (max-width: 767.98px), (pointer: coarse), (prefers-reduced-motion: reduce) {
+		.tkt {
+			height: auto;
+			padding: clamp(3rem, 8vw, 5rem) 0 1rem;
+		}
+
+		.tkt-stage {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1.5rem;
+			height: auto;
+			text-align: left;
+		}
+
+		.tkt-kicker,
+		.tkt-below {
+			position: static;
+			padding: 0;
+			text-align: left;
+		}
+
+		.tkt-framewrap {
+			align-self: center;
+		}
+
+		.tkt-frame {
+			min-width: 0;
+		}
 	}
 	/* ---------- 2 · lede ---------- */
 	.tk-head {

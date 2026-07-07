@@ -256,9 +256,9 @@
 	});
 </script>
 
-<section id="context" class="ctx" data-chapter="04" aria-labelledby="ctx-title">
+<section id="context" class="ctx" data-chapter="02" aria-labelledby="ctx-title">
 	<div class="ctx-head chapter-head">
-		<p class="eyebrow">Chapter 04 · the mediator</p>
+		<p class="eyebrow">Chapter 02 · the mediator</p>
 		<h2 id="ctx-title">The context window is the model’s entire world.</h2>
 		<p class="ctx-intro">
 			Between the agent and the LLM sits a tank. The agent fills it; the whole thing is handed to the

@@ -54,8 +54,8 @@
 	.theme-toggle {
 		display: inline-grid;
 		place-items: center;
-		width: 2.5rem;
-		height: 2.5rem;
+		width: 2.75rem;
+		height: 2.75rem;
 		padding: 0;
 		margin: 0;
 		flex: 0 0 auto;
@@ -124,8 +124,13 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.theme-toggle,
 		.glyphs svg {
 			transition: none;
+		}
+
+		.theme-toggle:active {
+			transform: none;
 		}
 	}
 </style>

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
+    import { macroCapable } from "$lib/loop.svelte";
 
     /* ============================================================
 	   Chapter 05 — Tool calling ("the hands")
@@ -533,9 +534,9 @@
                 .forEach((el) => mio?.observe(el));
 
             const q = gsap.utils.selector(transitionEl);
-            const reduced = window.matchMedia(
-                "(prefers-reduced-motion: reduce)",
-            ).matches;
+            const reduced =
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+                macroCapable();
 
             // --- Ch.5 schema/connector/heading reveal states ---
             const setTransitionInitial = () => {
@@ -559,9 +560,10 @@
                 gsap.set(q(".tc-head"), { autoAlpha: 1, y: 0 });
             };
 
-            // --- the morph SOURCE is the real Ch.4 tool-definitions band ---
+            // --- the morph SOURCE is the tool-definitions band in the
+            // context-window revisit beat directly above this station ---
             const ctxTank = document.querySelector<HTMLElement>(
-                "#context .ctx-sticky",
+                "#context-revisit .rv-panel",
             );
             const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
             const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
@@ -591,7 +593,7 @@
             const buildOverlay = () => {
                 removeOverlay();
                 const band = document.querySelector<SVGGElement>(
-                    '#context [data-band="tools"]',
+                    '#context-revisit [data-band="tools"]',
                 );
                 const body = band?.querySelector(".band-body");
                 if (!band || !body) return false;
@@ -634,7 +636,7 @@
             const updateMorph = (p: number) => {
                 if (!overlay && !buildOverlay()) return;
                 const band = document.querySelector(
-                    '#context [data-band="tools"] .band-body',
+                    '#context-revisit [data-band="tools"] .band-body',
                 );
                 const target = transitionEl.querySelector(".tx-schema-body");
                 if (!overlay || !band || !target) return;

@@ -196,7 +196,7 @@ body {
 	text-rendering: optimizeLegibility;
 }
 
-main > section[id] {
+main section[id] {
 	scroll-margin-top: 5.5rem;
 }
 
