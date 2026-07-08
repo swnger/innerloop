@@ -1,10 +1,25 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { LEDE_SCRUB } from '$lib/animation/chapterMotion';
+	import {
+		TRANSITION_TOKENS,
+		TOKENIZATION_EMBEDDING_AXES as EMB_AXES,
+		TOKENIZATION_EMBEDDING_GHOSTS as EMB_GHOSTS,
+		TOKENIZATION_EMBEDDING_WORDS as EMB_WORDS,
+		TOKENIZATION_GIBBERISH as GIBBERISH,
+		TOKENIZATION_LEDE_WORDS as LEDE,
+		TOKENIZATION_NUMBER_LINE_TOKENS,
+		TOKENIZATION_PRESETS as PRESETS,
+		TOKENIZATION_RECOMBINE as RECOMBINE,
+		TOKENIZATION_TICKER as TICKER,
+		STRAWBERRY_TOKENS as SB
+	} from '$lib/content/tokenization';
+	import { chapterNumberFor } from '$lib/content/loopPath';
 	import { tokenize, display, idFor } from '$lib/tokenizer';
 	import { macroCapable, loop, type CameraTimeline } from '$lib/loop.svelte';
 
 	/* ============================================================
-	   Chapter 02 — Tokenization (PRD §7.1)
+	   Station: tokenization
 	   The conceptual break-away: the camera leaves the machine.
 	   1. Pinned transition — ch.1's real token row hands off into
 	      the chapter frame, then reveals the token IDs.
@@ -22,76 +37,27 @@
 	// Ochre + resting-char colors for the GSAP strawberry sequence resolve
 	// per-theme inside onMount (see THEME-AWARE block).
 
-	/* — transition: the very sentence ch.1's machine just read — */
-	const TRANSITION_TOKENS = tokenize('fix the failing test');
-
-	/* — lede: revealed word by word as the reader scrolls — */
-	const LEDE =
-		'Before anything happens inside the model, your text is chopped into tokens — whole words, word-pieces, punctuation, even spaces — and each piece is swapped for a number. That chopping is the first thing that happens to every message you send.'.split(
-			' '
-		);
-
-	/* — token lab — */
-	const PRESETS = [
-		{ label: 'plain english', text: 'The quick brown fox jumps over the lazy dog.' },
-		{ label: 'a rare name', text: 'Benedict Cumberbatch flew to Kyrgyzstan.' },
-		{ label: 'code', text: 'const total = items.filter(x => x.price > 100);' },
-		{ label: 'numbers', text: '365.2425 days = 31,556,952 seconds' },
-		{ label: 'german', text: 'Donaudampfschifffahrtsgesellschaft' },
-		{ label: 'the question', text: "How many r's are in strawberry?" }
-	];
+	const CHAPTER_NUMBER = chapterNumberFor('tokenization');
 
 	// the lab sits right after the strawberry interlude — open on its question
 	let input = $state("How many r's are in strawberry?");
 	const tokens = $derived(tokenize(input));
 	const ratio = $derived(tokens.length ? (input.length / tokens.length).toFixed(1) : '0');
 
-	/* — why-not-words triptych — */
-	const TICKER = [
-		'cat', 'Tuesday', 'running', 'iPhone 17', 'Cumberbatch', 'yeet',
-		'Schifffahrt', 'doomscrolling', 'rizz', 'Kyrgyzstan', '(╯°□°)╯', '…'
-	];
-	const RECOMBINE = ['unbreakable', 'rebuilding', 'tokenization'].map((w) => tokenize(w));
-	const GIBBERISH = { word: 'xqzlrp', parts: tokenize('xqzlrp') };
-
 	/* — why numbers: IDs plotted on a number line — */
 	const VOCAB_MAX = 50000;
 	const AXIS_X = 70;
 	const AXIS_W = 740;
-	const NUMLINE = [' cat', ' the', ' straw', ' dog', 'ing', 'berry']
-		.map((t) => ({ label: display(t), id: idFor(t) }))
+	const NUMLINE = TOKENIZATION_NUMBER_LINE_TOKENS.map((t) => ({ label: display(t), id: idFor(t) }))
 		.sort((a, b) => a.id - b.id)
 		.map((d, i) => ({ ...d, x: AXIS_X + (d.id / VOCAB_MAX) * AXIS_W, up: i % 2 === 0 }));
 
 	/* — why numbers: the sentence explodes into meaning-space —
-	   hand-placed 3-D coords (illustrative); similar words cluster.
 	   Projected to 2-D with a slow yaw spin so the depth reads. */
 	const EMB_CX = 450;
 	const EMB_CY = 248;
 	const EMB_R = 300;
 	const EMB_YAW0 = -0.52;
-	const EMB_WORDS = [
-		{ w: 'kittens', x: -0.62, y: -0.18, z: 0.34 },
-		{ w: 'and', x: 0.66, y: 0.5, z: -0.45 },
-		{ w: 'puppies', x: -0.48, y: -0.36, z: 0.14 },
-		{ w: 'play', x: -0.05, y: -0.62, z: -0.42 },
-		{ w: 'on', x: 0.5, y: 0.62, z: -0.2 },
-		{ w: 'Tuesday', x: 0.6, y: -0.38, z: 0.55 }
-	];
-	const EMB_GHOSTS = [
-		{ w: 'cat', x: -0.55, y: -0.04, z: 0.44 },
-		{ w: 'dog', x: -0.38, y: -0.46, z: 0.3 },
-		{ w: 'pets', x: -0.72, y: -0.3, z: 0.06 },
-		{ w: 'frolic', x: 0.1, y: -0.72, z: -0.28 },
-		{ w: 'Friday', x: 0.7, y: -0.52, z: 0.4 },
-		{ w: 'weekend', x: 0.44, y: -0.24, z: 0.7 },
-		{ w: 'the', x: 0.76, y: 0.4, z: -0.3 }
-	];
-	const EMB_AXES = [
-		{ x: 0.95, y: 0, z: 0, label: 'dim 1' },
-		{ x: 0, y: -0.82, z: 0, label: 'dim 2' },
-		{ x: 0, y: 0, z: 0.95, label: 'dim 3' }
-	];
 	const EMB_CHIP_H = 30;
 	const embChipW = (w: string) => w.length * 9.6 + 24;
 	/* row layout for the not-yet-exploded sentence */
@@ -120,9 +86,6 @@
 			d: (rz + 1) / 2 // 0 = far, 1 = near
 		};
 	}
-
-	/* — strawberry — */
-	const SB = tokenize('strawberry');
 
 	let rootEl: HTMLElement;
 	let outEl: HTMLElement;
@@ -287,7 +250,7 @@
 						opacity: 1,
 						stagger: 0.05,
 						ease: 'none',
-						scrollTrigger: { trigger: '.tk-head', start: 'top 78%', end: 'top 28%', scrub: true }
+						scrollTrigger: { trigger: '.tk-head', ...LEDE_SCRUB, scrub: true }
 					}
 				);
 
@@ -750,7 +713,7 @@
 	});
 </script>
 
-<section id="tokenization" class="tk" data-chapter="03" bind:this={rootEl} aria-labelledby="tk-title">
+<section id="tokenization" class="tk" data-chapter={CHAPTER_NUMBER} bind:this={rootEl} aria-labelledby="tk-title">
 	{#snippet seam()}
 		<div class="tk-seam" aria-hidden="true">
 			<span class="seam-line seam-l"></span>
@@ -770,7 +733,7 @@
 				<p class="tkt-claim">The model never saw your words.</p>
 
 				<div class="tkt-titleblock chapter-head">
-					<p class="eyebrow">Chapter 03 · the alphabet of the machine</p>
+					<p class="eyebrow">Chapter {CHAPTER_NUMBER} · the alphabet of the machine</p>
 					<h2 id="tk-title">Tokenization</h2>
 				</div>
 			</div>

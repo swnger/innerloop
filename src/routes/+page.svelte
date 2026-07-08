@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
+    import type { Component } from "svelte";
     import { base } from "$app/paths";
     import Hero from "$lib/components/Hero.svelte";
     import Tokenization from "$lib/components/Tokenization.svelte";
@@ -10,216 +11,73 @@
     import LoopRecap from "$lib/components/LoopRecap.svelte";
     import LoopTransition from "$lib/components/LoopTransition.svelte";
     import LoopMinimap from "$lib/components/LoopMinimap.svelte";
+    import RepeatPass from "$lib/components/RepeatPass.svelte";
     import ThemeToggle from "$lib/components/ThemeToggle.svelte";
+    import {
+        LOOP_STOPS,
+        LOOP_LEGS,
+        LEG_PHASES,
+        STOP_DWELL_MS,
+        stationIds,
+        legAfter,
+        chapterNumberFor,
+        type WorldStopId,
+        type StationId,
+        type LoopLeg,
+        type LoopHue,
+        type FallbackTransition,
+    } from "$lib/content/loopPath";
+    import { WORLD_LAYOUT, buildWorldGeometry, type MeasuredStop } from "$lib/loopWorldGeometry";
     import { theme } from "$lib/theme.svelte";
-    import { loop, STATIONS, type StationId } from "$lib/loop.svelte";
-
-    type WorldId = StationId | "repeat-pass";
-
-    type WorldStop = {
-        id: WorldId;
-        station?: StationId;
-        label: string;
-        x: number;
-        y: number;
-        height: number;
-        travel: number;
-    };
+    import { loop } from "$lib/loop.svelte";
 
     type WorldCaption = {
+        id: LoopLeg["id"];
         x: number;
         y: number;
-        hue: "blue" | "violet" | "red";
+        hue: LoopHue;
         kicker: string;
         text: string;
     };
 
     type WorldCarrier = {
-        hue: "blue" | "violet" | "red";
+        id: LoopLeg["id"];
+        hue: LoopHue;
         chip: string;
     };
 
-    type FallbackTransition = {
-        from: "agent" | "window" | "tokens" | "model" | "tools" | "loop";
-        to: "agent" | "window" | "tokens" | "model" | "tools" | "loop";
-        fromLabel: string;
-        toLabel: string;
-        direction: "right" | "left" | "down";
-        hue: "blue" | "violet" | "red";
-        chip: string;
-        kicker: string;
-        caption: string;
-    };
+    type WorldAnchor =
+        | { kind: "stop"; stopId: WorldStopId; frac: number }
+        | { kind: "overview"; frac: number };
 
-    const STATION_WIDTH = 1120;
-    const DEFAULT_WORLD_WIDTH = 5920;
-    const DEFAULT_WORLD_HEIGHT = 3260;
-    const DEFAULT_TOP_ROW = 0;
-    const DEFAULT_BOTTOM_ROW = 1880;
-    const COL_0 = 0;
-    const COL_1 = 1480;
-    const COL_2 = 2960;
-    const COL_3 = 4440;
-    // Guaranteed empty margin on each side of a leg's clean transit zone —
-    // the beat where neither chapter is on screen and only the route line,
-    // carrier chip, and caption carry the handoff.
-    const TRANSIT_CLEARANCE = 120;
-    const STOP_COLUMNS = [0, 1, 2, 3, 3, 2, 1, 0] as const;
-    const ROW_GUTTER = 620;
-    const WORLD_PADDING = 420;
-    const ROUTE_X_OFFSET = STATION_WIDTH / 2;
-    const ROUTE_Y_OFFSET = 360;
+    const STOP_COMPONENTS = {
+        "agent-loop": Hero,
+        context: ContextWindow,
+        tokenization: Tokenization,
+        inference: Inference,
+        "context-revisit": ContextRevisit,
+        tools: ToolCalling,
+        recap: LoopRecap,
+    } satisfies Record<StationId, Component>;
 
-    const BASE_WORLD_STOPS: WorldStop[] = [
-        { id: "agent-loop", station: "agent-loop", label: "the agent", x: COL_0, y: DEFAULT_TOP_ROW, height: 0, travel: 0 },
-        { id: "context", station: "context", label: "context window", x: COL_1, y: DEFAULT_TOP_ROW, height: 0, travel: 0 },
-        { id: "tokenization", station: "tokenization", label: "tokenization", x: COL_2, y: DEFAULT_TOP_ROW, height: 0, travel: 0 },
-        { id: "inference", station: "inference", label: "inference", x: COL_3, y: DEFAULT_TOP_ROW, height: 0, travel: 0 },
-        { id: "context-revisit", station: "context-revisit", label: "context again", x: COL_3, y: DEFAULT_BOTTOM_ROW, height: 0, travel: 0 },
-        { id: "tools", station: "tools", label: "tool calling", x: COL_2, y: DEFAULT_BOTTOM_ROW, height: 0, travel: 0 },
-        { id: "repeat-pass", label: "model called again", x: COL_1, y: DEFAULT_BOTTOM_ROW, height: 0, travel: 0 },
-        { id: "recap", station: "recap", label: "the whole loop", x: COL_0, y: DEFAULT_BOTTOM_ROW, height: 0, travel: 0 },
-    ];
+    const initialGeometry = buildWorldGeometry({
+        stops: LOOP_STOPS,
+        legs: LOOP_LEGS,
+        heights: {},
+        viewportWidth: 1024,
+        viewportHeight: 768,
+        config: WORLD_LAYOUT,
+    });
 
-    const CAPTION_COPY: Omit<WorldCaption, "x" | "y">[] = [
-        {
-            hue: "blue",
-            kicker: "first stop",
-            text: "The agent appends your message. The next box is the pile it sends to the model.",
-        },
-        {
-            hue: "blue",
-            kicker: "toward the model",
-            text: "The whole window travels together — but the model does not read words yet.",
-        },
-        {
-            hue: "blue",
-            kicker: "into the machine",
-            text: "Token IDs enter the model. Now it reads, weighs, and predicts one piece.",
-        },
-        {
-            hue: "violet",
-            kicker: "the reply returns",
-            text: "A predicted reply is not memory. The agent writes it back into the window.",
-        },
-        {
-            hue: "violet",
-            kicker: "text meets the world",
-            text: "The model can only request a tool. The harness is what actually runs it.",
-        },
-        {
-            hue: "red",
-            kicker: "one more pass",
-            text: "Tool output is appended, then the model is called again with the updated window.",
-        },
-        {
-            hue: "red",
-            kicker: "zoom out",
-            text: "The second pass returns the answer. The camera pulls back so the loop reads as one system.",
-        },
-    ];
-
-    const CARRIER_CHIPS: readonly string[] = [
-        "your message",
-        "whole window",
-        "token ids",
-        "response",
-        "tool call",
-        "tool output",
-        "final answer",
-    ];
-
-    let worldWidth = $state(DEFAULT_WORLD_WIDTH);
-    let worldHeight = $state(DEFAULT_WORLD_HEIGHT);
-    let worldStops = $state<WorldStop[]>(BASE_WORLD_STOPS);
+    let worldWidth = $state(initialGeometry.width);
+    let worldHeight = $state(initialGeometry.height);
+    let worldStops = $state<MeasuredStop[]>(initialGeometry.stops);
     let worldCaptions = $state<WorldCaption[]>([]);
     let worldCarriers = $state<WorldCarrier[]>([]);
-    let worldRouteD = $state(`M ${COL_0 + ROUTE_X_OFFSET} ${DEFAULT_TOP_ROW + ROUTE_Y_OFFSET}
-        L ${COL_1 + ROUTE_X_OFFSET} ${DEFAULT_TOP_ROW + ROUTE_Y_OFFSET}
-        L ${COL_2 + ROUTE_X_OFFSET} ${DEFAULT_TOP_ROW + ROUTE_Y_OFFSET}
-        L ${COL_3 + ROUTE_X_OFFSET} ${DEFAULT_TOP_ROW + ROUTE_Y_OFFSET}
-        L ${COL_3 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET}
-        L ${COL_2 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET}
-        L ${COL_1 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET}
-        L ${COL_0 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET}`);
-    let routeBlueD = $state(`M ${COL_0 + ROUTE_X_OFFSET} ${DEFAULT_TOP_ROW + ROUTE_Y_OFFSET} L ${COL_3 + ROUTE_X_OFFSET} ${DEFAULT_TOP_ROW + ROUTE_Y_OFFSET}`);
-    let routeVioletD = $state(`M ${COL_3 + ROUTE_X_OFFSET} ${DEFAULT_TOP_ROW + ROUTE_Y_OFFSET} L ${COL_3 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET} L ${COL_2 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET}`);
-    let routeRedD = $state(`M ${COL_2 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET} L ${COL_0 + ROUTE_X_OFFSET} ${DEFAULT_BOTTOM_ROW + ROUTE_Y_OFFSET}`);
-
-    const FALLBACK_TRANSITIONS: FallbackTransition[] = [
-        {
-            from: "agent",
-            to: "window",
-            fromLabel: "the agent",
-            toLabel: "the context window",
-            direction: "right",
-            hue: "blue",
-            chip: "your message",
-            kicker: "first stop",
-            caption:
-                "The agent just appended your message to its context. Time to open that box: the pile is called the context window, and it is the model’s entire world.",
-        },
-        {
-            from: "window",
-            to: "tokens",
-            fromLabel: "the context window",
-            toLabel: "tokenization",
-            direction: "right",
-            hue: "blue",
-            chip: "the whole window",
-            kicker: "toward the model",
-            caption:
-                "The whole window is on its way to the model. One catch — the model can’t read words. First, everything becomes tokens.",
-        },
-        {
-            from: "tokens",
-            to: "model",
-            fromLabel: "tokenization",
-            toLabel: "the model",
-            direction: "down",
-            hue: "blue",
-            chip: "token ids",
-            kicker: "into the machine",
-            caption:
-                "The tokens are inside. Now the model does the only thing it ever does: read them all, weigh them, and guess what comes next.",
-        },
-        {
-            from: "model",
-            to: "window",
-            fromLabel: "the model",
-            toLabel: "the window, again",
-            direction: "left",
-            hue: "violet",
-            chip: "response",
-            kicker: "the reply returns",
-            caption:
-                "Those predicted tokens stream back to the agent — and land in the context window, stacked on top of everything you already know is there.",
-        },
-        {
-            from: "window",
-            to: "tools",
-            fromLabel: "the window, again",
-            toLabel: "tool calling",
-            direction: "left",
-            hue: "violet",
-            chip: "tool call",
-            kicker: "text meets the world",
-            caption:
-                "That reply names a tool. But the model can only ever write text — so who actually runs the command?",
-        },
-        {
-            from: "tools",
-            to: "loop",
-            fromLabel: "tool calling",
-            toLabel: "the whole loop",
-            direction: "right",
-            hue: "red",
-            chip: "tool output",
-            kicker: "closing the lap",
-            caption:
-                "The tool’s output is appended and the model is called again — the second pass returns your answer. That’s the full lap. Watch it run whole.",
-        },
-    ];
+    let worldRouteD = $state(initialGeometry.fullRouteD);
+    let routeBlueD = $state(initialGeometry.routeByHue.blue);
+    let routeVioletD = $state(initialGeometry.routeByHue.violet);
+    let routeRedD = $state(initialGeometry.routeByHue.red);
 
     let loopEl: HTMLElement;
     let mainEl: HTMLElement;
@@ -228,89 +86,34 @@
     let routeTravelEl: SVGPathElement;
     let worldEnhanced = $state(false);
 
-    const stationEls = new Map<WorldId, HTMLElement>();
+    const stationEls = new Map<WorldStopId, HTMLElement>();
 
-    const cloneStops = () => BASE_WORLD_STOPS.map((stop) => ({ ...stop }));
-
-    const routePoint = (stop: WorldStop) => ({
-        x: stop.x + ROUTE_X_OFFSET,
-        y: stop.y + ROUTE_Y_OFFSET,
+    const routePoint = (stop: MeasuredStop) => ({
+        x: stop.x + WORLD_LAYOUT.stationWidthPx / 2,
+        y: stop.y + WORLD_LAYOUT.routeYOffsetPx,
     });
 
     // Depart point = where the camera finishes reading a station (bottom).
     // By construction departPoint(i).y === routePoint(i+1).y for every
     // horizontal leg, so enter->depart->enter polylines are axis-pure.
-    const departPoint = (stop: WorldStop) => ({
-        x: stop.x + ROUTE_X_OFFSET,
-        y: stop.y + stop.travel + ROUTE_Y_OFFSET,
+    const departPoint = (stop: MeasuredStop) => ({
+        x: stop.x + WORLD_LAYOUT.stationWidthPx / 2,
+        y: stop.y + stop.travel + WORLD_LAYOUT.routeYOffsetPx,
     });
 
-    const stopById = (id: WorldId) => worldStops.find((stop) => stop.id === id) ?? BASE_WORLD_STOPS[0];
+    const stopById = (id: WorldStopId) => worldStops.find((stop) => stop.id === id) ?? worldStops[0];
 
-    const stopStyle = (id: WorldId) => {
+    const stopStyle = (id: WorldStopId) => {
         const stop = stopById(id);
         return `--wx: ${stop.x}px; --wy: ${stop.y}px;`;
     };
 
-    // Terraced layout: each station begins where the camera finished reading
-    // the previous one (stop.y = prev.y + prev.travel), so between-station legs
-    // are axis-pure — horizontal between chapters, vertical only for the single
-    // designed drop into "context again" (index 4). Camera y stays monotonic.
-    //
-    // The column pitch and drop gap are viewport-derived so every leg owns a
-    // clean transit zone: at mid-leg both chapters are fully off screen (with
-    // TRANSIT_CLEARANCE to spare) and the handoff caption floats over paper.
-    const measureWorldGeometry = (viewportWidth: number, viewportHeight: number) => {
-        const measured = cloneStops();
-        for (const stop of measured) {
-            const node = stationEls.get(stop.id);
-            stop.height = node?.offsetHeight ?? window.innerHeight;
-            stop.travel = Math.max(0, stop.height - viewportHeight);
-        }
+    const transitionFor = (leg: LoopLeg | undefined): FallbackTransition | null | undefined => leg?.fallback;
 
-        const columnPitch = Math.ceil(viewportWidth + STATION_WIDTH + TRANSIT_CLEARANCE * 2);
-        const dropGap = Math.max(ROW_GUTTER, viewportHeight * 2 + TRANSIT_CLEARANCE * 2);
-        measured[0].y = 0;
-        measured[0].x = 0;
-        for (let i = 1; i < measured.length; i += 1) {
-            measured[i].x = STOP_COLUMNS[i] * columnPitch;
-            measured[i].y =
-                i === 4
-                    ? measured[i - 1].y + measured[i - 1].travel + dropGap
-                    : measured[i - 1].y + measured[i - 1].travel;
-        }
-
-        const measuredWorldWidth = Math.ceil(3 * columnPitch + STATION_WIDTH + WORLD_PADDING);
-        const measuredWorldHeight = Math.ceil(measured[7].y + measured[7].height + WORLD_PADDING);
-
-        worldStops = measured;
-        worldWidth = measuredWorldWidth;
-        worldHeight = measuredWorldHeight;
-
-        // Route polylines are pure horizontal/vertical segments: the enter point
-        // (top of each station) and depart point share an x; departPoint(i).y
-        // === routePoint(i+1).y, so consecutive vertices collapse to one axis.
-        const enter = measured.map(routePoint);
-        const depart = measured.map(departPoint);
-        const poly = (points: { x: number; y: number }[]) =>
-            points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-        const fullPath: { x: number; y: number }[] = [];
-        for (let i = 0; i < measured.length; i += 1) {
-            fullPath.push(enter[i]);
-            if (i < measured.length - 1) fullPath.push(depart[i]);
-        }
-        worldRouteD = poly(fullPath);
-        routeBlueD = poly([enter[0], depart[0], enter[1], depart[1], enter[2], depart[2], enter[3]]);
-        routeVioletD = poly([enter[3], depart[3], enter[4], depart[4], enter[5]]);
-        routeRedD = poly([enter[5], depart[5], enter[6], enter[7]]);
-
-        return { stops: measured, width: measuredWorldWidth, height: measuredWorldHeight, route: worldRouteD };
-    };
-
-    function registerStation(node: HTMLElement, id: WorldId) {
+    function registerStation(node: HTMLElement, id: WorldStopId) {
         stationEls.set(id, node);
         return {
-            update(next: WorldId) {
+            update(next: WorldStopId) {
                 stationEls.delete(id);
                 id = next;
                 stationEls.set(id, node);
@@ -322,7 +125,6 @@
     }
 
     onMount(() => {
-        const stationIds = new Set(STATIONS.map((s) => s.id));
         let worldScrollTo: ((id: StationId) => void) | undefined;
         let lastHash = window.location.hash;
         let initialTarget = stationIds.has(window.location.hash.slice(1) as StationId)
@@ -428,6 +230,38 @@
                     let resizeObserver: ResizeObserver | undefined;
                     let rebuildTimer = 0;
                     let rebuilding = false;
+                    let anchorStopTimes = new Map<WorldStopId, number>();
+                    let anchorTotalBeforeOverview = 0;
+                    let anchorTimelineDuration = 0;
+
+                    const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
+                    const captureWorldAnchor = (): WorldAnchor | undefined => {
+                        if (!timeline || !anchorStopTimes.size) return undefined;
+                        const currentTime = timeline.time();
+                        if (currentTime > anchorTotalBeforeOverview) {
+                            return {
+                                kind: "overview",
+                                frac: clamp01(
+                                    (currentTime - anchorTotalBeforeOverview) /
+                                        Math.max(1, anchorTimelineDuration - anchorTotalBeforeOverview),
+                                ),
+                            };
+                        }
+
+                        const orderedStops = Array.from(anchorStopTimes.entries()).sort((a, b) => a[1] - b[1]);
+                        let currentIndex = 0;
+                        for (let index = 0; index < orderedStops.length; index += 1) {
+                            if (orderedStops[index][1] <= currentTime) currentIndex = index;
+                        }
+                        const [stopId, stopTime] = orderedStops[currentIndex];
+                        const nextStopTime = orderedStops[currentIndex + 1]?.[1] ?? anchorTotalBeforeOverview;
+                        return {
+                            kind: "stop",
+                            stopId,
+                            frac: clamp01((currentTime - stopTime) / Math.max(1, nextStopTime - stopTime)),
+                        };
+                    };
 
                     const killWorld = () => {
                         scrollCleanup?.();
@@ -441,22 +275,40 @@
                     const buildWorld = async () => {
                         if (cancelled || disposed || rebuilding) return;
                         rebuilding = true;
+                        const restoreAnchor = initialTarget ? undefined : captureWorldAnchor();
                         killWorld();
                         const viewportHeight = Math.max(
-                            420,
+                            WORLD_LAYOUT.minViewportHeightPx,
                             window.innerHeight - (header?.getBoundingClientRect().height ?? 70),
                         );
                         const viewportWidth = window.innerWidth;
-                        const geometry = measureWorldGeometry(viewportWidth, viewportHeight);
+                        const heights = Object.fromEntries(
+                            LOOP_STOPS.map((stop) => [stop.id, stationEls.get(stop.id)?.offsetHeight ?? window.innerHeight]),
+                        ) as Partial<Record<WorldStopId, number>>;
+                        const geometry = buildWorldGeometry({
+                            stops: LOOP_STOPS,
+                            legs: LOOP_LEGS,
+                            heights,
+                            viewportWidth,
+                            viewportHeight,
+                            config: WORLD_LAYOUT,
+                        });
+                        worldStops = geometry.stops;
+                        worldWidth = geometry.width;
+                        worldHeight = geometry.height;
+                        worldRouteD = geometry.fullRouteD;
+                        routeBlueD = geometry.routeByHue.blue;
+                        routeVioletD = geometry.routeByHue.violet;
+                        routeRedD = geometry.routeByHue.red;
                         if (cancelled || disposed) return;
-                        const cameraForStop = (stop: WorldStop) => ({
-                            x: viewportWidth / 2 - (stop.x + STATION_WIDTH / 2),
+                        const cameraForStop = (stop: MeasuredStop) => ({
+                            x: viewportWidth / 2 - (stop.x + WORLD_LAYOUT.stationWidthPx / 2),
                             y: -stop.y,
                         });
-                        const captionWidth = 496;
-                        const captionEdge = 96;
+                        const captionWidth = WORLD_LAYOUT.captionWidthPx;
+                        const captionEdge = WORLD_LAYOUT.captionEdgePx;
                         let captionPreviousCamera = cameraForStop(geometry.stops[0]);
-                        worldCaptions = CAPTION_COPY.map((copy, index) => {
+                        worldCaptions = LOOP_LEGS.map((leg, index) => {
                             const from = geometry.stops[index];
                             const to = geometry.stops[index + 1];
                             const fromNode = stationEls.get(from.id);
@@ -476,31 +328,35 @@
                             };
 
                             return {
-                                ...copy,
+                                id: leg.id,
+                                hue: leg.hue,
+                                kicker: leg.kicker,
+                                text: leg.enhancedText,
                                 x: Math.max(
                                     captionEdge,
                                     Math.min(geometry.width - captionWidth - captionEdge, viewportWidth / 2 - midCamera.x - captionWidth / 2),
                                 ),
-                                y: Math.max(captionEdge, Math.min(geometry.height - 220, -midCamera.y + 150)),
+                                y: Math.max(captionEdge, Math.min(geometry.height - 220, -midCamera.y + WORLD_LAYOUT.captionViewportYPx)),
                             };
                         });
 
-                        const routeLength = routeTravelEl.getTotalLength();
                         const stationTimes = new Map<StationId, number>();
-                        const stopTimes = new Map<WorldId, number>();
-                        const legRanges: { start: number; end: number; from: WorldId; to: WorldId }[] = [];
-                        worldCarriers = CAPTION_COPY.map((copy, index) => ({
-                            hue: copy.hue,
-                            chip: CARRIER_CHIPS[index] ?? "handoff",
+                        const stopTimes = new Map<WorldStopId, number>();
+                        const legRanges: { start: number; end: number; from: WorldStopId; to: WorldStopId }[] = [];
+                        worldCarriers = LOOP_LEGS.map((leg) => ({
+                            id: leg.id,
+                            hue: leg.hue,
+                            chip: leg.carrier,
                         }));
                         await tick();
                         if (cancelled || disposed) return;
-                        
+
+                        const routeLength = routeTravelEl.getTotalLength();
                         const captions = Array.from(cameraEl.querySelectorAll<HTMLElement>(".world-caption"));
                         const carriers = Array.from(cameraEl.querySelectorAll<HTMLElement>(".world-carrier"));
                         const stationNodes = geometry.stops
                             .map((stop) => [stop.id, stationEls.get(stop.id)] as const)
-                            .filter((entry): entry is readonly [WorldId, HTMLElement] => Boolean(entry[1]));
+                            .filter((entry): entry is readonly [WorldStopId, HTMLElement] => Boolean(entry[1]));
 
                         timeline = gsap.timeline({ paused: true, defaults: { ease: "none" } });
                         gsap.set(pinEl, { clearProps: "height" });
@@ -529,6 +385,7 @@
 
                             const nextCamera = cameraForStop(stop);
                             if (i > 0) {
+                                const leg = LOOP_LEGS[i - 1] as LoopLeg;
                                 const dx = nextCamera.x - previousCamera.x;
                                 const dy = nextCamera.y - previousCamera.y;
                                 const legDistance = Math.hypot(dx, dy);
@@ -538,8 +395,8 @@
                                 legRanges.push({
                                     start: legStart,
                                     end: legStart + legDuration,
-                                    from: geometry.stops[i - 1].id,
-                                    to: stop.id,
+                                    from: leg.from,
+                                    to: leg.to,
                                 });
                                 timeline.to(cameraEl, {
                                     x: nextCamera.x,
@@ -567,11 +424,11 @@
                                             y: toPoint.y,
                                             xPercent: -50,
                                             yPercent: -50,
-                                            scale: i === 3 ? 1.14 : 1,
-                                            duration: legDuration * 0.68,
+                                            scale: leg.carrierScale ?? 1,
+                                            duration: legDuration * LEG_PHASES.carrierTravel,
                                             ease: "power1.inOut",
                                         },
-                                        legStart + legDuration * 0.16,
+                                        legStart + legDuration * LEG_PHASES.carrierIn,
                                     );
                                     timeline.to(
                                         carrier,
@@ -581,13 +438,13 @@
                                             duration: Math.min(180, legDuration * 0.12),
                                             ease: "power2.in",
                                         },
-                                        legStart + legDuration * 0.82,
+                                        legStart + legDuration * LEG_PHASES.carrierOut,
                                     );
                                 }
                                 if (caption) {
                                     const captionData = worldCaptions[i - 1];
                                     const desiredCaptionX = Math.min(viewportWidth - captionWidth - 56, Math.max(56, viewportWidth / 2 - captionWidth / 2));
-                                    const desiredCaptionY = 150;
+                                    const desiredCaptionY = WORLD_LAYOUT.captionViewportYPx;
                                     const startX = desiredCaptionX - (captionData.x + previousCamera.x);
                                     const startY = desiredCaptionY - (captionData.y + previousCamera.y);
                                     const endX = desiredCaptionX - (captionData.x + nextCamera.x);
@@ -606,7 +463,7 @@
                                         caption,
                                         { autoAlpha: 0 },
                                         { autoAlpha: 1, duration: legDuration * 0.12, ease: "none" },
-                                        legStart + legDuration * 0.18,
+                                        legStart + legDuration * LEG_PHASES.captionIn,
                                     );
                                     timeline.to(
                                         caption,
@@ -615,20 +472,20 @@
                                             duration: Math.min(200, legDuration * 0.14),
                                             ease: "power2.in",
                                         },
-                                        legStart + legDuration * (i === geometry.stops.length - 1 ? 0.92 : 0.8),
+                                        legStart + legDuration * (leg.captionOut ?? LEG_PHASES.captionOut),
                                     );
                                 }
                             }
 
                             stopTimes.set(stop.id, timeline.duration());
-                            if (stop.station) stationTimes.set(stop.station, timeline.duration());
+                            if (stop.kind === "station") stationTimes.set(stop.id, timeline.duration());
 
                             const readableTravel = Math.max(0, node.offsetHeight - viewportHeight);
                             if (readableTravel > 0) {
                                 timeline.to(cameraEl, { y: nextCamera.y - readableTravel, duration: readableTravel });
                                 previousCamera = { x: nextCamera.x, y: nextCamera.y - readableTravel };
                             } else {
-                                timeline.to({}, { duration: stop.id === "repeat-pass" ? 560 : 420 });
+                                timeline.to({}, { duration: stop.dwellMs ?? STOP_DWELL_MS });
                                 previousCamera = nextCamera;
                             }
                         }
@@ -696,12 +553,15 @@
                             scale: 1,
                         });
                         loop.setContainerAnimation(timeline);
+                        anchorStopTimes = new Map(stopTimes);
+                        anchorTotalBeforeOverview = totalBeforeOverview;
+                        anchorTimelineDuration = timeline.duration();
 
                         const orderedStations = Array.from(stationTimes.entries()).sort((a, b) => a[1] - b[1]);
                         let activeStation: StationId | undefined;
                         let visibleKey = "";
                         const updateStationVisibility = (time: number) => {
-                            const visible = new Set<WorldId>();
+                            const visible = new Set<WorldStopId>();
                             if (time >= totalBeforeOverview - 2 && time < recapSettleStart) {
                                 for (const stop of geometry.stops) visible.add(stop.id);
                             } else if (time >= recapSettleStart) {
@@ -741,7 +601,7 @@
 
                         const renderAtProgress = (progress: number, preserveInitialTarget = false) => {
                             if (!timeline) return;
-                            const clamped = Math.max(0, Math.min(1, progress));
+                            const clamped = clamp01(progress);
                             timeline.progress(clamped, false);
                             const time = timeline.duration() * clamped;
                             updateStationVisibility(time);
@@ -785,6 +645,18 @@
                             gsap.set(mainEl, { clearProps: "--world-scroll" });
                         };
 
+                        const timeForAnchor = (anchor: WorldAnchor) => {
+                            if (anchor.kind === "overview") {
+                                return totalBeforeOverview + anchor.frac * Math.max(0, timeline!.duration() - totalBeforeOverview);
+                            }
+                            const orderedStops = Array.from(stopTimes.entries()).sort((a, b) => a[1] - b[1]);
+                            const stopIndex = orderedStops.findIndex(([id]) => id === anchor.stopId);
+                            if (stopIndex < 0) return undefined;
+                            const stopTime = orderedStops[stopIndex][1];
+                            const nextStopTime = orderedStops[stopIndex + 1]?.[1] ?? totalBeforeOverview;
+                            return stopTime + anchor.frac * Math.max(0, nextStopTime - stopTime);
+                        };
+
                         updateStationVisibility(0);
                         worldScrollTo = (id: StationId) => {
                             if (!timeline) return;
@@ -805,6 +677,16 @@
                                     window.setTimeout(() => worldScrollTo?.(target), 350);
                                     window.setTimeout(() => worldScrollTo?.(target), 900);
                                     initialTarget = undefined;
+                                } else if (restoreAnchor) {
+                                    const time = timeForAnchor(restoreAnchor);
+                                    if (time === undefined || !timeline) {
+                                        syncFromHash();
+                                        handleScroll();
+                                    } else {
+                                        const progress = time / timeline.duration();
+                                        window.scrollTo({ top: scrollStart() + progress * scrollRange, behavior: "auto" });
+                                        renderAtProgress(progress);
+                                    }
                                 } else {
                                     syncFromHash();
                                     handleScroll();
@@ -937,7 +819,7 @@
 
 <main bind:this={mainEl} class="loop-world" class:world-enhanced={worldEnhanced}>
     <div class="world-pin" bind:this={pinEl}>
-        <div class="world-camera" bind:this={cameraEl} style="--world-w: {worldWidth}px; --world-h: {worldHeight}px;">
+        <div class="world-camera" bind:this={cameraEl} style="--world-w: {worldWidth}px; --world-h: {worldHeight}px; --world-station-w: {WORLD_LAYOUT.stationWidthPx}px;">
             <svg
                 class="world-spine"
                 viewBox="0 0 {worldWidth} {worldHeight}"
@@ -954,105 +836,50 @@
                 <path class="world-route-base world-route-violet" d={routeVioletD} />
                 <path class="world-route-base world-route-red" d={routeRedD} marker-end="url(#world-arrow)" />
                 <path bind:this={routeTravelEl} class="world-route-travel" d={worldRouteD} />
-                {#each worldStops as stop}
-                    <g class="world-stop" transform="translate({stop.x + ROUTE_X_OFFSET} {stop.y + ROUTE_Y_OFFSET})">
-                        <circle r={stop.station ? 13 : 8} />
+                {#each worldStops as stop (stop.id)}
+                    {@const point = routePoint(stop)}
+                    <g class="world-stop" transform="translate({point.x} {point.y})">
+                        <circle r={stop.kind === "station" ? 13 : 8} />
                         <text y="34">{stop.label}</text>
                     </g>
                 {/each}
             </svg>
 
-            {#each worldCaptions as caption}
+            {#each worldCaptions as caption (caption.id)}
                 <p class="world-caption world-caption--{caption.hue}" style="--cx: {caption.x}px; --cy: {caption.y}px;">
                     <span>{caption.kicker}</span>
                     {caption.text}
                 </p>
             {/each}
 
-            {#each worldCarriers as carrier}
+            {#each worldCarriers as carrier (carrier.id)}
                 <span class="world-carrier world-carrier--{carrier.hue}">
                     {carrier.chip}
                 </span>
             {/each}
 
-            <div class="world-station" style={stopStyle("agent-loop")} use:registerStation={"agent-loop"}>
-                <Hero />
-            </div>
-
-            <div class="world-transition">
-                {#if !worldEnhanced}
-                    <LoopTransition {...FALLBACK_TRANSITIONS[0]} />
+            {#each LOOP_STOPS as stop (stop.id)}
+                {#if stop.kind === "interstitial"}
+                    <aside class="world-repeat" style={stopStyle(stop.id)} use:registerStation={stop.id} aria-label="Second model pass">
+                        <RepeatPass />
+                    </aside>
+                {:else}
+                    {@const StopComponent = STOP_COMPONENTS[stop.id]}
+                    <div class="world-station" style={stopStyle(stop.id)} use:registerStation={stop.id}>
+                        <StopComponent />
+                    </div>
                 {/if}
-            </div>
 
-            <div class="world-station" style={stopStyle("context")} use:registerStation={"context"}>
-                <ContextWindow />
-            </div>
-
-            <div class="world-transition">
-                {#if !worldEnhanced}
-                    <LoopTransition {...FALLBACK_TRANSITIONS[1]} />
+                {@const leg = legAfter(stop.id)}
+                {@const transition = transitionFor(leg)}
+                {#if transition}
+                    <div class="world-transition">
+                        {#if !worldEnhanced}
+                            <LoopTransition transition={transition} />
+                        {/if}
+                    </div>
                 {/if}
-            </div>
-
-            <div class="world-station" style={stopStyle("tokenization")} use:registerStation={"tokenization"}>
-                <Tokenization />
-            </div>
-
-            <div class="world-transition">
-                {#if !worldEnhanced}
-                    <LoopTransition {...FALLBACK_TRANSITIONS[2]} />
-                {/if}
-            </div>
-
-            <div class="world-station" style={stopStyle("inference")} use:registerStation={"inference"}>
-                <Inference />
-            </div>
-
-            <div class="world-transition">
-                {#if !worldEnhanced}
-                    <LoopTransition {...FALLBACK_TRANSITIONS[3]} />
-                {/if}
-            </div>
-
-            <div class="world-station" style={stopStyle("context-revisit")} use:registerStation={"context-revisit"}>
-                <ContextRevisit />
-            </div>
-
-            <div class="world-transition">
-                {#if !worldEnhanced}
-                    <LoopTransition {...FALLBACK_TRANSITIONS[4]} />
-                {/if}
-            </div>
-
-            <div class="world-station" style={stopStyle("tools")} use:registerStation={"tools"}>
-                <ToolCalling />
-            </div>
-
-            <aside class="world-repeat" style={stopStyle("repeat-pass")} use:registerStation={"repeat-pass"} aria-label="Second model pass">
-                <div class="repeat-rail" aria-hidden="true">
-                    <span class="repeat-dot repeat-dot--tools"></span>
-                    <span class="repeat-line"></span>
-                    <span class="repeat-dot repeat-dot--model"></span>
-                </div>
-                <div class="repeat-copy">
-                    <p class="eyebrow">repeat once · updated context</p>
-                    <h2>The loop runs again with the tool output inside the window.</h2>
-                    <p>
-                        Nothing mystical changed between calls. The agent added the tool’s text output, sent the whole window back to the model, and this pass produced the final answer.
-                    </p>
-                </div>
-            </aside>
-
-            <div class="world-transition">
-                {#if !worldEnhanced}
-                    <LoopTransition {...FALLBACK_TRANSITIONS[5]} />
-                {/if}
-            </div>
-
-            <div class="world-station" style={stopStyle("recap")} use:registerStation={"recap"}>
-                <LoopRecap />
-            </div>
+            {/each}
         </div>
     </div>
 </main>
@@ -1165,32 +992,6 @@
         background: var(--surface);
     }
 
-    .repeat-rail {
-        display: none;
-    }
-
-    .repeat-copy {
-        max-width: 72rem;
-    }
-
-    .repeat-copy h2 {
-        max-width: 18ch;
-        margin: 0 0 1rem;
-        font-family: var(--display);
-        font-size: clamp(1.7rem, 4vw, 2.6rem);
-        line-height: 1.08;
-        letter-spacing: -0.02em;
-        text-wrap: balance;
-        color: var(--paper);
-    }
-
-    .repeat-copy p:not(.eyebrow) {
-        max-width: var(--reading);
-        font-size: clamp(1.02rem, 2.3vw, 1.18rem);
-        line-height: 1.6;
-        color: var(--muted);
-        text-wrap: pretty;
-    }
 
     .world-transition {
         position: relative;
@@ -1298,7 +1099,7 @@
             position: absolute;
             left: var(--wx);
             top: var(--wy);
-            width: 1120px;
+            width: var(--world-station-w);
             z-index: 2;
         }
 
@@ -1407,7 +1208,7 @@
             grid-template-columns: 13rem minmax(0, 1fr);
             align-items: center;
             gap: clamp(1.5rem, 4vw, 3.5rem);
-            width: 1120px;
+            width: var(--world-station-w);
             min-height: 72svh;
             padding: clamp(2rem, 4vw, 3rem) var(--page-gutter);
             border: 1px solid var(--line);
@@ -1417,55 +1218,6 @@
             margin: 0;
         }
 
-        .repeat-rail {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .repeat-dot {
-            width: 2.4rem;
-            height: 2.4rem;
-            border-radius: 50%;
-            border: 2px solid var(--line-strong);
-            background: var(--paper);
-        }
-
-        .repeat-dot--tools {
-            box-shadow: inset 0 0 0 0.65rem var(--cat-tool-fill);
-            border-color: var(--cat-tools);
-        }
-
-        .repeat-dot--model {
-            box-shadow: inset 0 0 0 0.65rem var(--cat-response-fill);
-            border-color: var(--m-red);
-        }
-
-        .repeat-line {
-            flex: 1;
-            height: 4px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, var(--m-violet), var(--m-red));
-        }
-
-        .repeat-copy h2 {
-            max-width: 13ch;
-            margin: 0 0 1rem;
-            font-family: var(--display);
-            font-size: clamp(2rem, 4.5vw, 3.4rem);
-            line-height: 1.04;
-            letter-spacing: -0.02em;
-            text-wrap: balance;
-            color: var(--paper);
-        }
-
-        .repeat-copy p:not(.eyebrow) {
-            max-width: var(--reading);
-            font-size: clamp(1.05rem, 2vw, 1.2rem);
-            line-height: 1.6;
-            color: var(--muted);
-            text-wrap: pretty;
-        }
     }
 
     /* footer */

@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { loop, STATIONS, type StationId } from "$lib/loop.svelte";
+    import { MINIMAP_ARIA_LABEL, MINIMAP_EDGES, MINIMAP_HEIGHT, MINIMAP_NODES, MINIMAP_VIEWBOX, MINIMAP_WIDTH, type MinimapNode } from "$lib/content/loopPath";
+    import { loop, STATIONS } from "$lib/loop.svelte";
 
     /**
      * Persistent loop mini-map: the same right/right/right/down/left/left/left
@@ -9,44 +10,23 @@
 
     const station = $derived(STATIONS[loop.index]);
 
-    const EDGES = [
-        { d: "M 22 16 H 52", c: "var(--m-blue)" },
-        { d: "M 68 16 H 88", c: "var(--m-blue)" },
-        { d: "M 104 16 H 134", c: "var(--m-blue)" },
-        { d: "M 142 24 V 42", c: "var(--m-violet)" },
-        { d: "M 134 50 H 104", c: "var(--m-violet)" },
-        { d: "M 88 50 H 68", c: "var(--m-red)" },
-        { d: "M 52 50 H 22", c: "var(--m-red)" },
-    ];
+
+    const HUE_COLOR = {
+        blue: "var(--m-blue)",
+        violet: "var(--m-violet)",
+        red: "var(--m-red)",
+    } as const;
 
     // In enhanced mode the master camera streams loop.progress. In fallback it
     // remains 0, so the section index lights the completed path instead.
     const traveled = $derived(
         loop.current === "recap"
-            ? EDGES.length
-            : Math.max(Math.min(loop.index, EDGES.length), Math.floor(loop.progress * EDGES.length + 0.001)),
+            ? MINIMAP_EDGES.length
+            : Math.max(Math.min(loop.index, MINIMAP_EDGES.length), Math.floor(loop.progress * MINIMAP_EDGES.length + 0.001)),
     );
 
-    type Node = {
-        id: StationId;
-        node: string;
-        cx: number;
-        cy: number;
-        r: number;
-        name: string;
-    };
 
-    const NODES: Node[] = [
-        { id: "agent-loop", node: "agent", cx: 14, cy: 16, r: 4.5, name: "The agent — start of the loop" },
-        { id: "context", node: "window", cx: 60, cy: 16, r: 4.5, name: "The context window" },
-        { id: "tokenization", node: "tokens", cx: 96, cy: 16, r: 3.5, name: "Tokenization" },
-        { id: "inference", node: "model", cx: 142, cy: 16, r: 4.5, name: "Inference — the model" },
-        { id: "context-revisit", node: "window", cx: 142, cy: 50, r: 4.5, name: "The context window revisited" },
-        { id: "tools", node: "tools", cx: 96, cy: 50, r: 4.5, name: "Tool calling" },
-        { id: "recap", node: "agent", cx: 14, cy: 50, r: 4.5, name: "The whole loop recap" },
-    ];
-
-    const active = (n: Node) =>
+    const active = (n: MinimapNode) =>
         n.id === loop.current ||
         (loop.current === "context" && n.id === "context") ||
         (loop.current === "context-revisit" && n.id === "context-revisit") ||
@@ -56,23 +36,23 @@
 <nav class="minimap" aria-label="Position on the agent loop">
     <span class="mm-label" aria-hidden="true">{station.label}</span>
     <svg
-        viewBox="0 0 156 66"
-        width="160"
-        height="68"
-        aria-label="Loop map: agent, context window, tokenization, inference, context revisit, tool calling, recap"
+        viewBox={MINIMAP_VIEWBOX}
+        width={MINIMAP_WIDTH}
+        height={MINIMAP_HEIGHT}
+        aria-label={MINIMAP_ARIA_LABEL}
     >
-        {#each EDGES as edge, i}
+        {#each MINIMAP_EDGES as edge, i}
             <path
                 d={edge.d}
                 fill="none"
-                stroke={i < traveled ? edge.c : "var(--line-bright)"}
+                stroke={i < traveled ? HUE_COLOR[edge.hue] : "var(--line-bright)"}
                 stroke-width={i < traveled ? 2.2 : 1.25}
                 stroke-linecap="round"
                 class="mm-edge"
                 class:mm-edge-lit={i < traveled}
             />
         {/each}
-        {#each NODES as n}
+        {#each MINIMAP_NODES as n}
             <a
                 href="#{n.id}"
                 aria-label={n.name}

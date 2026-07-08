@@ -1,24 +1,52 @@
+<script module lang="ts">
+    declare global {
+        interface Window {
+            __handoffErrors?: string[];
+        }
+    }
+</script>
+
 <script lang="ts">
     import { onMount, tick } from "svelte";
+    import { STEP_ROOT_MARGIN } from "$lib/animation/chapterMotion";
+    import {
+        HANDOFFS,
+        chapterNumberFor,
+    } from "$lib/content/loopPath";
+    import {
+        RUN_SHELL_CALL,
+        RUN_SHELL_SCHEMA,
+        MCP_BASE_TOKENS as BASE,
+        MCP_SERVERS as SERVERS,
+        MCP_STEPS as MCP,
+        MCP_TOKEN_BUDGET as MAX,
+        MCP_TOOLDEF_TOKENS as TOOLDEF,
+        TOOL_ROUTINE_CODE as CODE,
+        TOOL_STAGE_CODE as STAGE_CODE,
+        TOOL_STAGES as STAGES,
+    } from "$lib/content/toolCalling";
+    import type { Accent } from "$lib/content/toolCalling";
     import { macroCapable } from "$lib/loop.svelte";
 
     /* ============================================================
-	   Chapter 05 — Tool calling ("the hands")
+	   Station: tool calling
 	   The question: how can an LLM call tools on my machine if it
 	   can only output text? Answer: it can't. It only ever emits
 	   tokens. A "tool call" is just text in an agreed-upon shape;
 	   the agent/harness parses it, runs the real function, and
 	   feeds the result back. The model never crosses the line.
 
-	   1. Transition — the violet tool-definition band from Ch.4's tank
-	      detaches into a schema box; the model then emits text shaped
+	   1. Transition — the violet tool-definition band from the context
+	      revisit tank detaches into a schema box; the model then emits text shaped
 	      by that contract (one-shot on entry).
 	   2. Exchange — reader-stepped sticky stage: the full round trip
 	      agent ⇄ LLM, with a YOUR MACHINE box only the agent touches.
 	   3. MCP — a sticky tank that grows as servers register tools,
-	      showing the context-window cost (callback to Ch.4).
+	      showing the context-window cost (callback to the context window).
 	   Degrades to static + prose without JS.
 	============================================================ */
+
+    const CHAPTER_NUMBER = chapterNumberFor("tools");
 
     const COOL = "var(--cool)",
         WARM = "var(--warm)",
@@ -29,135 +57,6 @@
         LINE_B = "var(--line-bright)",
         BRAND = "var(--brand-strong)",
         SURFACE = "var(--diagram-surface)";
-
-    const RUN_SHELL_SCHEMA = [
-        "{",
-        '  "name": "run_shell",',
-        '  "description": "Run a shell command",',
-        '  "input_schema": {',
-        '    "type": "object",',
-        '    "properties": {',
-        '      "command": {',
-        '        "type": "string"',
-        "      }",
-        "    },",
-        '    "required": ["command"]',
-        "  }",
-        "}",
-    ];
-    const RUN_SHELL_CALL = [
-        "{",
-        '  "name": "run_shell",',
-        '  "input": { "command": "pytest -q" }',
-        "}",
-    ];
-
-    /* ---- 2 · the exchange: one round trip, slowed down ---- */
-    type Lit = "agent" | "llm" | "machine" | "both";
-    type Accent = "cool" | "warm" | "brand" | "tools";
-    type Stage = {
-        k: string;
-        title: string;
-        body: string;
-        dir: "in" | "out" | "down" | null; // chip travel
-        lit: Lit;
-        cardLabel: string;
-        accent: Accent;
-        card: string[];
-        note: string;
-        valid?: boolean;
-        boundary?: boolean;
-    };
-
-    const STAGES: Stage[] = [
-        {
-            k: "the menu",
-            title: "First, the model is handed a menu",
-            body: "Before the turn, every tool is described to the model as a JSON schema — a name, what it does, and the contract its arguments must satisfy. This menu rides along in the context window, sent on every call.",
-            dir: "in",
-            lit: "llm",
-            cardLabel: "TOOL DEFINITION · part of the context",
-            accent: "tools",
-            card: RUN_SHELL_SCHEMA,
-            note: "the model never saw your machine — only this description of it",
-        },
-        {
-            k: "it writes a tool call",
-            title: "The model writes a tool call — as text",
-            body: "It does the only thing it can do: predict tokens. Here those tokens spell a small, structured block naming a tool and its arguments. Nothing has run. The text matches the schema contract.",
-            dir: "out",
-            lit: "llm",
-            cardLabel: "MODEL OUTPUT · just predicted tokens",
-            accent: "warm",
-            card: RUN_SHELL_CALL,
-            note: 'a "tool call" is not an action — it is a request, written in text',
-        },
-        {
-            k: "the agent reads it",
-            title: "The agent reads and checks it",
-            body: "The harness — your code, not the model — recognises the block, parses the JSON, and validates it against the schema. The model has stopped; the loop has the wheel now.",
-            dir: null,
-            lit: "agent",
-            cardLabel: "AGENT · parse + validate against schema",
-            accent: "brand",
-            card: [
-                "{",
-                '  "name": "run_shell",',
-                '  "input": { "command": "pytest -q" }',
-                "}",
-                "",
-                "✓ valid · matches run_shell schema",
-            ],
-            note: "the agent is the interpreter — it decides what the text means",
-            valid: true,
-        },
-        {
-            k: "the agent runs it",
-            title: "The agent runs it — on your machine",
-            body: "Now the agent actually executes the command: it opens a shell, runs it, reads the output. This is the step the model can never do. The model only emitted text; everything that touches your machine is the harness.",
-            dir: "down",
-            lit: "machine",
-            cardLabel: "YOUR MACHINE · the agent executes",
-            accent: "cool",
-            card: [
-                "$ pytest -q",
-                "....                       [100%]",
-                "1 passed in 0.42s",
-            ],
-            note: "the model never crosses this line — it has no shell, no files, no network",
-            boundary: true,
-        },
-        {
-            k: "the result goes back",
-            title: "The result is fed back — as text",
-            body: "The agent wraps the output as a tool result and appends it to the context, then calls the model again. To the model it is just more tokens to read, paired to the call it made.",
-            dir: "in",
-            lit: "llm",
-            cardLabel: "TOOL RESULT · appended to the context",
-            accent: "cool",
-            card: [
-                "{",
-                '  "type": "tool_result",',
-                '  "output": "1 passed in 0.42s"',
-                "}",
-            ],
-            note: "observe → the loop feeds the world back to the model, in the only format it reads",
-        },
-        {
-            k: "this time, an answer",
-            title: "This time it answers — no tool call",
-            body: "With the result in context, the model predicts plain text instead of another tool block. The agent sees no tool call, stops looping, and returns the answer to you. Think → act → observe, closed.",
-            dir: "out",
-            lit: "agent",
-            cardLabel: "MODEL OUTPUT · plain text → returned to you",
-            accent: "warm",
-            card: [
-                '"The test passes now — the bug',
-                ' was a missing null check."',
-            ],
-            note: "no tool call → the loop ends and the turn returns (Chapter 1)",
-        },
-    ];
 
     const ACCENT: Record<Accent, string> = {
         cool: COOL,
@@ -181,28 +80,8 @@
     const exFontSize = $derived(exLong ? 9.5 : 10.5);
     const exCardY0 = $derived(exLong ? 360 : 364);
 
-    // Chapter 1's agent routine, reused verbatim so the loop reads as the same
+    // The agent routine, reused verbatim so the loop reads as the same
     // machine. The detail view to the right is a zoom into run_tool()/has_tool_call.
-    const CODE = [
-        { t: "turn(user_message):", head: true },
-        { t: "  context.append(user_message)" },
-        { t: "  while True:", head: true },
-        { t: "    response = LLM(context)" },
-        { t: "    context.append(response)" },
-        { t: "    if not response.has_tool_call:" },
-        { t: "      return response" },
-        { t: "    out = run_tool(response.tool_call)" },
-        { t: "    context.append(out)" },
-    ];
-    // per stage: which routine line is live, and whether the detail is a zoom-in
-    const STAGE_CODE = [
-        { line: 3, zoom: false },
-        { line: 3, zoom: false },
-        { line: 5, zoom: true },
-        { line: 7, zoom: true },
-        { line: 8, zoom: true },
-        { line: 6, zoom: false },
-    ];
     const codeLine = $derived(STAGE_CODE[activeStage].line);
     const zoom = $derived(STAGE_CODE[activeStage].zoom);
     const codeY = $derived(202 + STAGE_CODE[activeStage].line * 16);
@@ -211,53 +90,8 @@
     const VX = 70,
         VW = 150,
         FLOOR = 420,
-        MAXY = 70,
-        MAX = 8000;
+        MAXY = 70;
     const mscale = (FLOOR - MAXY) / MAX;
-    const BASE = { system: 450, history: 600, user: 450 };
-    const TOOLDEF = [600, 1700, 3400, 6800];
-
-    type McpStep = {
-        title: string;
-        body: string;
-        servers: number;
-        note: string;
-    };
-    const MCP: McpStep[] = [
-        {
-            title: "Without MCP, tools are wired in by hand",
-            body: "Every tool you want the agent to have, you define yourself — name, description, schema — and register it in code. Useful, but it does not scale past a handful.",
-            servers: 0,
-            note: "a small, hand-picked menu",
-        },
-        {
-            title: "MCP is a standard plug for tools",
-            body: "An MCP server advertises a list of tools — each with a name, description, and JSON schema. The agent connects, asks for the list, and registers them all automatically. No bespoke wiring per tool.",
-            servers: 2,
-            note: "tools/list → schemas register themselves into the context",
-        },
-        {
-            title: "Every tool rides in the window",
-            body: "Those schemas land in the tool-definitions layer — which is fixed and re-sent to the model on every single call (Chapter 4). Connect more servers and the layer keeps growing.",
-            servers: 4,
-            note: "fixed cost · paid on every call, before any of your work",
-        },
-        {
-            title: "So be careful what you plug in",
-            body: "A dozen MCP servers can spend thousands of tokens before you have said a word — crowding the budget and pushing toward the limit. And a longer menu makes the model likelier to reach for the wrong tool. Connect deliberately; prune what you do not use.",
-            servers: 6,
-            note: "attempted 8.3k / 8k → the menu alone is breaching the budget",
-        },
-    ];
-
-    const SERVERS = [
-        { name: "filesystem", tools: 6 },
-        { name: "github", tools: 11 },
-        { name: "postgres", tools: 4 },
-        { name: "slack", tools: 8 },
-        { name: "gmail", tools: 7 },
-        { name: "sentry", tools: 5 },
-    ];
 
     let activeMcp = $state(0);
     const mcp = $derived(MCP[activeMcp]);
@@ -296,6 +130,7 @@
     let exchangeEl: HTMLElement;
     let mcpEl: HTMLElement;
     let transitionEl: HTMLElement;
+    let rootEl: HTMLElement;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let gsap: any;
     let stageRun = 0;
@@ -315,7 +150,7 @@
         const q = gsap.utils.selector(exchangeEl);
         // dim the prose, light the active step
         const prose = Array.from(
-            document.querySelectorAll<HTMLElement>(".tc-step"),
+            rootEl.querySelectorAll<HTMLElement>(".tc-step"),
         );
         gsap.to(prose, { opacity: 0.3, duration: 0.3, overwrite: true });
         if (prose[i])
@@ -442,7 +277,7 @@
             );
 
         const prose = Array.from(
-            document.querySelectorAll<HTMLElement>(".tc-mcp-step"),
+            rootEl.querySelectorAll<HTMLElement>(".tc-mcp-step"),
         );
         gsap.to(prose, { opacity: 0.3, duration: 0.3, overwrite: true });
         if (prose[i])
@@ -478,6 +313,15 @@
         let txTl: any;
         let cleanupTx = () => {};
 
+        const handoff = HANDOFFS.contextToolsBandToToolSchema;
+        const sourceRootSelectors = [
+            `#${handoff.sourceStop}`,
+            `[data-loop-anchor-id="${handoff.sourceStop}"]`,
+        ];
+        const sourcePanelSelector = sourceRootSelectors.map((root) => `${root} ${handoff.sourcePanelSelector}`).join(", ");
+        const sourceSelector = sourceRootSelectors.map((root) => `${root} ${handoff.sourceSelector}`).join(", ");
+        const sourceBodySelector = sourceRootSelectors.map((root) => `${root} ${handoff.sourceSelector} .band-body`).join(", ");
+
         Promise.all([
             import("gsap"),
             import("gsap/MotionPathPlugin"),
@@ -492,10 +336,16 @@
             );
 
             // initial step emphasis
-            gsap.set(".tc-step", { opacity: 0.3 });
-            gsap.set(".tc-step:first-child", { opacity: 1 });
-            gsap.set(".tc-mcp-step", { opacity: 0.3 });
-            gsap.set(".tc-mcp-step:first-child", { opacity: 1 });
+            const stepEls = Array.from(
+                rootEl.querySelectorAll<HTMLElement>(".tc-step"),
+            );
+            const mcpStepEls = Array.from(
+                rootEl.querySelectorAll<HTMLElement>(".tc-mcp-step"),
+            );
+            gsap.set(stepEls, { opacity: 0.3 });
+            if (stepEls[0]) gsap.set(stepEls[0], { opacity: 1 });
+            gsap.set(mcpStepEls, { opacity: 0.3 });
+            if (mcpStepEls[0]) gsap.set(mcpStepEls[0], { opacity: 1 });
             gsap.set(
                 [
                     exchangeEl.querySelector(".chip-cool"),
@@ -513,9 +363,9 @@
                         if (!Number.isNaN(n)) void goStage(n);
                     }
                 },
-                { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+                { rootMargin: STEP_ROOT_MARGIN, threshold: 0 },
             );
-            document
+            rootEl
                 .querySelectorAll(".tc-step")
                 .forEach((el) => io?.observe(el));
 
@@ -527,9 +377,9 @@
                         if (!Number.isNaN(n)) void goMcp(n);
                     }
                 },
-                { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+                { rootMargin: STEP_ROOT_MARGIN, threshold: 0 },
             );
-            document
+            rootEl
                 .querySelectorAll(".tc-mcp-step")
                 .forEach((el) => mio?.observe(el));
 
@@ -538,7 +388,7 @@
                 window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
                 macroCapable();
 
-            // --- Ch.5 schema/connector/heading reveal states ---
+            // --- schema/connector/heading reveal states ---
             const setTransitionInitial = () => {
                 gsap.set(q(".tx-schema-shell"), { autoAlpha: 0 });
                 gsap.set(q(".tx-schema-line"), { autoAlpha: 0, y: 8 });
@@ -562,9 +412,8 @@
 
             // --- the morph SOURCE is the tool-definitions band in the
             // context-window revisit beat directly above this station ---
-            const ctxTank = document.querySelector<HTMLElement>(
-                "#context-revisit .rv-panel",
-            );
+            const ctxTank =
+                document.querySelector<HTMLElement>(sourcePanelSelector);
             const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
             const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
             const smooth = (n: number) => n * n * (3 - 2 * n);
@@ -588,15 +437,24 @@
                 overlay?.remove();
                 overlay = undefined;
             };
-            // a fixed-position clone of the live Ch.4 band — visually identical,
+            // a fixed-position clone of the live context band — visually identical,
             // so fading the real tank reads as "the band itself lifted out".
+            let handoffMissingRecorded = false;
             const buildOverlay = () => {
                 removeOverlay();
-                const band = document.querySelector<SVGGElement>(
-                    '#context-revisit [data-band="tools"]',
-                );
+                const band = document.querySelector<SVGGElement>(sourceSelector);
                 const body = band?.querySelector(".band-body");
-                if (!band || !body) return false;
+                if (!band || !body) {
+                    if (import.meta.env.DEV && !handoffMissingRecorded) {
+                        handoffMissingRecorded = true;
+                        console.warn("handoff: missing source", handoff.id);
+                        window.__handoffErrors = [
+                            ...(window.__handoffErrors ?? []),
+                            `handoff: missing source ${handoff.id}`,
+                        ];
+                    }
+                    return false;
+                }
                 const bbox = band.getBBox();
                 const svg = document.createElementNS(
                     "http://www.w3.org/2000/svg",
@@ -632,13 +490,13 @@
             };
 
             // scroll progress drives: the clone flying band → schema box, its
-            // label/hatch fading out in flight, and the Ch.4 tank fading behind.
+            // label/hatch fading out in flight, and the source tank fading behind.
             const updateMorph = (p: number) => {
                 if (!overlay && !buildOverlay()) return;
-                const band = document.querySelector(
-                    '#context-revisit [data-band="tools"] .band-body',
+                const band = document.querySelector(sourceBodySelector);
+                const target = transitionEl.querySelector(
+                    handoff.targetSelector,
                 );
-                const target = transitionEl.querySelector(".tx-schema-body");
                 if (!overlay || !band || !target) return;
                 const from = rectOf(band);
                 const to = rectOf(target);
@@ -650,7 +508,7 @@
                     height: lerp(from.height, to.height, tp),
                     autoAlpha: 1 - span(p, 0.6, 0.74), // fade as schema fills in
                 });
-                const tex = 1 - span(p, 0, 0.22); // lose the Ch.4 texture early
+                const tex = 1 - span(p, 0, 0.22); // lose the source texture early
                 if (ovHatch) gsap.set(ovHatch, { autoAlpha: tex });
                 if (ovLabel) gsap.set(ovLabel, { autoAlpha: tex });
                 if (ovCount) gsap.set(ovCount, { autoAlpha: tex });
@@ -671,7 +529,7 @@
                     return;
                 }
                 setTransitionInitial();
-                // scrubbed reveal of the Ch.5 box, played as the clone arrives
+                // scrubbed reveal of the schema box, played as the clone arrives
                 txTl = gsap
                     .timeline({ paused: true, defaults: { ease: "none" } })
                     .to({}, { duration: 1 }, 0)
@@ -757,11 +615,17 @@
     });
 </script>
 
-<section id="tools" class="tc" data-chapter="05" aria-labelledby="tc-title">
-    <!-- 1 · TRANSITION — Ch.4's tool-definition band becomes Ch.5's schema contract -->
+<section
+    bind:this={rootEl}
+    id="tools"
+    class="tc"
+    data-chapter={CHAPTER_NUMBER}
+    aria-labelledby="tc-title"
+>
+    <!-- 1 · TRANSITION — the tool-definition band becomes the schema contract -->
     <div class="tc-tx" bind:this={transitionEl}>
         <div class="tc-head chapter-head">
-            <p class="eyebrow tc-eyebrow">Chapter 05 · the hands</p>
+            <p class="eyebrow tc-eyebrow">Chapter {CHAPTER_NUMBER} · the hands</p>
             <h2 id="tc-title" class="tc-title">
                 It only writes text.<br />So who runs the command?
             </h2>
@@ -779,7 +643,7 @@
                 role="img"
                 aria-label="The tool-definitions layer carried forward from the context window unfolds and enlarges into a tool-definition schema box; a chip then connects it to the text the model actually emitted — a tool call that matches the schema's contract."
             >
-                <!-- The morph SOURCE is the real Ch.4 tool-definitions band:
+                <!-- The morph SOURCE is the real tool-definitions band:
                      a fixed-position clone of it is flown in from the tank and
                      crossfades into this schema box (see onMount). -->
                 <g
@@ -788,6 +652,7 @@
                 >
                     <rect
                         class="tx-schema-body"
+                        data-handoff-target="tool-schema-body"
                         x="30"
                         y="22"
                         width="430"
@@ -1768,8 +1633,8 @@
     }
 
     /* 1 · transition — normal document flow; the morph plays once on enter.
-       Content-height (no forced 100svh) so the figure follows Ch.4 closely
-       instead of sitting behind a screenful of dead space. */
+       Content-height (no forced 100svh) so the figure follows the previous
+       context beat closely instead of sitting behind a screenful of dead space. */
     .tc-tx {
         display: grid;
         gap: clamp(1.4rem, 4vw, 2.8rem);
@@ -1790,7 +1655,7 @@
         width: 100%;
         height: auto;
     }
-    /* the flying clone of Ch.4's tool-definitions band (built in JS) */
+    /* the flying clone of the source tool-definitions band (built in JS) */
     :global(.tx-band-overlay) {
         position: fixed;
         left: 0;

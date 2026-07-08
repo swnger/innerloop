@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { STATIONS, type LoopNodeId as NodeId, type Station, type StationId } from '$lib/content/loopPath';
 
 /**
  * Loop-spine state — the single source of truth for "where on the agent
@@ -9,34 +10,8 @@ import { browser } from '$app/environment';
  * report themselves via an IntersectionObserver in `+page.svelte`; the
  * header mini-map renders from this state.
  */
-export type StationId =
-	| 'agent-loop'
-	| 'context'
-	| 'tokenization'
-	| 'inference'
-	| 'context-revisit'
-	| 'tools'
-	| 'recap';
 
-/** Which mini-map node a station lights up (the window is visited twice). */
-export type NodeId = 'agent' | 'window' | 'tokens' | 'model' | 'tools';
-
-export type Station = {
-	id: StationId;
-	/** Short wayfinding label shown next to the mini-map. */
-	label: string;
-	node: NodeId;
-};
-
-export const STATIONS: readonly Station[] = [
-	{ id: 'agent-loop', label: 'the agent', node: 'agent' },
-	{ id: 'context', label: 'context window', node: 'window' },
-	{ id: 'tokenization', label: 'tokenization', node: 'tokens' },
-	{ id: 'inference', label: 'inference', node: 'model' },
-	{ id: 'context-revisit', label: 'context window · again', node: 'window' },
-	{ id: 'tools', label: 'tool calling', node: 'tools' },
-	{ id: 'recap', label: 'the whole loop', node: 'agent' }
-];
+export { STATIONS, type NodeId, type Station, type StationId };
 
 export const stationIndex = (id: StationId) => STATIONS.findIndex((s) => s.id === id);
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { type FallbackTransition, type LoopGlyph, type LoopHue } from "$lib/content/loopPath";
 
     /**
      * Static transition beat for the vertical-stack fallback. The enhanced
@@ -7,32 +8,19 @@
      * no-JS without creating private pinned coordinate systems.
      */
 
-    type Glyph = "agent" | "window" | "tokens" | "model" | "tools" | "loop";
-    type Hue = "blue" | "violet" | "red";
 
-    let {
-        from,
-        to,
-        fromLabel,
-        toLabel,
-        direction = "right",
-        hue = "blue",
-        chip,
-        caption,
-        kicker,
-    }: {
-        from: Glyph;
-        to: Glyph;
-        fromLabel: string;
-        toLabel: string;
-        direction?: "right" | "left" | "down";
-        hue?: Hue;
-        chip: string;
-        caption: string;
-        kicker: string;
-    } = $props();
+    let { transition }: { transition: FallbackTransition } = $props();
+    const from = $derived(transition.from);
+    const to = $derived(transition.to);
+    const fromLabel = $derived(transition.fromLabel);
+    const toLabel = $derived(transition.toLabel);
+    const direction = $derived(transition.direction ?? "right");
+    const hue = $derived(transition.hue ?? "blue");
+    const chip = $derived(transition.chip);
+    const caption = $derived(transition.caption);
+    const kicker = $derived(transition.kicker);
 
-    const HUES: Record<Hue, string> = {
+    const HUES: Record<LoopHue, string> = {
         blue: "var(--m-blue)",
         violet: "var(--m-violet)",
         red: "var(--m-red)",
@@ -82,7 +70,7 @@
 
 </script>
 
-{#snippet glyph(kind: Glyph)}
+{#snippet glyph(kind: LoopGlyph)}
     {#if kind === "agent"}
         <rect width="440" height="320" rx="16" fill={SURFACE} stroke={LINE_B} stroke-width="1.5" />
         <text x="30" y="42" font-family="var(--mono)" font-size="14" font-weight="600" letter-spacing="0.14em" fill={PAPER}>AGENT</text>

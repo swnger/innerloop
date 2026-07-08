@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
 
     /* ============================================================
-       Station 5 — the context window, revisited. A compact beat,
+       Station: context window revisit. A compact beat,
        not a replay: the reply the model just predicted lands back
        in the window as a new band. The tool-definitions band here
        is also the morph SOURCE for Tool Calling's opening
@@ -141,7 +141,6 @@
 <section
     id="context-revisit"
     class="rv"
-    data-chapter="05"
     aria-labelledby="rv-title"
 >
     <div class="rv-grid">
@@ -160,7 +159,7 @@
             </p>
         </div>
 
-        <figure class="rv-panel" bind:this={figureEl}>
+        <figure class="rv-panel" bind:this={figureEl} data-handoff="revisit-panel">
             <svg
                 viewBox="0 0 460 440"
                 role="img"
@@ -226,7 +225,7 @@
                 >
 
                 {#each BANDS as band}
-                    <g data-band={band.key}>
+                    <g data-band={band.key} data-handoff={band.key === "tools" ? "tool-definitions-band" : undefined}>
                         <rect
                             class="band-body"
                             x="70"

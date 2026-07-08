@@ -1,8 +1,18 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { STEP_ROOT_MARGIN } from '$lib/animation/chapterMotion';
+	import {
+		CONTEXT_BANDS as B,
+		CONTEXT_LEGEND_KEYS,
+		CONTEXT_STEPS as STEPS,
+		CONTEXT_TOKEN_BUDGET as MAX,
+		type ContextBandKey,
+		type ContextStep as Step
+	} from '$lib/content/contextWindow';
+	import { chapterNumberFor } from '$lib/content/loopPath';
 
 	/* ============================================================
-	   Chapter 04 — The Context Window (PRD §7)
+	   Station: context window.
 	   A liquid tank that mediates between the agent and the LLM.
 	   Strata = what's in the window (system prompt, tool defs, user
 	   prompt, tool outputs, model replies). It fills as the inner
@@ -20,101 +30,24 @@
 	const COOL = 'var(--cool)',
 		WARM = 'var(--warm)';
 
-	type Kind = 'fixed' | 'history' | 'user' | 'tool' | 'response';
-	type Band = { key: string; label: string; tok: number; kind: Kind; fill: string; accent: string };
+	const CHAPTER_NUMBER = chapterNumberFor('context');
 
-	// One distinct hue per category so adjacent layers read apart by color.
-	const SYSTEM = { accent: 'var(--cat-system)', fill: 'var(--cat-system-fill)' };
-	const TOOLS = { accent: 'var(--cat-tools)', fill: 'var(--cat-tools-fill)' };
-	const HISTORY = { accent: 'var(--cat-history)', fill: 'var(--cat-history-fill)' };
-	const USER = { accent: 'var(--cat-user)', fill: 'var(--cat-user-fill)' };
-	const TOOLOUT = { accent: 'var(--cat-tool)', fill: 'var(--cat-tool-fill)' };
-	const RESPONSE = { accent: WARM, fill: 'var(--cat-response-fill)' };
-
-	const B: Record<string, Band> = {
-		system: { key: 'system', label: 'system prompt', tok: 450, kind: 'fixed', ...SYSTEM },
-		tools: { key: 'tools', label: 'tool definitions', tok: 1900, kind: 'fixed', ...TOOLS },
-		history: { key: 'history', label: 'conversation history', tok: 650, kind: 'history', ...HISTORY },
-		user: { key: 'user', label: 'user input', tok: 450, kind: 'user', ...USER },
-		toolout1: { key: 'toolout1', label: 'tool output', tok: 1050, kind: 'tool', ...TOOLOUT },
-		response1: { key: 'response1', label: 'model response', tok: 320, kind: 'response', ...RESPONSE },
-		toolout2: { key: 'toolout2', label: 'tool output', tok: 1250, kind: 'tool', ...TOOLOUT },
-		response2: { key: 'response2', label: 'model response', tok: 360, kind: 'response', ...RESPONSE },
-		toolout3: { key: 'toolout3', label: 'tool output', tok: 1200, kind: 'tool', ...TOOLOUT },
-		response3: { key: 'response3', label: 'model response', tok: 760, kind: 'response', ...RESPONSE }
-	};
-
-	type Step = {
-		title: string;
-		body: string;
-		bands: string[]; // bottom → top
-		highlight: 'all' | string[];
-		entered: string[];
-		note: string;
-		overflow?: boolean;
-	};
-
-	const STEPS: Step[] = [
-		{
-			title: 'A window, mid-task',
-			body: 'Pause the agent halfway through a turn and look at what the model is actually handed. It is this stack — and nothing else. No database, no memory of past chats. Just these layers.',
-			bands: ['system', 'tools', 'history', 'user', 'toolout1', 'response1'],
-			highlight: 'all',
-			entered: [],
-			note: 'everything the model can “see” right now'
-		},
-		{
-			title: 'Some of it never changes',
-			body: 'The system prompt and the tool definitions sit at the bottom of every window. They are re-sent on every single call — a fixed cost you pay before any of your actual content fits.',
-			bands: ['system', 'tools', 'history', 'user', 'toolout1', 'response1'],
-			highlight: ['system', 'tools'],
-			entered: [],
-			note: 'fixed base · re-sent every call'
-		},
-		{
-			title: 'The loop keeps adding',
-			body: 'Each turn of the inner loop writes more in: the result of the tool it just ran, then the model’s reply, appended on top. The window is how one step remembers the last.',
-			bands: ['system', 'tools', 'history', 'user', 'toolout1', 'response1'],
-			highlight: ['toolout1', 'response1'],
-			entered: ['response1'],
-			note: 'tool result observed → reply appended'
-		},
-		{
-			title: 'It fills up',
-			body: 'Do that a few times and the stack climbs toward the line. Every tool result and every reply adds tokens, leaving less room for what comes next.',
-			bands: ['system', 'tools', 'history', 'user', 'toolout1', 'response1', 'toolout2', 'response2', 'toolout3'],
-			highlight: 'all',
-			entered: ['toolout2', 'response2', 'toolout3'],
-			note: 'every turn costs more tokens'
-		},
-		{
-			title: 'Past the limit, things fall out',
-			body: 'The window is finite. Push past the budget and the oldest content is dropped to make room — the model simply stops being able to see it. That is why a long agent run can “forget” what it did early on.',
-			bands: ['system', 'tools', 'user', 'toolout1', 'response1', 'toolout2', 'response2', 'toolout3', 'response3'],
-			highlight: 'all',
-			entered: ['response3'],
-			note: 'attempted 8.4k / 8k → oldest history evicted · 7.7k remains',
-			overflow: true
-		}
-	];
-
-	// vessel geometry
 	const VX = 64,
 		VW = 196,
 		FLOOR = 420,
-		MAXY = 68,
-		MAX = 8000;
+		MAXY = 68;
 	const scale = (FLOOR - MAXY) / MAX;
 
 	const fmt = (n: number) => (n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n));
 
 	let activeStep = $state(0);
+	let rootEl: HTMLElement;
 	let figureEl: HTMLElement;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let gsap: any;
 	let activation = 0;
 
-	const step = $derived(STEPS[activeStep]);
+	const step = $derived(STEPS[activeStep] as Step);
 	const layoutFor = (target: Step) => {
 		let acc = 0;
 		return target.bands.map((k) => {
@@ -122,7 +55,7 @@
 			const h = b.tok * scale;
 			const y = FLOOR - acc - h;
 			acc += h;
-			const lit = target.highlight === 'all' || target.highlight.includes(k);
+			const lit = target.highlight === 'all' || (target.highlight as readonly ContextBandKey[]).includes(k);
 			return { ...b, h, y, lit, isNew: target.entered.includes(k) };
 		});
 	};
@@ -130,17 +63,18 @@
 	const used = $derived(step.bands.reduce((a, k) => a + B[k].tok, 0));
 	const surfaceY = $derived(Math.max(MAXY - 6, FLOOR - used * scale));
 	const fixedTop = FLOOR - (B.system.tok + B.tools.tok) * scale;
-	const LEGEND = [B.system, B.tools, B.history, B.user, B.toolout1, B.response1];
+	const LEGEND = CONTEXT_LEGEND_KEYS.map((key) => B[key]);
 	const surfaceFor = (target: Step) =>
 		Math.max(MAXY - 6, FLOOR - target.bands.reduce((a, k) => a + B[k].tok, 0) * scale);
 
 	async function activateStep(nextIndex: number) {
 		if (nextIndex === activeStep) return;
 		const run = ++activation;
-		const previous = STEPS[activeStep];
+		const previous = STEPS[activeStep] as Step;
+		const next = STEPS[nextIndex] as Step;
 		const previousLayout = layoutFor(previous);
 		const previousMap = new Map(previousLayout.map((band) => [band.key, band]));
-		const removed = previous.bands.filter((key) => !STEPS[nextIndex].bands.includes(key));
+		const removed = previous.bands.filter((key) => !next.bands.includes(key));
 
 		if (gsap && removed.length) {
 			const nodes = removed
@@ -158,7 +92,7 @@
 		await tick();
 		if (run !== activation || !gsap) return;
 
-		const nextLayout = layoutFor(STEPS[nextIndex]);
+		const nextLayout = layoutFor(next);
 		const duration = 0.62;
 		const timeline = gsap.timeline({ defaults: { duration, ease: 'power2.inOut' } });
 
@@ -201,7 +135,7 @@
 		}
 
 		const oldSurface = surfaceFor(previous);
-		const newSurface = surfaceFor(STEPS[nextIndex]);
+		const newSurface = surfaceFor(next);
 		timeline.fromTo(
 			figureEl.querySelector('.ctx-liquid'),
 			{ attr: { y: oldSurface, height: FLOOR - oldSurface } },
@@ -221,7 +155,7 @@
 			0
 		);
 
-		const prose = Array.from(document.querySelectorAll<HTMLElement>('.ctx-step'));
+		const prose = Array.from(rootEl.querySelectorAll<HTMLElement>('.ctx-step'));
 		gsap.to(prose, { opacity: 0.32, duration: 0.35, overwrite: true });
 		gsap.to(prose[nextIndex], { opacity: 1, duration: 0.35, overwrite: true });
 	}
@@ -233,7 +167,7 @@
 		import('gsap').then((module) => {
 			if (disposed) return;
 			gsap = module.gsap ?? module.default;
-			const prose = Array.from(document.querySelectorAll<HTMLElement>('.ctx-step'));
+			const prose = Array.from(rootEl.querySelectorAll<HTMLElement>('.ctx-step'));
 			gsap.set(prose, { opacity: 0.32 });
 			gsap.set(prose[0], { opacity: 1 });
 			io = new IntersectionObserver(
@@ -244,7 +178,7 @@
 						if (!Number.isNaN(index)) void activateStep(index);
 					}
 				},
-				{ rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+				{ rootMargin: STEP_ROOT_MARGIN, threshold: 0 }
 			);
 			prose.forEach((element) => io?.observe(element));
 		});
@@ -256,9 +190,9 @@
 	});
 </script>
 
-<section id="context" class="ctx" data-chapter="02" aria-labelledby="ctx-title">
+<section bind:this={rootEl} id="context" class="ctx" data-chapter={CHAPTER_NUMBER} aria-labelledby="ctx-title">
 	<div class="ctx-head chapter-head">
-		<p class="eyebrow">Chapter 02 · the mediator</p>
+		<p class="eyebrow">Chapter {CHAPTER_NUMBER} · the mediator</p>
 		<h2 id="ctx-title">The context window is the model’s entire world.</h2>
 		<p class="ctx-intro">
 			Between the agent and the LLM sits a tank. The agent fills it; the whole thing is handed to the

@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { chapterNumberFor } from "$lib/content/loopPath";
 
     /* ============================================================
-       Station 1 — cold open. One object only: the agent routine.
+       Station: agent cold open. One object only: the agent routine.
        The live beat is the user's instruction being typed into the
        input, then the code lights the outer user-turn loop and the
        inner model/tool loop. Context, tokenization, and model internals
@@ -17,6 +18,7 @@
     };
 
     const MESSAGE = "fix the broken test";
+    const CHAPTER_NUMBER = chapterNumberFor("agent-loop");
 
     const CODE: CodeLine[] = [
         { text: "while input := inbox.next():", cls: "outer", note: "outer loop", loop: "outer" },
@@ -118,9 +120,9 @@
     });
 </script>
 
-<section id="agent-loop" class="hero" data-chapter="01" aria-labelledby="hero-title">
+<section id="agent-loop" class="hero" data-chapter={CHAPTER_NUMBER} aria-labelledby="hero-title">
     <div class="intro chapter-head">
-        <p class="eyebrow">Chapter 01 · the cold open</p>
+        <p class="eyebrow">Chapter {CHAPTER_NUMBER} · the cold open</p>
         <h1 id="hero-title">Watch the loop before we name the parts.</h1>
     </div>
 
