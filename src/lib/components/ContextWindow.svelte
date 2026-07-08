@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import { STEP_ROOT_MARGIN } from '$lib/animation/chapterMotion';
 	import {
 		CONTEXT_BANDS as B,
@@ -10,6 +10,7 @@
 		type ContextStep as Step
 	} from '$lib/content/contextWindow';
 	import { chapterNumberFor } from '$lib/content/loopPath';
+	import { loop } from '$lib/loop.svelte';
 
 	/* ============================================================
 	   Station: context window.
@@ -43,9 +44,17 @@
 	let activeStep = $state(0);
 	let rootEl: HTMLElement;
 	let figureEl: HTMLElement;
+	let stepsEl: HTMLElement;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let gsap: any;
+	let gsapReady = $state(false);
 	let activation = 0;
+
+	// Enhanced = the pinned 2D camera world is mounted. Then the chapter parks
+	// at one viewport height and its steps are a scroll-driven conveyor (in from
+	// the bottom, out the top) instead of a tall document-flow scrolly — so the
+	// loop spine stays flat through this station.
+	const enhanced = $derived(gsapReady && loop.worldEnhanced);
 
 	const step = $derived(STEPS[activeStep] as Step);
 	const layoutFor = (target: Step) => {
@@ -66,6 +75,20 @@
 	const LEGEND = CONTEXT_LEGEND_KEYS.map((key) => B[key]);
 	const surfaceFor = (target: Step) =>
 		Math.max(MAXY - 6, FLOOR - target.bands.reduce((a, k) => a + B[k].tok, 0) * scale);
+
+	// Right-column steps as a vertical conveyor: active card centered, the rest
+	// parked one mask-height above/below. Advancing scrolls the next card in from
+	// the bottom and the previous out the top; the world coordinate never moves.
+	function layoutConveyor(index: number, animate: boolean) {
+		if (!gsap || !stepsEl) return;
+		const cards = Array.from(stepsEl.querySelectorAll<HTMLElement>('.ctx-step'));
+		const slide = (stepsEl.clientHeight || 480) * 0.9;
+		cards.forEach((card, i) => {
+			const target = { y: (i - index) * slide, autoAlpha: i === index ? 1 : 0 };
+			if (animate) gsap.to(card, { ...target, duration: 0.62, ease: 'power3.out', overwrite: true });
+			else gsap.set(card, target);
+		});
+	}
 
 	async function activateStep(nextIndex: number) {
 		if (nextIndex === activeStep) return;
@@ -155,38 +178,68 @@
 			0
 		);
 
-		const prose = Array.from(rootEl.querySelectorAll<HTMLElement>('.ctx-step'));
-		gsap.to(prose, { opacity: 0.32, duration: 0.35, overwrite: true });
-		gsap.to(prose[nextIndex], { opacity: 1, duration: 0.35, overwrite: true });
+		if (enhanced) {
+			layoutConveyor(nextIndex, true);
+		} else {
+			const prose = Array.from(rootEl.querySelectorAll<HTMLElement>('.ctx-step'));
+			gsap.to(prose, { opacity: 0.32, duration: 0.35, overwrite: true });
+			gsap.to(prose[nextIndex], { opacity: 1, duration: 0.35, overwrite: true });
+		}
 	}
 
 	onMount(() => {
-		let io: IntersectionObserver | undefined;
 		let disposed = false;
-
 		import('gsap').then((module) => {
 			if (disposed) return;
 			gsap = module.gsap ?? module.default;
-			const prose = Array.from(rootEl.querySelectorAll<HTMLElement>('.ctx-step'));
-			gsap.set(prose, { opacity: 0.32 });
-			gsap.set(prose[0], { opacity: 1 });
-			io = new IntersectionObserver(
-				(entries) => {
-					for (const entry of entries) {
-						if (!entry.isIntersecting) continue;
-						const index = Number((entry.target as HTMLElement).dataset.i);
-						if (!Number.isNaN(index)) void activateStep(index);
-					}
-				},
-				{ rootMargin: STEP_ROOT_MARGIN, threshold: 0 }
-			);
-			prose.forEach((element) => io?.observe(element));
+			gsapReady = true;
 		});
-
 		return () => {
 			disposed = true;
-			io?.disconnect();
 		};
+	});
+
+	// Pick the step driver by mode. Base/fallback: an IntersectionObserver over
+	// the tall document-flow list drives which step is active and fades prose.
+	// Enhanced: the steps are a fixed-height conveyor whose position is set here
+	// and animated by activateStep; the frac effect below advances the index.
+	$effect(() => {
+		if (!gsapReady) return;
+		const isEnhanced = enhanced;
+		const index = untrack(() => activeStep);
+		const prose = Array.from(rootEl.querySelectorAll<HTMLElement>('.ctx-step'));
+
+		if (isEnhanced) {
+			gsap.set(prose, { clearProps: 'opacity' });
+			layoutConveyor(index, false);
+			return () => gsap.set(prose, { clearProps: 'transform,opacity,visibility' });
+		}
+
+		gsap.set(prose, { clearProps: 'transform,visibility', opacity: 0.32 });
+		gsap.set(prose[index], { opacity: 1 });
+		const io = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting) continue;
+					const i = Number((entry.target as HTMLElement).dataset.i);
+					if (!Number.isNaN(i)) void activateStep(i);
+				}
+			},
+			{ rootMargin: STEP_ROOT_MARGIN, threshold: 0 }
+		);
+		prose.forEach((element) => io.observe(element));
+		return () => io.disconnect();
+	});
+
+	// Enhanced only: map this station's dwell frac to a step index. The page
+	// publishes frac 0→1 across the parked camera dwell; each threshold advances
+	// the conveyor + tank fill, scrubbable both directions.
+	$effect(() => {
+		if (!enhanced) return;
+		const { stop, frac } = loop.stationProgress;
+		if (stop !== 'context') return;
+		const index = Math.min(STEPS.length - 1, Math.max(0, Math.floor(frac * STEPS.length)));
+		void activateStep(index);
 	});
 </script>
 
@@ -287,7 +340,7 @@
 			<figcaption class="ctx-note mono">{step.note}</figcaption>
 		</figure>
 
-		<ol class="ctx-steps">
+		<ol class="ctx-steps" bind:this={stepsEl}>
 			{#each STEPS as s, i}
 				<li class="ctx-step" data-i={i} aria-current={i === activeStep ? 'step' : undefined}>
 					<span class="step-n mono">0{i + 1}</span>
@@ -441,5 +494,61 @@
 		opacity: 1;
 		min-height: auto;
 		margin-bottom: 2rem;
+	}
+
+	/* Enhanced world: the chapter parks at one pinned viewport height. Head on
+	   top, tank + step conveyor share the middle, disclaimer at the foot. The
+	   station never scrolls its world coordinate, so the loop spine stays flat
+	   through it; the steps are absolutely stacked and JS runs the conveyor. */
+	:global(html[data-loop-world='enhanced']) .ctx {
+		height: var(--world-viewport, 100svh);
+		margin: 0;
+		padding: clamp(0.75rem, 2vh, 1.75rem) var(--page-gutter);
+		border-top: none;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		box-sizing: border-box;
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-head,
+	:global(html[data-loop-world='enhanced']) .ctx-disclaimer {
+		flex: none;
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-head h2 {
+		font-size: clamp(1.7rem, 3vw, 2.5rem);
+		margin-bottom: 0.5rem;
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-intro {
+		font-size: clamp(0.98rem, 1.7vw, 1.1rem);
+		max-width: 62ch;
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-disclaimer {
+		margin: clamp(0.5rem, 1.4vh, 1rem) 0 0;
+		font-size: 0.78rem;
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-scrolly {
+		flex: 1;
+		min-height: 0;
+		margin-top: clamp(0.5rem, 1.6vh, 1.25rem);
+		align-items: center;
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-sticky {
+		align-self: center;
+		max-width: min(100%, calc((var(--world-viewport, 80svh) - 20rem) * 1.191));
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-steps {
+		position: relative;
+		height: 100%;
+		align-self: stretch;
+		overflow: hidden;
+	}
+	:global(html[data-loop-world='enhanced']) .ctx-step {
+		position: absolute;
+		inset: 0;
+		min-height: 0;
+		max-width: 34rem;
+		padding: 0;
+		justify-content: center;
+		opacity: 0;
 	}
 </style>

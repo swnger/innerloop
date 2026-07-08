@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { STATIONS, type LoopNodeId as NodeId, type Station, type StationId } from '$lib/content/loopPath';
+import { STATIONS, type LoopNodeId as NodeId, type Station, type StationId, type WorldStopId } from '$lib/content/loopPath';
 
 /**
  * Loop-spine state — the single source of truth for "where on the agent
@@ -11,7 +11,7 @@ import { STATIONS, type LoopNodeId as NodeId, type Station, type StationId } fro
  * header mini-map renders from this state.
  */
 
-export { STATIONS, type NodeId, type Station, type StationId };
+export { STATIONS, type NodeId, type Station, type StationId, type WorldStopId };
 
 export const stationIndex = (id: StationId) => STATIONS.findIndex((s) => s.id === id);
 
@@ -49,6 +49,18 @@ const worldFactories = new Set<WorldTriggerFactory>();
 
 let progress = $state(0);
 
+/**
+ * Progress *within the current stop's own scrub window* (the dwell or the
+ * readable descent), 0→1. Published by the page's master-scrub render so a
+ * station can run a chapter-local, viewport-parked animation off it without
+ * measuring window-scroll through the transformed camera. `stop` is undefined
+ * on legs / overview, where no single station owns the playhead.
+ */
+let stationProgress = $state<{ stop: WorldStopId | undefined; frac: number }>({ stop: undefined, frac: 0 });
+
+/** True while the pinned 2D camera world is mounted (macro mode). */
+let worldEnhanced = $state(false);
+
 export const loop = {
 	get current(): StationId {
 		return current;
@@ -64,6 +76,18 @@ export const loop = {
 	},
 	setProgress(value: number) {
 		progress = Math.max(0, Math.min(1, value));
+	},
+	get stationProgress(): { stop: WorldStopId | undefined; frac: number } {
+		return stationProgress;
+	},
+	setStationProgress(stop: WorldStopId | undefined, frac: number) {
+		stationProgress = { stop, frac: Math.max(0, Math.min(1, frac)) };
+	},
+	get worldEnhanced(): boolean {
+		return worldEnhanced;
+	},
+	setWorldEnhanced(value: boolean) {
+		worldEnhanced = value;
 	},
 	get containerAnimation(): CameraTimeline | undefined {
 		return containerAnimation;

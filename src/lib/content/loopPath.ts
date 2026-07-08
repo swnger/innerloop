@@ -94,7 +94,7 @@ export type MinimapEdge = {
 
 export const LOOP_STOPS = [
 	{ kind: "station", id: "agent-loop", label: "the agent", node: "agent", column: 0, row: 0, chapterNumber: "01" },
-	{ kind: "station", id: "context", label: "context window", node: "window", column: 1, row: 0, chapterNumber: "02" },
+	{ kind: "station", id: "context", label: "context window", node: "window", column: 1, row: 0, chapterNumber: "02", dwellMs: 2600 },
 	{ kind: "station", id: "tokenization", label: "tokenization", node: "tokens", column: 2, row: 0, chapterNumber: "03" },
 	{ kind: "station", id: "inference", label: "inference", node: "model", column: 3, row: 0, chapterNumber: "04" },
 	{ kind: "station", id: "context-revisit", label: "context again", mapLabel: "context window · again", node: "window", column: 3, row: 1 },

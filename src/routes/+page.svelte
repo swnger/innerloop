@@ -211,6 +211,7 @@
                 const enhancedAnchors: HTMLElement[] = [];
 
                 worldEnhanced = true;
+                loop.setWorldEnhanced(true);
                 document.documentElement.dataset.loopWorld = "enhanced";
                 for (const section of document.querySelectorAll<HTMLElement>("main section[id]")) {
                     if (!stationIds.has(section.id as StationId)) continue;
@@ -282,6 +283,10 @@
                             window.innerHeight - (header?.getBoundingClientRect().height ?? 70),
                         );
                         const viewportWidth = window.innerWidth;
+                        // Collapse viewport-parked stations (ch2) to exactly the
+                        // pinned camera height *before* measuring, so their travel
+                        // reads 0 and the spine stays flat through them.
+                        document.documentElement.style.setProperty("--world-viewport", `${Math.floor(viewportHeight)}px`);
                         const heights = Object.fromEntries(
                             LOOP_STOPS.map((stop) => [stop.id, stationEls.get(stop.id)?.offsetHeight ?? window.innerHeight]),
                         ) as Partial<Record<WorldStopId, number>>;
@@ -343,6 +348,10 @@
                         const stationTimes = new Map<StationId, number>();
                         const stopTimes = new Map<WorldStopId, number>();
                         const legRanges: { start: number; end: number; from: WorldStopId; to: WorldStopId }[] = [];
+                        // Per-stop scrub window [enter, depart]: the descent (tall
+                        // stations) or the dwell (viewport-parked ones). Feeds the
+                        // station-local frac published each render.
+                        const stationScrubRanges = new Map<WorldStopId, { start: number; end: number }>();
                         worldCarriers = LOOP_LEGS.map((leg) => ({
                             id: leg.id,
                             hue: leg.hue,
@@ -480,6 +489,7 @@
                             stopTimes.set(stop.id, timeline.duration());
                             if (stop.kind === "station") stationTimes.set(stop.id, timeline.duration());
 
+                            const enterTime = timeline.duration();
                             const readableTravel = Math.max(0, node.offsetHeight - viewportHeight);
                             if (readableTravel > 0) {
                                 timeline.to(cameraEl, { y: nextCamera.y - readableTravel, duration: readableTravel });
@@ -488,6 +498,7 @@
                                 timeline.to({}, { duration: stop.dwellMs ?? STOP_DWELL_MS });
                                 previousCamera = nextCamera;
                             }
+                            stationScrubRanges.set(stop.id, { start: enterTime, end: timeline.duration() });
                         }
 
                         const totalBeforeOverview = timeline.duration();
@@ -605,6 +616,15 @@
                             timeline.progress(clamped, false);
                             const time = timeline.duration() * clamped;
                             updateStationVisibility(time);
+                            let scrubStop: WorldStopId | undefined;
+                            let scrubFrac = 0;
+                            for (const [id, range] of stationScrubRanges) {
+                                if (time < range.start || time > range.end) continue;
+                                scrubStop = id;
+                                scrubFrac = (time - range.start) / Math.max(1, range.end - range.start);
+                                break;
+                            }
+                            loop.setStationProgress(scrubStop, scrubFrac);
                             if (initialTarget && preserveInitialTarget) {
                                 loop.set(initialTarget);
                                 loop.setProgress(clamped);
@@ -731,6 +751,8 @@
                         delete section.dataset.loopAnchorId;
                     }
                     worldEnhanced = false;
+                    loop.setWorldEnhanced(false);
+                    loop.setStationProgress(undefined, 0);
                     delete document.documentElement.dataset.loopWorld;
                 };
             });
