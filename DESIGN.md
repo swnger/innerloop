@@ -285,7 +285,8 @@ leads with its diagram-panel.
 - **Diagram panel** — `surface` well, `line` border, `rounded.lg`; the Isotype
 stage where color-coded blocks and pictograms live.
 - **Token chip** — small `rounded.sm` chip in a concept `*-fill`; the persistent
-object that hands off between chapters (Ch.2 → Ch.3 → Ch.4).
+object that leaves tokenization in Ch.2, enters the context window in Ch.3, and
+travels inside the sealed context packet into inference in Ch.4.
 - **Context-window strata** — stacked bands, one concept hue each, each band
 text-labeled.
 - **Legend** — always-available key mapping hue → concept; the contract that
@@ -303,10 +304,14 @@ disclaimer.
 
 - **Connective through-line (signature).** Chapters are one continuous system.
 Shared objects persist and morph across each boundary so concepts visibly
-compose: tokens from Ch.2 flow into Ch.3's prediction, then stack into Ch.4's
-context window, then feed Ch.5's loop. The Hero loop is the spine; each chapter
-zooms into one of its nodes and back out. Implement with `ScrollTrigger` pinning
-  - `Flip` for element handoff.
+compose: the prompt enters tokenization in Ch.2, tokens fill the context window
+in Ch.3, the sealed context feeds next-token prediction in Ch.4, and a structured
+tool request enters the inner loop in Ch.5. The page itself traces this loop:
+full-motion layouts move between stations on one world circuit, while compact
+and reduced-motion layouts preserve the same handoffs with in-flow captions and
+static teaching states. The Hero loop and persistent mini-map are two scales of
+the same circuit. Use one centrally owned `ScrollTrigger` pin/master timeline in
+the full-motion layout and `Flip` for persistent-object handoff.
 - **Diagram motion** — tokens flow, the context window fills, the loop cycles;
 each animation reveals an already-visible default state (never gates content
 visibility on a class).
@@ -338,4 +343,3 @@ uppercase mono — removed from the old system).
 identical icon-card grids.
 - No childish / cartoonish pictograms; keep them flat, exact, Isotype-grade.
 - Never encode meaning in color alone.
-
