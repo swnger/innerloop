@@ -37,7 +37,7 @@
 	});
 </script>
 
-<nav class="loop-map" class:born={journey.loopMapBorn} aria-label="Journey map">
+<nav class="loop-map" aria-label="Journey map" aria-hidden={!journey.loopMapBorn}>
 	<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Seven-station journey circuit">
 		<defs>
 			<linearGradient id="journey-spine" x1="0" x2="1" y1="0" y2="0">
@@ -75,7 +75,7 @@
 		top: 5.5rem;
 		right: clamp(1rem, 3vw, 3rem);
 		z-index: 20;
-		display: none;
+		display: block;
 		width: 10rem;
 		padding: 0.5rem;
 		background: color-mix(in oklch, var(--c-paper) 90%, transparent);
@@ -85,9 +85,10 @@
 		backdrop-filter: blur(8px);
 	}
 
-	.loop-map.born {
-		display: block;
+	.loop-map[aria-hidden='true'] {
+		pointer-events: none;
 	}
+
 
 	svg {
 		display: block;

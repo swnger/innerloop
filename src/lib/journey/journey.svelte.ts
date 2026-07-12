@@ -5,7 +5,7 @@ const handles = new Map<string, StationHandle>();
 const firstStationId = manifest[0]?.meta.id ?? '';
 let activeId = $state(firstStationId);
 let progress = $state(0);
-let loopMapBorn = $state(false);
+let loopMapBorn = $state(true);
 const active = $derived(manifest.find((entry) => entry.meta.id === activeId)?.meta ?? null);
 
 /** Shared reactive journey state and station-handle registry. */
@@ -27,11 +27,10 @@ export const journey = {
 		const clamped = Number.isFinite(nextProgress) ? Math.min(1, Math.max(0, nextProgress)) : 0;
 		progress = clamped;
 		activeId = table.at(clamped).stationId;
-
-		const firstStation = table.segments.find((segment) => segment.kind === 'station');
-		if (firstStation && clamped >= 0.95 * firstStation.endProgress) {
-			loopMapBorn = true;
-		}
+	},
+	/** Set the reversible, orchestrator-owned LoopMap birth state. */
+	setLoopMapBorn(next: boolean): void {
+		loopMapBorn = next;
 	},
 	/** Register a station handle for transition and orchestration lookups. */
 	register(handle: StationHandle): void {

@@ -9,6 +9,7 @@ import type {
 	StationHandle,
 	SegmentTable
 } from '$lib/journey/types';
+import { flightPoint } from './trajectory';
 
 export interface TravelerLayerDeps {
 	gsap: GsapStatic;
@@ -69,6 +70,16 @@ export function createTravelerLayer(deps: TravelerLayerDeps): TravelerLayerApi {
 
 	const el = (id: TravelerId): HTMLElement => getElement(id);
 
+	const resolvePort = (stationId: string, port: TravelerDock['port']): Element | null => {
+		try {
+			return deps.handle(stationId)?.ports[port]?.() ?? null;
+		} catch {
+			// Component teardown can clear a bound scene root before the GSAP
+			// branch cleanup runs. A missing port is equivalent to a lazy port.
+			return null;
+		}
+	};
+
 	const adopt = (id: TravelerId): void => {
 		const traveler = getElement(id);
 		const point = worldPoint(traveler, deps.world);
@@ -85,7 +96,7 @@ export function createTravelerLayer(deps: TravelerLayerDeps): TravelerLayerApi {
 
 	const deposit = (id: TravelerId, dock: TravelerDock): void => {
 		const traveler = getElement(id);
-		const port = deps.handle(dock.stationId)?.ports[dock.port]?.();
+		const port = resolvePort(dock.stationId, dock.port);
 		if (!port) {
 			// A lazy port may not exist until a scene beat has rendered. Keep the
 			// traveler visible in the layer rather than dropping the handoff.
@@ -108,21 +119,18 @@ export function createTravelerLayer(deps: TravelerLayerDeps): TravelerLayerApi {
 		route: TravelerRoute,
 		progress: number
 	): void => {
-		const fromPort = deps.handle(transition.from)?.ports[route.fromPort]?.();
-		const toPort = deps.handle(transition.to)?.ports[route.toPort]?.();
+		const fromPort = resolvePort(transition.from, route.fromPort);
+		const toPort = resolvePort(transition.to, route.toPort);
 		if (!fromPort || !toPort) {
 			adopt(id);
 			return;
 		}
 		const from = worldPoint(fromPort, deps.world);
 		const to = worldPoint(toPort, deps.world);
-		adopt(id);
+		if (getElement(id).parentElement !== deps.layerEl) adopt(id);
 		const span = segment.endProgress - segment.startProgress;
 		const local = span > 0 ? Math.max(0, Math.min(1, (progress - segment.startProgress) / span)) : 1;
-		deps.gsap.set(getElement(id), {
-			x: from.x + (to.x - from.x) * local,
-			y: from.y + (to.y - from.y) * local
-		});
+		deps.gsap.set(getElement(id), flightPoint(from, to, local, route.arc));
 	};
 
 	const placeFor = (rawProgress: number): void => {

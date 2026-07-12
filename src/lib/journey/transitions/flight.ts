@@ -1,39 +1,51 @@
 import { worldPoint } from '../travelers/layer';
-import type { PortName, TravelerId, TransitionContext } from '../types';
+import { flightPoint, type Point2D } from '../travelers/trajectory';
+import type { TravelerRoute, TransitionContext } from '../types';
 
 /**
- * Move one traveler to a destination port in world-local coordinates.
- * The destination and its geometry are resolved lazily when GSAP
- * initializes the function-valued end coordinates.
+ * Move one traveler along its declared route in world-local coordinates.
+ * Both endpoints are measured when the tween initializes, so invalidation
+ * re-resolves geometry without deriving a source from the traveler transform.
  */
 export function flightTween(
 	ctx: TransitionContext,
-	id: TravelerId,
-	fromPort: PortName,
-	toPort: PortName,
+	route: TravelerRoute,
 	vars: gsap.TweenVars = {},
 ): gsap.core.Tween {
-	const traveler = ctx.traveler(id);
+	const traveler = ctx.traveler(route.id);
 	const world =
 		(traveler.closest('.world') as HTMLElement | null) ??
 		(traveler.offsetParent as HTMLElement | null);
+	const proxy = { progress: 0 };
+	let from: Point2D = { x: 0, y: 0 };
+	let to: Point2D = { x: 0, y: 0 };
+	const setX = ctx.gsap.quickSetter(traveler, 'x', 'px');
+	const setY = ctx.gsap.quickSetter(traveler, 'y', 'px');
 
-	// The traveler is adopted by the layer before the transition starts, so
-	// its current position already represents fromPort. Keep the source in
-	// the signature as part of the route contract without reparenting here.
-	void fromPort;
-
-	const coordinate = (axis: 'x' | 'y') => () => {
-		const destination = ctx.port('to', toPort);
-		if (!destination || !world) return 0;
-		return worldPoint(destination, world)[axis];
+	const measure = (): void => {
+		const source = ctx.port('from', route.fromPort);
+		const destination = ctx.port('to', route.toPort);
+		if (!source || !destination || !world) return;
+		from = worldPoint(source, world);
+		to = worldPoint(destination, world);
 	};
 
-	return ctx.gsap.to(traveler, {
-		...vars,
-		duration: 1,
-		ease: 'none',
-		x: coordinate('x'),
-		y: coordinate('y'),
-	});
+	return ctx.gsap.fromTo(
+		proxy,
+		{ progress: 0 },
+		{
+			...vars,
+			progress: () => {
+				measure();
+				return 1;
+			},
+			duration: 1,
+			ease: 'none',
+			onUpdate: () => {
+				const point = flightPoint(from, to, proxy.progress, route.arc);
+				setX(point.x);
+				setY(point.y);
+			},
+		},
+	);
 }

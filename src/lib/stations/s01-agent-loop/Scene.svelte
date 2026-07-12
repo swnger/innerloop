@@ -78,12 +78,16 @@
 				timeline.to(node, { attr: { r: 39 }, duration: DUR.micro, ease: EASE.out });
 			}
 			if (line) {
-				timeline.to(line, {
-					opacity: 1,
-					backgroundColor: ctx.color(beat.fill),
-					duration: DUR.micro,
-					ease: EASE.out
-				});
+				timeline.to(
+					line,
+					{
+						opacity: 1,
+						backgroundColor: ctx.color(beat.fill),
+						duration: DUR.micro,
+						ease: EASE.out
+					},
+					'<0.1'
+				);
 			}
 			timeline.to({}, { duration: DUR.settle });
 			if (node) timeline.to(node, { attr: { r: 32 }, duration: DUR.micro, ease: EASE.out });
@@ -97,6 +101,7 @@
 			}
 		}
 
+		timeline.addLabel('loop-map-birth');
 		// Birth of the persistent LoopMap: the station diagram leaves the stage
 		// by shrinking toward the same top-right corner.
 		if (loopStage) {
@@ -119,7 +124,8 @@
 			sceneEl: root,
 			ports: {
 				'prompt-out': () => root.querySelector('[data-port="prompt-out"]'),
-				'answer-in': () => root.querySelector('[data-port="answer-in"]')
+				'answer-in': () => root.querySelector('[data-port="answer-in"]'),
+				'loop-diagram': () => root.querySelector('[data-loop-stage]')
 			},
 			build,
 			applyStatic: () => {}

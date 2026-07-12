@@ -26,7 +26,6 @@
 		const shatter = Array.from(ctx.root.querySelectorAll<HTMLElement>('[data-shatter-chip]'));
 		const ids = Array.from(ctx.root.querySelectorAll<HTMLElement>('[data-chip-id]'));
 		const callout = ctx.root.querySelector<HTMLElement>('[data-space-callout]');
-		const shatterRow = ctx.root.querySelector<HTMLElement>('[data-shatter-row]');
 		const edge = Array.from(ctx.root.querySelectorAll<HTMLElement>('[data-edge-card]'));
 		const lab = ctx.root.querySelector<HTMLElement>('[data-token-lab]');
 		const progress = ctx.root.querySelector<HTMLElement>('[data-plateau-progress]');
@@ -34,13 +33,44 @@
 
 		if (panel) timeline.from(panel, { autoAlpha: 0, y: 24, duration: DUR.beat, ease: EASE.out });
 		if (copy && shatter.length) {
-			timeline.set(shatter, { autoAlpha: 0, scale: 0.92, y: 4 });
-			timeline.set(ids, { autoAlpha: 0, rotationX: -90, transformOrigin: 'center bottom' });
+			/**
+			 * Measure each chip's origin at tween init instead of capturing layout
+			 * during build. GSAP re-runs function-valued vars on invalidate(), so
+			 * a resize keeps the shatter tied to the copy's current center.
+			 */
+			const measureOrigin = (index: number, target: HTMLElement) => {
+				const copyRect = copy.getBoundingClientRect();
+				const chipRect = target.getBoundingClientRect();
+				const currentX = parseFloat(String(ctx.gsap.getProperty(target, 'x'))) || 0;
+				const currentY = parseFloat(String(ctx.gsap.getProperty(target, 'y'))) || 0;
+				const naturalCenterX = chipRect.left + chipRect.width / 2 - currentX;
+				const naturalCenterY = chipRect.top + chipRect.height / 2 - currentY;
+				const dx = copyRect.left + copyRect.width / 2 - naturalCenterX;
+				const dy = copyRect.top + copyRect.height / 2 - naturalCenterY;
+				const rotation = Math.max(-18, Math.min(18, (dx / Math.max(copyRect.width, 1)) * 18));
+				return { x: dx, y: dy, rotation: rotation || (index % 2 === 0 ? -6 : 6) };
+			};
+
+			timeline.set(shatter, {
+				autoAlpha: 0,
+				scale: 0.92,
+				x: (index: number, target: HTMLElement) => measureOrigin(index, target).x,
+				y: (index: number, target: HTMLElement) => measureOrigin(index, target).y,
+				rotation: (index: number, target: HTMLElement) => measureOrigin(index, target).rotation
+			});
+			timeline.set(ids, { autoAlpha: 0, rotationX: -90, scale: 1.06, transformOrigin: 'center bottom' });
 			timeline.to({}, { duration: DUR.beat });
 			timeline.to(copy, { autoAlpha: 0, duration: DUR.micro, ease: EASE.out });
-			timeline.to(shatter, { autoAlpha: 1, scale: 1, y: 0, duration: DUR.beat, stagger: STAGGER.tight, ease: EASE.out });
-			// The zero gap makes the pieces read as one surface before they separate.
-			if (shatterRow) timeline.to(shatterRow, { columnGap: '0.45rem', duration: DUR.beat, ease: EASE.out });
+			timeline.to(
+				shatter,
+				{ autoAlpha: 1, scale: 1, x: 0, y: 0, rotation: 0, duration: DUR.beat, stagger: STAGGER.tight, ease: EASE.out },
+				'<'
+			);
+			timeline.to(
+				ids,
+				{ autoAlpha: 1, rotationX: 0, scale: 1, duration: DUR.micro, stagger: STAGGER.tight, ease: EASE.out },
+				'<'
+			);
 		}
 		if (callout) timeline.from(callout, { autoAlpha: 0, y: 10, duration: DUR.beat, ease: EASE.out });
 		if (edge.length) {

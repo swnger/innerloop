@@ -7,14 +7,15 @@ export const t56: StationTransition = {
 	from: 'tool-calling',
 	to: 'context-engineering',
 	travelers: [
-		{ id: 'context-band', fromPort: 'context-out', toPort: 'context-in' },
-		{ id: 'response-card', fromPort: 'response-out', toPort: 'response-in' },
+		{ id: 'context-band', fromPort: 'context-out', toPort: 'context-in', arc: -0.06 },
+		{ id: 'response-card', fromPort: 'response-out', toPort: 'response-in', arc: -0.06 },
 	],
 	build: (ctx) => {
 		const timeline = ctx.gsap.timeline();
-		timeline.add(flightTween(ctx, 'context-band', 'context-out', 'context-in'), 0);
-		timeline.add(flightTween(ctx, 'response-card', 'response-out', 'response-in'), 0);
+		timeline.add(flightTween(ctx, t56.travelers[0]), 0);
+		timeline.add(flightTween(ctx, t56.travelers[1]), 0);
 		if (!ctx.reduced) {
+			// The return carries accumulated context weight; the meter strains before release.
 			const band = ctx.traveler('context-band');
 			const meter = band.querySelector<HTMLElement>('.capacity-fill');
 			if (meter) {
@@ -32,6 +33,7 @@ export const t56: StationTransition = {
 					0.46,
 				);
 			}
+			// A loaded band twists under the return load, then settles neutral at the dock.
 			timeline.to(
 				band,
 				{ rotation: -2, duration: DUR.micro, yoyo: true, repeat: 1, ease: EASE.draw },

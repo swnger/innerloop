@@ -1,4 +1,4 @@
-import { EASE } from '$lib/motion/tokens';
+import { DUR, EASE } from '$lib/motion/tokens';
 import { cssColor } from '$lib/motion/colors';
 import { loadGsap } from '$lib/motion/gsap';
 import { journey } from './journey.svelte';
@@ -80,6 +80,7 @@ export async function initJourney(els: {
 			(mmContext: GsapContext) => {
 				const conditions = mmContext.conditions ?? {};
 				if (conditions.reduced || conditions.compact) {
+					journey.setLoopMapBorn(true);
 					for (const entry of manifest) {
 						const handle = handles.get(entry.meta.id);
 						if (!handle) continue;
@@ -94,6 +95,7 @@ export async function initJourney(els: {
 						if (conditions.reduced) handle.applyStatic(context);
 					}
 					branchCleanup = () => {
+						journey.setLoopMapBorn(true);
 						els.world.style.removeProperty('transform');
 						for (const entry of manifest) {
 							const station = els.world.querySelector<HTMLElement>(`[data-station="${entry.meta.id}"]`);
@@ -101,7 +103,7 @@ export async function initJourney(els: {
 							station?.style.removeProperty('visibility');
 						}
 					};
-				return branchCleanup;
+					return branchCleanup;
 				}
 
 				const positions = layoutCircuit(manifest);
@@ -118,6 +120,41 @@ export async function initJourney(els: {
 				const maxY = Math.max(...[...positions.values()].map((position) => position.y));
 				els.world.style.width = `${(maxX + 1) * 100}svw`;
 				els.world.style.height = `${(maxY + 1) * 100}svh`;
+				const loopMapEl = document.querySelector<HTMLElement>('.loop-map');
+				// The enhanced branch progressively enhances the visible SSR map by
+				// hiding it only while the station 01 baton pass is in flight.
+				if (loopMapEl) gsap.set(loopMapEl, { autoAlpha: 0 });
+				const measureLoopMapStart = () => {
+					if (!loopMapEl) return { x: 0, y: 0 };
+					const port = handles.get('agent-loop')?.ports['loop-diagram']?.() as HTMLElement | null;
+					if (!port) return { x: 0, y: 0 };
+					const source = port.getBoundingClientRect();
+					const target = loopMapEl.getBoundingClientRect();
+					const scale = Math.max(0.001, Number(gsap.getProperty(port, 'scale')) || 1);
+					const xPercent = Number(gsap.getProperty(port, 'xPercent')) || 0;
+					const yPercent = Number(gsap.getProperty(port, 'yPercent')) || 0;
+					const width = source.width / scale;
+					const height = source.height / scale;
+					const currentCenterX = source.left + source.width / 2;
+					const currentCenterY = source.top + source.height / 2;
+					// Recover the untransformed center from any playhead position,
+					// then analytically apply the finale's corner-anchored end transform.
+					const baseCenterX =
+						currentCenterX - (xPercent / 100) * width - ((1 - scale) * width) / 2;
+					const baseCenterY =
+						currentCenterY - (yPercent / 100) * height + ((1 - scale) * height) / 2;
+					const endCenterX = baseCenterX + 0.32 * width + ((1 - 0.34) * width) / 2;
+					const endCenterY = baseCenterY - 0.42 * height - ((1 - 0.34) * height) / 2;
+					const targetCenterX =
+						target.left + target.width / 2 - (Number(gsap.getProperty(loopMapEl, 'x')) || 0);
+					const targetCenterY =
+						target.top + target.height / 2 - (Number(gsap.getProperty(loopMapEl, 'y')) || 0);
+					return {
+						x: endCenterX - targetCenterX,
+						y: endCenterY - targetCenterY
+					};
+				};
+
 
 				const travelerLayer = createTravelerLayer({
 					gsap,
@@ -130,6 +167,9 @@ export async function initJourney(els: {
 				const contexts: GsapContext[] = [];
 				const master = gsap.timeline({ paused: true });
 				let trigger: ScrollTrigger | undefined;
+				let birthMasterProgress = 0;
+				let birthFraction: number | undefined;
+
 				let measureTimer: ReturnType<typeof setTimeout> | undefined;
 				let previousActive = '';
 				const cull = (progress: number) => {
@@ -147,6 +187,7 @@ export async function initJourney(els: {
 				};
 				const update = (progress: number) => {
 					journey.setFromProgress(progress, table);
+					journey.setLoopMapBorn(progress >= birthMasterProgress);
 					cull(progress);
 					travelerLayer.placeFor(progress);
 					if (journey.activeId && journey.activeId !== previousActive) {
@@ -179,6 +220,16 @@ export async function initJourney(els: {
 					};
 					let stationTimeline: Timeline | undefined;
 					let stationFailed = false;
+					// Station 05 owns a face beat on the persistent response card.
+					// Dock it only while build() captures its stable face nodes, then
+					// restore the SSR home state before the first rendered update.
+					const capturesResponseFaces = entry.meta.id === 'tool-calling';
+					if (capturesResponseFaces) {
+						travelerLayer.deposit('response-card', {
+							stationId: 'tool-calling',
+							port: 'response-in'
+						});
+					}
 					const stationContext = gsap.context(() => {
 						try {
 							stationTimeline = handle.build(stationContextValue);
@@ -186,25 +237,73 @@ export async function initJourney(els: {
 							stationFailed = true;
 						}
 					}, handle.sceneEl);
+					if (capturesResponseFaces) travelerLayer.home();
 					contexts.push(stationContext);
 					if (stationFailed) {
 						stationContext.revert();
 						stationTimeline = undefined;
 					}
+					if (entry.meta.id === 'agent-loop' && stationTimeline) {
+						const labelTime = stationTimeline.labels['loop-map-birth'];
+						const timelineDuration = stationTimeline.duration();
+						if (Number.isFinite(labelTime) && timelineDuration > 0) {
+							birthFraction = labelTime / timelineDuration;
+						}
+					}
+
 					if (stationTimeline) master.add(stationTimeline.duration(entry.meta.lengthVh / 100));
 					else master.add(gsap.timeline().to({}, { duration: entry.meta.lengthVh / 100 }));
 
 					const exit = entry.exit;
 					const transition = transitions[exit.id];
 					master.addLabel(exit.id);
+					const source = positions.get(entry.meta.id) ?? { x: 0, y: 0 };
 					const destination = positions.get(transition.to) ?? { x: 0, y: 0 };
-					const direction = deriveDirection(positions.get(entry.meta.id) ?? { x: 0, y: 0 }, destination);
-					const camera = gsap.timeline().to(els.world, {
-						x: () => -destination.x * window.innerWidth,
-						y: () => -destination.y * window.innerHeight,
-						duration: exit.lengthVh / 100,
-						ease: EASE.travel
-					});
+					const direction = deriveDirection(source, destination);
+					const worldSign = {
+						x: direction === 'right' ? -1 : direction === 'left' ? 1 : 0,
+						y: direction === 'down' ? -1 : direction === 'up' ? 1 : 0
+					};
+					const sourceX = () => -source.x * window.innerWidth;
+					const sourceY = () => -source.y * window.innerHeight;
+					const destinationX = () => -destination.x * window.innerWidth;
+					const destinationY = () => -destination.y * window.innerHeight;
+					const anticipationX = () => sourceX() + worldSign.x * 0.02 * window.innerWidth;
+					const anticipationY = () => sourceY() + worldSign.y * 0.02 * window.innerHeight;
+					const shortX = () => destinationX() - (destinationX() - sourceX()) * 0.015;
+					const shortY = () => destinationY() - (destinationY() - sourceY()) * 0.015;
+					const cameraWindow = exit.lengthVh / 100;
+					const camera = gsap.timeline()
+						.fromTo(
+							els.world,
+							{ x: sourceX, y: sourceY },
+							{
+								x: anticipationX,
+								y: anticipationY,
+								duration: cameraWindow * 0.04,
+								ease: EASE.out
+							}
+						)
+						.fromTo(
+							els.world,
+							{ x: anticipationX, y: anticipationY },
+							{
+								x: shortX,
+								y: shortY,
+								duration: cameraWindow * 0.9,
+								ease: EASE.travel
+							}
+						)
+						.fromTo(
+							els.world,
+							{ x: shortX, y: shortY },
+							{
+								x: destinationX,
+								y: destinationY,
+								duration: cameraWindow * 0.06,
+								ease: EASE.out
+							}
+						);
 					master.add(camera, '>');
 					let transitionTimeline: Timeline | undefined;
 					try {
@@ -227,6 +326,41 @@ export async function initJourney(els: {
 					if (transitionTimeline) master.add(transitionTimeline.duration(exit.lengthVh / 100), '<');
 					else master.add(gsap.timeline().to({}, { duration: exit.lengthVh / 100 }), '<');
 				}
+				const responseCard = travelerLayer.el('response-card');
+				const initialToolFace = responseCard.querySelector<HTMLElement>('.tool-face');
+				const initialAnswerFace = responseCard.querySelector<HTMLElement>('.answer-face');
+				// A master-owned zero state makes reverse/deep seeks converge before
+				// any later station or transition face turnover has begun.
+				master.set(responseCard, { attr: { 'data-face': 'tool' } }, 0);
+				if (initialToolFace) master.set(initialToolFace, { autoAlpha: 1, rotationX: 0 }, 0);
+				if (initialAnswerFace) master.set(initialAnswerFace, { autoAlpha: 0, rotationX: -90 }, 0);
+				const station01 = table.byId('agent-loop');
+				if (station01 && birthFraction !== undefined) {
+					birthMasterProgress =
+						station01.startProgress + birthFraction * (station01.endProgress - station01.startProgress);
+				}
+				if (loopMapEl) {
+					const mapEntrance = gsap.timeline().fromTo(
+						loopMapEl,
+						{
+							x: () => measureLoopMapStart().x,
+							y: () => measureLoopMapStart().y,
+							scale: () => 0.92,
+							autoAlpha: () => 0,
+							transformOrigin: 'center center'
+						},
+						{
+							x: () => 0,
+							y: () => 0,
+							scale: () => 1,
+							autoAlpha: () => 1,
+							duration: DUR.settle,
+							ease: EASE.out
+						}
+					);
+					master.add(mapEntrance, birthMasterProgress * master.duration());
+				}
+
 
 				const resizeObserver = new ResizeObserver(requestMeasure);
 				for (const station of stationElements.values()) resizeObserver.observe(station);
@@ -279,6 +413,10 @@ export async function initJourney(els: {
 				});
 
 				branchCleanup = () => {
+					journey.setLoopMapBorn(true);
+					loopMapEl?.style.removeProperty('opacity');
+					loopMapEl?.style.removeProperty('visibility');
+					loopMapEl?.style.removeProperty('transform');
 					clearTimeout(measureTimer);
 					resizeObserver.disconnect();
 					window.removeEventListener('resize', requestMeasure);

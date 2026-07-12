@@ -18,6 +18,7 @@
 		{ token: 'This', percentage: '13%', width: '13%' },
 		{ token: 'One', percentage: '8%', width: '8%' },
 	];
+	const selectedProbabilityIndex = probabilities.findIndex((candidate) => candidate.token === 'The');
 	const streamTokens = ['run_tests', '(', "'failing_test'", ')'];
 
 	const build = (ctx: StationContext) => {
@@ -32,6 +33,7 @@
 		const progress = ctx.root.querySelector<HTMLElement>('[data-plateau-fill]');
 		const bars = ctx.root.querySelectorAll<HTMLElement>('[data-prob-bar]');
 		const frames = ctx.root.querySelectorAll<HTMLElement>('[data-cycle-frame]');
+		const cycleArrows = ctx.root.querySelectorAll<SVGPathElement>('[data-cycle-arrow]');
 		const streamedTokens = ctx.root.querySelectorAll<HTMLElement>('[data-stream-token]');
 
 		requestMeasure = ctx.requestMeasure;
@@ -44,10 +46,10 @@
 		);
 		timeline.set(beats, { autoAlpha: 0 });
 		timeline.set(frames, { autoAlpha: 0 });
+		timeline.set(cycleArrows, { strokeDasharray: 1, strokeDashoffset: 1 });
 		timeline.set(bars, { scaleX: 0, transformOrigin: 'left center' });
 		if (pickedLine) timeline.set(pickedLine, { autoAlpha: 0 });
-		timeline.set(streamedTokens, { autoAlpha: 0, y: 8 });
-
+		timeline.set(streamedTokens, { autoAlpha: 0, y: 2 });
 		if (packet) timeline.to(packet, { autoAlpha: 1, duration: DUR.beat, ease: EASE.out });
 		if (instrument) timeline.to(instrument, { autoAlpha: 1, duration: DUR.beat, ease: EASE.out }, '<0.25');
 		if (probabilityPanel) timeline.to(probabilityPanel, { autoAlpha: 1, duration: DUR.beat }, '+=0.15');
@@ -56,13 +58,16 @@
 				scaleX: 1,
 				duration: DUR.micro,
 				ease: EASE.draw,
-				stagger: STAGGER.tight,
+				stagger: { each: 0.03, from: selectedProbabilityIndex },
 			}, '<0.15');
 		}
 		if (pickedLine) timeline.to(pickedLine, { autoAlpha: 1, duration: DUR.micro, ease: EASE.out }, '+=0.1');
 		if (filmstrip) timeline.to(filmstrip, { autoAlpha: 1, duration: DUR.beat }, '+=0.2');
 		if (frames.length) {
 			timeline.to(frames, { autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out, stagger: 0.22 }, '<0.1');
+		}
+		if (cycleArrows.length) {
+			timeline.to(cycleArrows, { strokeDashoffset: 0, duration: DUR.micro, ease: EASE.draw, stagger: STAGGER.tight }, '<0.1');
 		}
 		if (guessMachine) timeline.to(guessMachine, { autoAlpha: 1, duration: DUR.beat, ease: EASE.out }, '+=0.3');
 		if (progress) timeline.to(progress, { scaleX: 1, duration: 1.1, ease: EASE.draw }, '+=0.15');
@@ -95,6 +100,10 @@
 					frame.style.removeProperty('opacity');
 					frame.style.removeProperty('visibility');
 					frame.style.removeProperty('transform');
+				});
+				ctx.root.querySelectorAll<SVGPathElement>('[data-cycle-arrow]').forEach((path) => {
+					path.style.removeProperty('stroke-dasharray');
+					path.style.removeProperty('stroke-dashoffset');
 				});
 				ctx.root.querySelectorAll<HTMLElement>('[data-prob-bar]').forEach((bar) => {
 					bar.style.removeProperty('transform');
@@ -187,17 +196,29 @@
 			<article class="cycle-frame" data-cycle-frame>
 				<span class="cycle-frame__number">1</span>
 				<div><strong>read → guess</strong><p>The first draw appends <code>The</code>.</p></div>
-				<span class="cycle-frame__arrow" aria-hidden="true">→</span>
+				<span class="cycle-frame__arrow">
+					<svg viewBox="0 0 32 16" role="img" aria-label="→" focusable="false">
+						<path data-cycle-arrow d="M1 8h25m-6-6 6 6-6 6" pathLength="1" />
+					</svg>
+				</span>
 			</article>
 			<article class="cycle-frame" data-cycle-frame>
 				<span class="cycle-frame__number">2</span>
 				<div><strong>append → re-read</strong><p>The longer line now starts <code>The <em>fix</em></code>.</p></div>
-				<span class="cycle-frame__arrow" aria-hidden="true">↺</span>
+				<span class="cycle-frame__arrow">
+					<svg viewBox="0 0 24 24" role="img" aria-label="↺" focusable="false">
+						<path data-cycle-arrow d="M5 8a8 8 0 1 1-1 9M5 8V3m0 5h5" pathLength="1" />
+					</svg>
+				</span>
 			</article>
 			<article class="cycle-frame" data-cycle-frame>
 				<span class="cycle-frame__number">3</span>
 				<div><strong>append → re-read</strong><p>New scores choose <code>The fix <em>is</em> …</code>; the whole line returns to the same intake.</p></div>
-				<span class="cycle-frame__arrow" aria-hidden="true">↺</span>
+				<span class="cycle-frame__arrow">
+					<svg viewBox="0 0 24 24" role="img" aria-label="↺" focusable="false">
+						<path data-cycle-arrow d="M5 8a8 8 0 1 1-1 9M5 8V3m0 5h5" pathLength="1" />
+					</svg>
+				</span>
 			</article>
 		</div>
 		<div class="cycle-loop-note"><span aria-hidden="true">↺</span> append → re-read the full sequence → fan out new scores → append again</div>
@@ -304,10 +325,11 @@
 	.cycle-frame p { margin: 0; color: var(--c-ink-muted); font-size: 0.9rem; line-height: 1.55; }
 	.cycle-frame code { color: var(--concept-history); font: 0.8rem/1.4 var(--mono); }
 	.cycle-frame em { color: var(--concept-response); font-style: normal; }
-	.cycle-frame__arrow { color: var(--concept-response); font-size: 1.4rem; }
+	.cycle-frame__arrow { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; color: var(--concept-response); }
+	.cycle-frame__arrow svg { display: block; width: 100%; height: 100%; overflow: visible; }
+	.cycle-frame__arrow path { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 	.cycle-loop-note { display: flex; align-items: center; gap: 0.55rem; padding: 0.75rem 1rem; border: 1px solid var(--concept-response); border-radius: 0.4rem; background: var(--concept-response-fill); }
 	.cycle-loop-note > span { font-size: 1.3rem; }
-
 	.plateau-cue { display: grid; grid-template-columns: auto minmax(8rem, 1fr) auto; gap: 0.7rem; align-items: center; color: var(--c-ink-muted); font: 0.72rem/1.3 var(--mono); }
 	.plateau-cue__track { height: 0.45rem; overflow: hidden; border-radius: 999px; background: var(--c-sunken); }
 	.plateau-cue__track i { display: block; width: 100%; height: 100%; border-radius: inherit; background: var(--concept-response); transform: scaleX(0); transform-origin: left center; }

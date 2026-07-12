@@ -11,27 +11,48 @@
 	let root: HTMLDivElement;
 	const station = manifest.find((entry) => entry.meta.id === 'context-window');
 
+	const chipHash = (index: number) => Math.imul(index, 2654435761) >>> 0;
+	const chipJitter = (index: number) => 0.85 + 0.3 * ((chipHash(index) % 1000) / 1000);
+
 	const build = (ctx: StationContext) => {
 		const timeline = ctx.gsap.timeline();
 		const tank = ctx.root.querySelector<HTMLElement>('[data-tank]');
 		const chips = Array.from(ctx.root.querySelectorAll<HTMLElement>('[data-chip]'));
 		const strata = Array.from(ctx.root.querySelectorAll<HTMLElement>('[data-stratum]'));
+		const tankContents = ctx.root.querySelector<HTMLElement>('[data-tank-contents]');
 		const fill = ctx.root.querySelector<HTMLElement>('[data-tank-fill]');
 		const capacity = ctx.root.querySelector<HTMLElement>('[data-capacity]');
 		const stateless = ctx.root.querySelector<HTMLElement>('[data-stateless]');
+		const underline = ctx.root.querySelector<HTMLElement>('[data-stateless-underline]');
 		const packet = ctx.root.querySelector<HTMLElement>('[data-packet]');
 
 		if (tank) timeline.from(tank, { autoAlpha: 0, y: 18, duration: DUR.beat, ease: EASE.out });
 		if (chips.length) {
-			timeline.from(
-				chips,
-				{ autoAlpha: 0, y: -42, scale: 0.7, duration: DUR.micro, ease: EASE.out, stagger: STAGGER.chip },
-				`>-=${DUR.beat * 0.45}`,
-			);
+			// Hash-ranked drops keep the rain irregular without breaking scrub determinism.
+			const chipOrder = chips
+				.map((element, order) => ({ element, index: Number(element.dataset.chipIndex ?? order) }))
+				.sort((a, b) => chipHash(a.index) - chipHash(b.index) || a.index - b.index);
+			const chipStart = timeline.duration() - DUR.beat * 0.45;
+			chipOrder.forEach(({ element, index }, order) => {
+				timeline.from(
+					element,
+					{ autoAlpha: 0, y: -42, scale: 0.7, duration: DUR.micro * chipJitter(index), ease: EASE.out },
+					chipStart + order * STAGGER.chip,
+				);
+			});
 		}
 		if (strata.length) {
 			timeline.set(strata, { autoAlpha: 0, y: 16 });
+			const strataStart = timeline.duration();
 			timeline.to(strata, { autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out, stagger: STAGGER.tight });
+			if (tankContents) {
+				// A small compression impulse makes each layer feel like it lands in the bounded tank.
+				strata.forEach((_, index) => {
+					const landedAt = strataStart + DUR.beat + index * STAGGER.tight;
+					timeline.to(tankContents, { scaleY: 0.985, duration: DUR.micro * 0.5, ease: EASE.out }, landedAt);
+					timeline.to(tankContents, { scaleY: 1, duration: DUR.micro * 0.5, ease: EASE.out }, landedAt + DUR.micro * 0.5);
+				});
+			}
 		}
 		if (fill) {
 			timeline.set(fill, { scaleY: 0, transformOrigin: 'bottom center' });
@@ -43,6 +64,10 @@
 		}
 		if (stateless) {
 			timeline.from(stateless, { autoAlpha: 0, y: 20, duration: DUR.settle, ease: EASE.out });
+		}
+		if (underline) {
+			timeline.set(underline, { scaleX: 0, transformOrigin: 'left center' });
+			timeline.to(underline, { scaleX: 1, duration: DUR.settle, ease: EASE.draw });
 		}
 		if (packet) {
 			timeline.from(packet, { autoAlpha: 0, scale: 0.82, y: 12, duration: DUR.beat, ease: EASE.out });
@@ -99,22 +124,24 @@
 				<div class="tank-label"><span>one call</span><span>bounded capacity</span></div>
 				<div class="tank" data-tank role="group" aria-label="Context strata rising toward a maximum capacity line.">
 					<div class="tank__limit" aria-hidden="true"><span>limit</span></div>
-					<div class="tank__fill" data-tank-fill aria-hidden="true"></div>
-					<div class="strata" aria-label="Context strata">
-						<div class="stratum stratum--system" data-stratum>
-							<strong>system</strong><span>instructions that set the rules</span>
+					<div class="tank__contents" data-tank-contents aria-hidden="true">
+						<div class="tank__fill" data-tank-fill></div>
+						<div class="strata" aria-label="Context strata">
+							<div class="stratum stratum--system" data-stratum>
+								<strong>system</strong><span>instructions that set the rules</span>
+							</div>
+							<div class="stratum stratum--tools" data-stratum>
+								<strong>tool definitions</strong><span>the tools the model may call</span>
+							</div>
+							<div class="stratum stratum--history" data-stratum>
+								<strong>history</strong><span>the selected conversation so far</span>
+							</div>
 						</div>
-						<div class="stratum stratum--tools" data-stratum>
-							<strong>tool definitions</strong><span>the tools the model may call</span>
+						<div class="chips">
+							{#each Array(14) as _, index}
+								<span class="chip" data-chip data-chip-index={index} style={`--chip-x: ${12 + ((index * 29) % 76)}%; --chip-y: ${12 + ((index * 17) % 62)}%;`}></span>
+							{/each}
 						</div>
-						<div class="stratum stratum--history" data-stratum>
-							<strong>history</strong><span>the selected conversation so far</span>
-						</div>
-					</div>
-					<div class="chips" aria-hidden="true">
-						{#each Array(14) as _, index}
-							<span class="chip" data-chip style={`--chip-x: ${12 + ((index * 29) % 76)}%; --chip-y: ${12 + ((index * 17) % 62)}%;`}></span>
-						{/each}
 					</div>
 				</div>
 				<div class="capacity-note" data-capacity>
@@ -122,14 +149,13 @@
 					<p><strong>Capacity is a harness decision.</strong> Hitting the limit is not model behavior. An over-limit call can simply fail; trimming the oldest history is one common policy — someone chooses what to drop. Chapter 06 returns to that choice.</p>
 				</div>
 			</div>
-		</div>
-
 		<div class="stateless" data-stateless>
 			<p class="stateless__eyebrow">The biggest misconception</p>
-			<p class="stateless__line">Every call, the model reads all of this and nothing else.</p>
+			<p class="stateless__line">Every call, the model reads <span class="stateless__claim">all of this and nothing else<span class="stateless__underline" data-stateless-underline aria-hidden="true"></span></span>.</p>
 			<p class="stateless__support">It remembers nothing between calls. The next call gets a new packet.</p>
 		</div>
 
+		</div>
 	</DiagramPanel>
 
 	<div class="ports" aria-label="Station ports">
@@ -179,6 +205,7 @@
 	.tank-wrap { display: grid; gap: 0.75rem; justify-items: stretch; }
 	.tank-label { display: flex; justify-content: space-between; color: var(--c-ink-muted); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
 	.tank { position: relative; isolation: isolate; width: min(100%, 25rem); height: clamp(20rem, 51vh, 31rem); margin-inline: auto; overflow: hidden; border: 2px solid var(--c-line-strong); border-radius: 1.4rem 1.4rem 2rem 2rem; background: var(--c-sunken); box-shadow: inset 0 0 0 0.45rem var(--c-surface); }
+	.tank__contents { position: absolute; z-index: 1; inset: 0; pointer-events: none; transform-origin: bottom center; }
 	.tank__fill { position: absolute; z-index: 1; inset: 17% 0 0; background: var(--concept-history-fill); opacity: 0.72; transform-origin: bottom center; }
 	.tank__limit { position: absolute; z-index: 3; top: 17%; right: -0.15rem; left: -0.15rem; border-top: 2px dashed var(--concept-tool-output); color: var(--concept-tool-output); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.05em; text-align: right; text-transform: uppercase; }
 	.tank__limit span { position: relative; top: -1.3rem; right: 0.65rem; background: var(--c-sunken); padding-inline: 0.3rem; }
@@ -189,7 +216,7 @@
 	.stratum--system { border-color: var(--concept-system); background: var(--concept-system-fill); }
 	.stratum--tools { border-color: var(--concept-tools); background: var(--concept-tools-fill); }
 	.stratum--history { border-color: var(--concept-history); background: var(--concept-history-fill); }
-	.chips { position: absolute; z-index: 4; inset: 0; pointer-events: none; }
+	.chips { position: absolute; z-index: 4; inset: 0; }
 	.chip { position: absolute; top: var(--chip-y); left: var(--chip-x); width: 0.52rem; height: 0.52rem; border: 1px solid var(--concept-history); border-radius: 0.12rem; background: var(--concept-history-fill); }
 
 	.capacity-note { display: grid; grid-template-columns: 0.28rem 1fr; gap: 0.7rem; align-items: start; max-width: 25rem; margin-inline: auto; color: var(--c-ink-muted); font-size: 0.86rem; line-height: 1.45; }
@@ -200,6 +227,8 @@
 	.stateless { display: grid; gap: 0.65rem; max-width: 48rem; margin: clamp(2rem, 7vh, 5rem) auto clamp(1rem, 4vh, 2.5rem); padding: clamp(1.5rem, 4vw, 3rem) 0; border-block: 1px solid var(--c-line-strong); }
 	.stateless p { margin: 0; }
 	.stateless__eyebrow { color: var(--concept-history); font-family: var(--mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+	.stateless__claim { position: relative; }
+	.stateless__underline { position: absolute; right: 0; bottom: -0.16em; left: 0; height: 0.12rem; border-radius: 999px; background: var(--concept-history); transform: scaleX(1); transform-origin: left center; }
 	.stateless__line { max-width: 23ch; color: var(--c-ink); font-family: var(--display); font-size: clamp(1.8rem, 4.5vw, 3.7rem); font-weight: 700; letter-spacing: -0.04em; line-height: 1.04; }
 	.stateless__support { color: var(--c-ink-muted); font-size: 1rem; line-height: 1.5; }
 

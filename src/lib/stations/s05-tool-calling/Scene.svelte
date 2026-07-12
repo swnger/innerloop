@@ -4,7 +4,7 @@
 	import DiagramPanel from '$lib/components/DiagramPanel.svelte';
 	import Legend from '$lib/components/Legend.svelte';
 	import StationHead from '$lib/components/StationHead.svelte';
-	import { DUR, EASE } from '$lib/motion/tokens';
+	import { DUR, EASE, STAGGER } from '$lib/motion/tokens';
 	import { manifest } from '$lib/journey/stations.manifest';
 	import type { SceneProps, StationHandle } from '$lib/journey/types';
 
@@ -40,18 +40,57 @@
 				const timeline = ctx.gsap.timeline();
 				const beats = Array.from(ctx.root.querySelectorAll<HTMLElement>('[data-beat]'));
 				const branch = ctx.root.querySelector<HTMLElement>('[data-branch-pulse]');
+				const tank = ctx.root.querySelector<HTMLElement>('[data-tank]');
 				const tankFill = ctx.root.querySelector<HTMLElement>('[data-tank-fill]');
+				const checkPaths = Array.from(ctx.root.querySelectorAll<SVGPathElement>('[data-check-path]'));
+				const card = ctx.root.querySelector<HTMLElement>(
+					'[data-port="response-in"] [data-traveler="response-card"]',
+				);
+				const toolFace = card?.querySelector<HTMLElement>('.tool-face');
+				const answerFace = card?.querySelector<HTMLElement>('.answer-face');
 
 				// SSR is the readable end state. These sets are the only wire-time hiding.
 				beats.forEach((beat) => timeline.set(beat, { autoAlpha: 0, y: 22 }));
 				if (branch) timeline.set(branch, { autoAlpha: 0, scaleX: 0.4, transformOrigin: 'left center' });
+				if (tank) timeline.set(tank, { attr: { 'data-threshold': 'none' } });
 				if (tankFill) timeline.set(tankFill, { scaleY: 0, transformOrigin: 'bottom' });
+				if (checkPaths.length) {
+					timeline.set(checkPaths, { attr: { strokeDashoffset: 1 } });
+					timeline.to(checkPaths, {
+						attr: { strokeDashoffset: 0 },
+						duration: DUR.micro,
+						ease: EASE.draw,
+						stagger: STAGGER.tight,
+					});
+				}
+				if (card) timeline.set(card, { attr: { 'data-face': 'tool' } }, 0);
+				if (toolFace) {
+					timeline.set(toolFace, { autoAlpha: 1, rotationX: 0, transformOrigin: '50% 50%' }, 0);
+				}
+				if (answerFace) {
+					timeline.set(answerFace, { autoAlpha: 0, rotationX: -90, transformOrigin: '50% 50%' }, 0);
+				}
 
 				beats.forEach((beat, index) => {
 					timeline.to(beat, { autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out }, index === 0 ? '>' : '+=0.2');
+					if (index === 3 && tank && tankFill) timeline.addLabel('tank-fill-start');
 					timeline.to({}, { duration: index === 1 ? 0.5 : 0.28 });
-					if (index === 3 && tankFill) {
-						timeline.to(tankFill, { scaleY: 1, duration: DUR.settle, ease: EASE.out }, '<');
+					if (index === 3 && tank && tankFill) {
+						// The fill is 78% tall: the lower line is the first crossing,
+						// then the upper line. Both semantic sets are reversible on scrub.
+						const firstCrossing = (1 - 0.65) / 0.78;
+						const secondCrossing = (1 - 0.35) / 0.78;
+						timeline.to(tankFill, { scaleY: 1, duration: DUR.settle, ease: EASE.draw }, 'tank-fill-start');
+						timeline.set(
+							tank,
+							{ attr: { 'data-threshold': 'one' } },
+							`tank-fill-start+=${DUR.settle * firstCrossing}`,
+						);
+						timeline.set(
+							tank,
+							{ attr: { 'data-threshold': 'two' } },
+							`tank-fill-start+=${DUR.settle * secondCrossing}`,
+						);
 					}
 					if (index === 4 && branch) {
 						timeline.to(branch, { autoAlpha: 1, scaleX: 1, duration: DUR.micro, ease: EASE.out }, '<');
@@ -59,19 +98,17 @@
 					}
 				});
 
-				// The card is a real traveler. Resolve it lazily at the dock, and use the
-				// local progress delta so the same call restores the tool face on reverse scrub.
+				// Face turnover is owned by the scrubbed timeline. The semantic
+				// attribute changes at the handoff, after both faces have crossed.
 				const answerPoint = timeline.duration();
-				let previousProgress = 0;
-				timeline.call(() => {
-					const card = ctx.root.querySelector<HTMLElement>(
-						'[data-port="response-in"] [data-traveler="response-card"]',
-					);
-					if (card) card.setAttribute('data-face', timeline.progress() >= previousProgress ? 'answer' : 'tool');
-				}, [], answerPoint);
-				timeline.eventCallback('onUpdate', () => {
-					previousProgress = timeline.progress();
-				});
+				const faceStart = Math.max(0, answerPoint - DUR.micro);
+				if (toolFace) {
+					timeline.to(toolFace, { autoAlpha: 0, rotationX: 90, duration: DUR.micro, ease: EASE.out }, faceStart);
+				}
+				if (answerFace) {
+					timeline.to(answerFace, { autoAlpha: 1, rotationX: 0, duration: DUR.micro, ease: EASE.out }, faceStart);
+				}
+				if (card) timeline.set(card, { attr: { 'data-face': 'answer' } }, answerPoint);
 
 				// Keep a little scrolling distance after the answer lands: the departure
 				// copy and overstuffed tank are the hand-off to context engineering.
@@ -86,12 +123,33 @@
 				});
 				const fill = ctx.root.querySelector<HTMLElement>('[data-tank-fill]');
 				if (fill) fill.style.transform = 'scaleY(1)';
+				const tank = ctx.root.querySelector<HTMLElement>('[data-tank]');
+				if (tank) tank.setAttribute('data-threshold', 'two');
 				const pulse = ctx.root.querySelector<HTMLElement>('[data-branch-pulse]');
 				if (pulse) pulse.style.opacity = '1';
+				const checkPaths = ctx.root.querySelectorAll<SVGPathElement>('[data-check-path]');
+				checkPaths.forEach((path) => {
+					path.style.strokeDasharray = '1';
+					path.style.strokeDashoffset = '0';
+				});
 				const card = ctx.root.querySelector<HTMLElement>(
 					'[data-port="response-in"] [data-traveler="response-card"]',
 				);
-				if (card) card.setAttribute('data-face', 'answer');
+				if (card) {
+					card.setAttribute('data-face', 'answer');
+					const toolFace = card.querySelector<HTMLElement>('.tool-face');
+					const answerFace = card.querySelector<HTMLElement>('.answer-face');
+					if (toolFace) {
+						toolFace.style.transition = 'none';
+						toolFace.style.opacity = '0';
+						toolFace.style.transform = 'rotateX(90deg) rotateY(90deg)';
+					}
+					if (answerFace) {
+						answerFace.style.transition = 'none';
+						answerFace.style.opacity = '1';
+						answerFace.style.transform = 'rotateX(0deg) rotateY(0deg)';
+					}
+				}
 			},
 		};
 
@@ -123,9 +181,9 @@
 			<h3>run_tests</h3>
 			<p>Runs the project's test command.</p>
 			<ul class="checks">
-				<li><span aria-hidden="true">✓</span> tool name matches</li>
-				<li><span aria-hidden="true">✓</span> arguments are an object</li>
-				<li><span aria-hidden="true">✓</span> command is required</li>
+				<li><svg class="check-mark" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path data-check-path pathLength="1" d="M3 8.5 6.5 12 13 4" /></svg> tool name matches</li>
+				<li><svg class="check-mark" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path data-check-path pathLength="1" d="M3 8.5 6.5 12 13 4" /></svg> arguments are an object</li>
+				<li><svg class="check-mark" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path data-check-path pathLength="1" d="M3 8.5 6.5 12 13 4" /></svg> command is required</li>
 			</ul>
 		</aside>
 	</div>
@@ -153,7 +211,7 @@
 		</DiagramPanel>
 		<div class="mini-tank" aria-label="Context tank grows with tool output">
 			<div class="tank-head"><strong>next context</strong><span>window grows</span></div>
-			<div class="tank" aria-hidden="true"><div class="tank-fill" data-tank-fill></div><span class="tank-line tank-line--one"></span><span class="tank-line tank-line--two"></span></div>
+			<div class="tank" data-tank data-threshold="two" aria-hidden="true"><div class="tank-fill" data-tank-fill></div><span class="tank-line tank-line--one"></span><span class="tank-line tank-line--two"></span></div>
 			<p>Tool output joins the history the model must read.</p>
 		</div>
 	</div>
@@ -257,7 +315,8 @@
 	.schema-card h3 { margin: 0; font-family: var(--mono); font-size: 1.1rem; }
 	.schema-card p { margin: 0.5rem 0 1rem; color: var(--c-ink-muted); font-size: 0.9rem; line-height: 1.45; }
 	.checks { display: grid; gap: 0.55rem; margin: 0; padding: 0; list-style: none; color: var(--c-ink); font-size: 0.82rem; }
-	.checks span { display: inline-grid; width: 1.2rem; height: 1.2rem; margin-right: 0.35rem; place-items: center; border-radius: 50%; background: var(--concept-tools); color: var(--c-paper); font-weight: 800; }
+	.check-mark { display: inline-block; width: 1.2rem; height: 1.2rem; margin-inline-end: 0.35rem; vertical-align: -0.28rem; overflow: visible; }
+	.check-mark path { fill: none; stroke: var(--concept-tools); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
 	.explain { display: flex; flex-wrap: wrap; gap: 0.35rem 0.6rem; max-width: 64rem; padding: 0.8rem 1rem; border-inline-start: 3px solid var(--concept-tools); background: var(--c-sunken); color: var(--c-ink-muted); line-height: 1.5; }
 	.explain strong { color: var(--c-ink); }
 	.terminal { overflow: hidden; border: 1px solid var(--c-line-strong); border-radius: 0.55rem; background: var(--c-sunken); }
@@ -276,7 +335,13 @@
 	.tank-head span { color: var(--concept-history); font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; }
 	.tank { position: relative; overflow: hidden; height: 8rem; border: 1px solid var(--concept-history); border-radius: 0.45rem; background: var(--c-sunken); }
 	.tank-fill { position: absolute; inset: auto 0 0; height: 78%; background: linear-gradient(to top, var(--concept-history-fill), var(--concept-tool-output-fill)); }
+	:global(.tank[data-threshold='none']) { border-color: var(--concept-history); }
+	:global(.tank[data-threshold='one']) { border-color: var(--concept-tools); }
+	.tank[data-threshold='two'] { border-color: var(--concept-tool-output); }
 	.tank-line { position: absolute; inset-inline: 0.5rem; border-top: 1px dashed var(--c-line-strong); }
+	:global(.tank[data-threshold='one']) .tank-line--two { border-color: var(--concept-tools); }
+	.tank[data-threshold='two'] .tank-line--one,
+	.tank[data-threshold='two'] .tank-line--two { border-color: var(--concept-tool-output); }
 	.tank-line--one { top: 35%; }
 	.tank-line--two { top: 65%; }
 	.mini-tank p { margin: 0; color: var(--c-ink-muted); font-size: 0.82rem; line-height: 1.45; }
@@ -306,11 +371,13 @@
 	.port { display: grid; width: clamp(9rem, 18vw, 13rem); height: 5.25rem; place-items: center; border: 1px solid var(--concept-tools); border-radius: 0.65rem; background: var(--concept-tools-fill); color: var(--concept-tools); font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; }
 	.port[data-port="context-out"] { border-color: var(--concept-history); background: var(--concept-history-fill); color: var(--concept-history); }
 	.port[data-port="response-out"] { border-color: var(--concept-response); background: var(--concept-response-fill); color: var(--concept-response); }
+	:global(.journey[data-journey='enhanced'] .response-face) { transition: none; }
 	@media (max-width: 48rem) {
 		.call-layout, .execution-grid, .append-grid, .loop-grid, .answer-grid, .departure { grid-template-columns: 1fr; }
 		.ports { justify-content: flex-start; }
 	}
 	@media (prefers-reduced-motion: reduce) {
+		:global(.response-face) { transition: none; }
 		.scene { gap: 1.15rem; }
 		.branch-pulse { opacity: 1; }
 	}

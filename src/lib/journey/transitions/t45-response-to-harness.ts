@@ -5,22 +5,24 @@ export const t45: StationTransition = {
 	id: 't45',
 	from: 'inference',
 	to: 'tool-calling',
-	travelers: [{ id: 'response-card', fromPort: 'response-out', toPort: 'response-in' }],
+	travelers: [{ id: 'response-card', fromPort: 'response-out', toPort: 'response-in', arc: 0 }],
 	build: (ctx) => {
 		const timeline = ctx.gsap.timeline();
-		timeline.add(flightTween(ctx, 'response-card', 'response-out', 'response-in'), 0);
+		const traveler = ctx.traveler('response-card');
+		timeline.set(traveler, { yPercent: 0, rotation: 0 }, 0);
+		timeline.add(flightTween(ctx, t45.travelers[0]), 0);
 		if (!ctx.reduced) {
-			const traveler = ctx.traveler('response-card');
+			// Being handed down shifts the card's weight into a restrained
+			// counter-rotation, rather than making it fall like a loose object.
 			timeline.to(
 				traveler,
-				{ y: '+=14', rotation: 2.5, duration: DUR.beat, ease: EASE.out },
-				0.68,
+				{ yPercent: 14, rotation: -2, duration: DUR.beat, ease: EASE.out },
+				0.68
 			);
-			timeline.to(
-				traveler,
-				{ y: '+=3', rotation: 0, duration: DUR.settle, ease: EASE.out },
-				'>',
-			);
+			// The handoff rebounds only once: a brief opposite tilt, then a
+			// chained settle back to neutral so both segment boundaries are still.
+			timeline.to(traveler, { yPercent: 3, rotation: 1, duration: DUR.micro, ease: EASE.out }, '>');
+			timeline.to(traveler, { yPercent: 0, rotation: 0, duration: DUR.settle, ease: EASE.out }, '>');
 		}
 		return timeline;
 	},

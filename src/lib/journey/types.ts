@@ -53,7 +53,8 @@ export type PortName =
 	| 'context-in'
 	| 'response-out'
 	| 'response-in'
-	| 'answer-in';
+	| 'answer-in'
+	| 'loop-diagram';
 
 /**
  * The four travelers. Each is ONE DOM element for the whole page lifetime
@@ -149,6 +150,8 @@ export interface TravelerRoute {
 	id: TravelerId;
 	fromPort: PortName;
 	toPort: PortName;
+	/** Perpendicular quadratic Bézier bow as a fraction of flight distance. */
+	arc?: number;
 }
 
 /**

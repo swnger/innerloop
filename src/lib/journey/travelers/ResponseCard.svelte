@@ -13,6 +13,7 @@
 		<span class="face-detail mono">&#123; suite: 'unit' &#125;</span>
 	</div>
 	<div class="response-face answer-face">
+		<span class="answer-glow" aria-hidden="true"></span>
 		<span class="face-kicker mono">ANSWER</span>
 		<strong>Tests pass.</strong>
 		<span class="face-detail mono">result: ready</span>
@@ -41,13 +42,14 @@
 		transition:
 			opacity 0.24s ease,
 			transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+		transform-style: preserve-3d;
 	}
 
 	.tool-face {
 		border-color: color-mix(in oklch, var(--concept-tools) 50%, var(--c-line));
 		background: var(--concept-tools-fill);
 		color: var(--concept-tools);
-		transform: rotateY(0deg);
+		transform: rotateX(0deg);
 	}
 
 	.answer-face {
@@ -55,17 +57,33 @@
 		background: var(--concept-response-fill);
 		color: var(--concept-response);
 		opacity: 0;
-		transform: rotateY(-90deg);
+		transform: rotateX(-90deg);
 	}
 
 	.response-card[data-face='answer'] .tool-face {
 		opacity: 0;
-		transform: rotateY(90deg);
+		transform: rotateX(90deg);
 	}
 
 	.response-card[data-face='answer'] .answer-face {
 		opacity: 1;
-		transform: rotateY(0deg);
+		transform: rotateX(0deg);
+	}
+
+	.answer-glow {
+		position: absolute;
+		top: 0.65rem;
+		right: 0.65rem;
+		width: 0.42rem;
+		height: 0.42rem;
+		border-radius: 50%;
+		background: var(--concept-response);
+		box-shadow: 0 0 0 transparent;
+		opacity: 0.72;
+	}
+
+	:global(.journey[data-journey='enhanced']) .response-face {
+		transition: none;
 	}
 
 	.face-kicker {

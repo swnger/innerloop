@@ -7,6 +7,7 @@ dist/
 dist-ssr/
 .svelte-kit/
 .vite/
+artifacts/
 
 # Local env
 .env
