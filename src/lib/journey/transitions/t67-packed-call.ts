@@ -1,4 +1,5 @@
 import type { StationTransition } from '../types';
+import { DUR, EASE } from '$lib/motion/tokens';
 import { flightTween } from './flight';
 
 export const t67: StationTransition = {
@@ -16,7 +17,12 @@ export const t67: StationTransition = {
 		if (!ctx.reduced) {
 			timeline.to(
 				ctx.traveler('context-band'),
-				{ rotation: 1.5, duration: 0.16, yoyo: true, repeat: 1 },
+				{ scaleX: 0.76, scaleY: 0.84, duration: DUR.micro, ease: EASE.draw },
+				0.42,
+			);
+			timeline.to(
+				ctx.traveler('context-band'),
+				{ rotation: 1.5, duration: DUR.micro, ease: EASE.draw, yoyo: true, repeat: 1 },
 				0.5,
 			);
 		}

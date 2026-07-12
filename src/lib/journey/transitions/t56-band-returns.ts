@@ -1,4 +1,5 @@
 import type { StationTransition } from '../types';
+import { DUR, EASE } from '$lib/motion/tokens';
 import { flightTween } from './flight';
 
 export const t56: StationTransition = {
@@ -14,9 +15,26 @@ export const t56: StationTransition = {
 		timeline.add(flightTween(ctx, 'context-band', 'context-out', 'context-in'), 0);
 		timeline.add(flightTween(ctx, 'response-card', 'response-out', 'response-in'), 0);
 		if (!ctx.reduced) {
+			const band = ctx.traveler('context-band');
+			const meter = band.querySelector<HTMLElement>('.capacity-fill');
+			if (meter) {
+				timeline.to(
+					meter,
+					{
+						backgroundColor: 'var(--concept-tool-output)',
+						scaleX: 1.06,
+						transformOrigin: 'left center',
+						duration: DUR.beat,
+						yoyo: true,
+						repeat: 1,
+						ease: EASE.draw,
+					},
+					0.46,
+				);
+			}
 			timeline.to(
-				ctx.traveler('context-band'),
-				{ rotation: -2, duration: 0.16, yoyo: true, repeat: 1 },
+				band,
+				{ rotation: -2, duration: DUR.micro, yoyo: true, repeat: 1, ease: EASE.draw },
 				0.48,
 			);
 		}

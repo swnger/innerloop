@@ -1,6 +1,6 @@
 import type { StationTransition } from '../types';
+import { DUR, EASE } from '$lib/motion/tokens';
 import { flightTween } from './flight';
-
 export const t45: StationTransition = {
 	id: 't45',
 	from: 'inference',
@@ -10,10 +10,16 @@ export const t45: StationTransition = {
 		const timeline = ctx.gsap.timeline();
 		timeline.add(flightTween(ctx, 'response-card', 'response-out', 'response-in'), 0);
 		if (!ctx.reduced) {
+			const traveler = ctx.traveler('response-card');
 			timeline.to(
-				ctx.traveler('response-card'),
-				{ y: '+=8', duration: 0.12, yoyo: true, repeat: 1 },
-				0.7,
+				traveler,
+				{ y: '+=14', rotation: 2.5, duration: DUR.beat, ease: EASE.out },
+				0.68,
+			);
+			timeline.to(
+				traveler,
+				{ y: '+=3', rotation: 0, duration: DUR.settle, ease: EASE.out },
+				'>',
 			);
 		}
 		return timeline;
