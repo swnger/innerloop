@@ -44,7 +44,7 @@
 </svelte:head>
 
 <header class="site-header">
-	<a class="wordmark" href="#agent-loop" aria-label="The Inner Loop home">The Inner Loop</a>
+	<h1 class="wordmark-heading"><a class="wordmark" href="#agent-loop" aria-label="The Inner Loop home">The Inner Loop</a></h1>
 	<div class="header-meta">
 		<p aria-live="polite">Chapter {journey.active?.number ?? 1}/07</p>
 		<ThemeToggle />
@@ -90,6 +90,13 @@
 		backdrop-filter: blur(8px);
 	}
 
+	.wordmark-heading {
+		margin: 0;
+		font-size: inherit;
+		line-height: inherit;
+		font-weight: inherit;
+	}
+
 	.wordmark,
 	.footer-wordmark {
 		color: var(--c-ink);
@@ -121,6 +128,8 @@
 	.journey {
 		position: relative;
 		isolation: isolate;
+		/* Decorative docks may poke past the flow edge on the static branch. */
+		overflow-x: clip;
 	}
 
 	.viewport {

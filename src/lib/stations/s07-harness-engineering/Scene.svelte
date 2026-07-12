@@ -316,7 +316,9 @@
 		.terms-panel {
 			grid-template-columns: 1fr;
 		}
-
+		.ports {
+			grid-template-columns: 1fr;
+		}
 		.term + .term {
 			border-inline-start: 0;
 			border-block-start: 1px solid var(--c-line);

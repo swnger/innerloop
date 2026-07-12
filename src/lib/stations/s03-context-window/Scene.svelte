@@ -204,7 +204,7 @@
 	.stateless__support { color: var(--c-ink-muted); font-size: 1rem; line-height: 1.5; }
 
 	.packet { display: inline-flex; align-items: center; gap: 0.3rem; min-width: 8rem; min-height: 4.2rem; padding: 0.75rem; border: 2px solid var(--concept-history); border-radius: 0.8rem; background: var(--concept-history-fill); box-shadow: 0.35rem 0.35rem 0 var(--c-line); color: var(--c-ink); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; }
-	.packet--dock { width: 7rem; min-width: 0; min-height: 3.2rem; padding: 0.5rem; }
+	.packet--dock { width: 7rem; max-width: 100%; min-width: 0; min-height: 3.2rem; padding: 0.5rem; }
 	.packet span { margin-inline-end: auto; }
 	.packet i { width: 0.45rem; height: 1.6rem; border-radius: 0.12rem; background: var(--concept-history); opacity: 0.68; }
 

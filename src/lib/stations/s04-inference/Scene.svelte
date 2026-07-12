@@ -331,6 +331,7 @@
 		.feed-arrow { transform: rotate(90deg); }
 		.intake-note { grid-column: auto; }
 		.port--context { margin-inline: 0; }
+		.instrument > .port--context { left: 0.6rem; transform: translate(0, -50%); }
 		.filmstrip { grid-template-columns: 1fr; }
 		.cycle-frame { min-height: 0; }
 		.plateau-cue { grid-template-columns: 1fr; }

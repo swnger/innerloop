@@ -49,7 +49,11 @@
 		<polyline class="spine" points={points} fill="none" stroke="url(#journey-spine)" />
 		{#each manifest as entry}
 			{@const position = positions.get(entry.meta.id) ?? { x: 0, y: 0 }}
-			<a href={`#${entry.meta.id}`} aria-current={journey.activeId === entry.meta.id ? 'step' : undefined}>
+			<a
+				href={`#${entry.meta.id}`}
+				aria-label={`Chapter ${String(entry.meta.number).padStart(2, '0')} — ${entry.meta.title}`}
+				aria-current={journey.activeId === entry.meta.id ? 'step' : undefined}
+			>
 				<circle
 					class:active={journey.activeId === entry.meta.id}
 					cx={inset + position.x * scale}
