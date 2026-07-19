@@ -72,7 +72,15 @@
 				}
 
 				beats.forEach((beat, index) => {
-					timeline.to(beat, { autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out }, index === 0 ? '>' : '+=0.2');
+					if (index > 0) {
+						timeline.to(beats[index - 1], {
+							autoAlpha: 0,
+							y: -12,
+							duration: DUR.micro,
+							ease: EASE.out,
+						});
+					}
+					timeline.to(beat, { autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out });
 					if (index === 3 && tank && tankFill) timeline.addLabel('tank-fill-start');
 					timeline.to({}, { duration: index === 1 ? 0.5 : 0.28 });
 					if (index === 3 && tank && tankFill) {
@@ -249,7 +257,7 @@
 		</div>
 	</div>
 
-	<Legend items={[{ hue: 'tools', label: 'tool call · violet' }, { hue: 'tool-output', label: 'tool output · red' }, { hue: 'response', label: 'answer · ochre' }]} />
+	<Legend items={[{ hue: 'history', label: 'context · blue' }, { hue: 'tools', label: 'tool call · violet' }, { hue: 'tool-output', label: 'tool output · red' }, { hue: 'response', label: 'answer · ochre' }]} />
 
 	<div class="ports" aria-label="Station ports">
 		<div class="port" data-port="response-in" aria-hidden="true"><span>response in</span></div>
@@ -387,6 +395,13 @@
 	min-height: 100svh;
 	overflow: hidden;
 	padding-block: clamp(1.5rem, 5vh, 3.5rem);
+}
+
+:global(.journey[data-journey='enhanced']) .scene > :global(.station-head) {
+	position: absolute;
+	top: 8%;
+	right: var(--page-gutter);
+	left: var(--page-gutter);
 }
 
 :global(.journey[data-journey='enhanced']) .scene > [data-beat] {

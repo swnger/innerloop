@@ -47,38 +47,32 @@
 		flex: 0 0 auto;
 		width: 0.9rem;
 		height: 0.9rem;
-		border: 2px solid var(--c-line-strong);
+		border: 1px solid currentColor;
 		border-radius: 0.25rem;
-		background: var(--c-sunken);
+		background: currentColor;
 	}
 
 	.legend__swatch--system {
-		border-color: var(--concept-system);
-		background: var(--concept-system-fill);
+		color: var(--concept-system);
 	}
 
 	.legend__swatch--history {
-		border-color: var(--concept-history);
-		background: var(--concept-history-fill);
+		color: var(--concept-history);
 	}
 
 	.legend__swatch--user {
-		border-color: var(--concept-user);
-		background: var(--concept-user-fill);
+		color: var(--concept-user);
 	}
 
 	.legend__swatch--tools {
-		border-color: var(--concept-tools);
-		background: var(--concept-tools-fill);
+		color: var(--concept-tools);
 	}
 
 	.legend__swatch--tool-output {
-		border-color: var(--concept-tool-output);
-		background: var(--concept-tool-output-fill);
+		color: var(--concept-tool-output);
 	}
 
 	.legend__swatch--response {
-		border-color: var(--concept-response);
-		background: var(--concept-response-fill);
+		color: var(--concept-response);
 	}
 </style>

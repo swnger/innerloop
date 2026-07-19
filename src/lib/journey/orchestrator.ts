@@ -1,4 +1,5 @@
-import { DUR, EASE } from '$lib/motion/tokens';
+import { replaceState } from '$app/navigation';
+import { DUR, EASE, STAGGER } from '$lib/motion/tokens';
 import { cssColor } from '$lib/motion/colors';
 import { loadGsap } from '$lib/motion/gsap';
 import { journey } from './journey.svelte';
@@ -79,29 +80,191 @@ export async function initJourney(els: {
 			},
 			(mmContext: GsapContext) => {
 				const conditions = mmContext.conditions ?? {};
-				if (conditions.reduced || conditions.compact) {
+				if (conditions.reduced) {
 					journey.setLoopMapBorn(true);
 					for (const entry of manifest) {
 						const handle = handles.get(entry.meta.id);
 						if (!handle) continue;
-						const context: StationContext = {
+						handle.applyStatic({
 							gsap,
 							root: handle.sceneEl,
-							reduced: Boolean(conditions.reduced),
-							mobile: Boolean(conditions.compact),
+							reduced: true,
+							mobile: false,
 							color: (token) => cssColor(token, handle.sceneEl),
 							requestMeasure: () => undefined
-						};
-						if (conditions.reduced) handle.applyStatic(context);
+						});
 					}
 					branchCleanup = () => {
 						journey.setLoopMapBorn(true);
 						els.world.style.removeProperty('transform');
-						for (const entry of manifest) {
-							const station = els.world.querySelector<HTMLElement>(`[data-station="${entry.meta.id}"]`);
-							station?.removeAttribute('inert');
-							station?.style.removeProperty('visibility');
-						}
+					};
+					return branchCleanup;
+				}
+
+				if (conditions.compact) {
+					journey.setLoopMapBorn(true);
+					const contexts: GsapContext[] = [];
+					const observedTweens = new Map<Element, gsap.core.Tween[]>();
+					const observer = new IntersectionObserver(
+						(entries) => {
+							for (const entry of entries) {
+								const tweens = observedTweens.get(entry.target) ?? [];
+								for (const tween of tweens) {
+									if (entry.isIntersecting) tween.play();
+									else if (entry.boundingClientRect.top > 0) tween.reverse();
+								}
+							}
+						},
+						{ rootMargin: '0px 0px -10% 0px', threshold: 0.12 }
+					);
+					const observeTween = (trigger: Element, tween: gsap.core.Tween) => {
+						const tweens = observedTweens.get(trigger) ?? [];
+						tweens.push(tween);
+						observedTweens.set(trigger, tweens);
+						observer.observe(trigger);
+					};
+
+					const primarySelector = [
+						'figure.diagram-panel',
+						'section.beat',
+						'[data-beat]',
+						'.diagram-shell',
+						'.chat-panel',
+						'.loop-column',
+						'.station-summary',
+						'.closing'
+					].join(',');
+
+					for (const entry of manifest) {
+						const handle = handles.get(entry.meta.id);
+						if (!handle) continue;
+						const stationContext = gsap.context(() => {
+							const candidates = Array.from(
+								handle.sceneEl.querySelectorAll<HTMLElement>(primarySelector)
+							);
+							const primaryTargets = candidates.filter(
+								(target) => !candidates.some((other) => other !== target && other.contains(target))
+							);
+
+							for (const [index, target] of primaryTargets.entries()) {
+								const tween = gsap.fromTo(
+									target,
+									{ autoAlpha: 0, y: 18 },
+									{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out, paused: true }
+								);
+								if (entry.meta.id === 'agent-loop' && index === 0) {
+									tween.play();
+									continue;
+								}
+								observeTween(target, tween);
+							}
+
+							const observeGroup = (
+								selector: string,
+								from: gsap.TweenVars,
+								to: gsap.TweenVars
+							) => {
+								const targets = Array.from(handle.sceneEl.querySelectorAll<Element>(selector));
+								if (!targets.length) return;
+								const triggerTarget =
+									targets[0].closest<HTMLElement>(
+										'.beat, figure, [data-beat], .diagram-shell, .loop-column'
+									) ?? targets[0];
+								const tween = gsap.fromTo(targets, from, { ...to, paused: true });
+								observeTween(triggerTarget, tween);
+							};
+
+							observeGroup(
+								'[data-shatter-chip], [data-chip], [data-stratum], [data-strategy], [data-loop-ring], [data-terms]',
+								{ autoAlpha: 0, y: 12 },
+								{
+									autoAlpha: 1,
+									y: 0,
+									duration: DUR.micro,
+									stagger: STAGGER.tight,
+									ease: EASE.out
+								}
+							);
+							observeGroup(
+								'[data-prompt-char]',
+								{ autoAlpha: 0 },
+								{
+									autoAlpha: 1,
+									duration: DUR.micro * 0.7,
+									stagger: STAGGER.tight * 0.45,
+									ease: EASE.out
+								}
+							);
+							observeGroup(
+								'[data-chip-id]',
+								{ autoAlpha: 0, rotationX: -90, transformOrigin: 'center bottom' },
+								{
+									autoAlpha: 1,
+									rotationX: 0,
+									duration: DUR.micro,
+									stagger: STAGGER.tight,
+									ease: EASE.out
+								}
+							);
+							observeGroup(
+								'[data-flow], [data-cycle-arrow], [data-check-path]',
+								{ attr: { strokeDasharray: 1, strokeDashoffset: 1 } },
+								{
+									attr: { strokeDashoffset: 0 },
+									duration: DUR.beat,
+									stagger: STAGGER.tight,
+									ease: EASE.draw
+								}
+							);
+							observeGroup(
+								'[data-prob-bar], [data-plateau-fill]',
+								{ scaleX: 0, transformOrigin: 'left center' },
+								{
+									scaleX: 1,
+									duration: DUR.settle,
+									stagger: STAGGER.tight,
+									ease: EASE.draw
+								}
+							);
+							observeGroup(
+								'[data-cycle-frame], [data-stream-token]',
+								{ autoAlpha: 0, y: 8 },
+								{
+									autoAlpha: 1,
+									y: 0,
+									duration: DUR.micro,
+									stagger: STAGGER.chip,
+									ease: EASE.out
+								}
+							);
+							observeGroup(
+								'[data-branch-pulse]',
+								{ autoAlpha: 0, scaleX: 0.4, transformOrigin: 'left center' },
+								{ autoAlpha: 1, scaleX: 1, duration: DUR.beat, ease: EASE.out }
+							);
+							observeGroup(
+								'.band i, .mini-band i',
+								{ scaleX: 0, transformOrigin: 'left center' },
+								{
+									scaleX: 1,
+									duration: DUR.micro,
+									stagger: STAGGER.tight,
+									ease: EASE.draw
+								}
+							);
+							observeGroup(
+								'[data-tank-fill]',
+								{ scaleY: 0, transformOrigin: 'bottom center' },
+								{ scaleY: 1, duration: DUR.settle, ease: EASE.draw }
+							);
+						}, handle.sceneEl);
+						contexts.push(stationContext);
+					}
+
+					branchCleanup = () => {
+						observer.disconnect();
+						for (const context of contexts) context.revert();
+						els.world.style.removeProperty('transform');
 					};
 					return branchCleanup;
 				}
@@ -170,7 +333,7 @@ export async function initJourney(els: {
 				let birthMasterProgress = 0;
 				let birthFraction: number | undefined;
 
-				let measureTimer: ReturnType<typeof setTimeout> | undefined;
+				let measureTimer: number | undefined;
 				let previousActive = '';
 				const cull = (progress: number) => {
 					const segment = table.at(progress);
@@ -191,20 +354,32 @@ export async function initJourney(els: {
 					cull(progress);
 					travelerLayer.placeFor(progress);
 					if (journey.activeId && journey.activeId !== previousActive) {
-						history.replaceState(history.state, '', `#${journey.activeId}`);
+						replaceState(`#${journey.activeId}`, history.state);
 						previousActive = journey.activeId;
 					}
 				};
+				const remeasure = () => {
+					if (!trigger) return;
+					const progress = trigger.progress;
+					master.invalidate();
+					ScrollTrigger.refresh();
+					trigger.scroll(trigger.start + progress * table.totalVh * window.innerHeight / 100);
+					// GSAP leaves invalidated tweens un-initialised until they render at
+					// a non-zero ratio, so a backward scrub can never restore states that
+					// sit before the playhead. Sweep 0 → 1 so every child's local time
+					// really moves (a direct jump to 1 skips children already resting at
+					// their end) and each tween re-seeds in choreography order. Return to
+					// 0 suppressed, then land forward un-suppressed so scene callbacks
+					// (gauges, counters) replay for everything at or before the playhead.
+					master.progress(0, true);
+					master.progress(1, true);
+					master.progress(0, true);
+					master.progress(progress);
+					update(progress);
+				};
 				const requestMeasure = () => {
-					clearTimeout(measureTimer);
-					measureTimer = setTimeout(() => {
-						if (!trigger) return;
-						const progress = trigger.progress;
-						master.invalidate();
-						ScrollTrigger.refresh();
-						trigger.scroll(trigger.start + progress * table.totalVh * window.innerHeight / 100);
-						update(progress);
-					}, 150);
+					window.clearTimeout(measureTimer);
+					measureTimer = window.setTimeout(remeasure, 150);
 				};
 				for (const entry of manifest) {
 					const handle = handles.get(entry.meta.id);
@@ -233,8 +408,11 @@ export async function initJourney(els: {
 					const stationContext = gsap.context(() => {
 						try {
 							stationTimeline = handle.build(stationContextValue);
-						} catch {
+						} catch (error) {
 							stationFailed = true;
+							if (import.meta.env.DEV) {
+								console.error(`Failed to build station "${entry.meta.id}"`, error);
+							}
 						}
 					}, handle.sceneEl);
 					if (capturesResponseFaces) travelerLayer.home();
@@ -406,10 +584,7 @@ export async function initJourney(els: {
 				}
 				if (trigger) update(trigger.progress);
 				document.fonts?.ready.then(() => {
-					if (!destroyed) {
-						master.invalidate();
-						ScrollTrigger.refresh();
-					}
+					if (!destroyed) remeasure();
 				});
 
 				branchCleanup = () => {
@@ -445,7 +620,8 @@ export async function initJourney(els: {
 				return branchCleanup;
 			}
 		);
-	} catch {
+	} catch (error) {
+		if (import.meta.env.DEV) console.error('Failed to initialize journey', error);
 		return {
 			destroy() {
 				destroyed = true;

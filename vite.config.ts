@@ -3,6 +3,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	plugins: [sveltekit()],
+	server: {
+		host: true,
+		allowedHosts: ['.taildcd954.ts.net']
+	},
 	test: {
 		include: ['src/**/*.test.ts'],
 		environment: 'happy-dom'

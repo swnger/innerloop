@@ -31,7 +31,7 @@ export const manifest: StationManifestEntry[] = [
 			title: 'Context window',
 			loopNode: 'context',
 			accent: 'history',
-			lengthVh: 350,
+			lengthVh: 400,
 		},
 		exit: { id: 't34', direction: 'down', steps: 1, lengthVh: 100 },
 	},

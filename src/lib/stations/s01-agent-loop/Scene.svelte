@@ -309,6 +309,7 @@
 	}
 
 	.port {
+		position: relative;
 		display: grid;
 		width: 8.5rem;
 		min-width: 7rem;
@@ -321,6 +322,14 @@
 		font: 500 0.65rem/1 var(--mono);
 		letter-spacing: 0.03em;
 		text-transform: uppercase;
+	}
+
+	.port > span {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		white-space: nowrap;
 	}
 
 	.port--out {

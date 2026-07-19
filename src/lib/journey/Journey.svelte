@@ -46,7 +46,7 @@
 <header class="site-header">
 	<h1 class="wordmark-heading"><a class="wordmark" href="#agent-loop" aria-label="The Inner Loop home">The Inner Loop</a></h1>
 	<div class="header-meta">
-		<p aria-live="polite">Chapter {journey.active?.number ?? 1}/07</p>
+		<p aria-live="polite">Chapter {String(journey.active?.number ?? 1).padStart(2, '0')}/07</p>
 		<ThemeToggle />
 	</div>
 </header>

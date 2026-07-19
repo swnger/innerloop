@@ -29,18 +29,24 @@
 				const timeline = ctx.gsap.timeline();
 
 				if (panel) {
-					timeline.from(panel, { autoAlpha: 0, y: 20, duration: DUR.beat, ease: EASE.out });
+					timeline.fromTo(
+						panel,
+						{ autoAlpha: 0, y: 20 },
+						{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+					);
 					if (ring) {
-						timeline.from(
+						timeline.fromTo(
 							ring,
-							{ autoAlpha: 0, scale: 0.96, duration: DUR.settle, ease: EASE.out },
+							{ autoAlpha: 0, scale: 0.96 },
+							{ autoAlpha: 1, scale: 1, duration: DUR.settle, ease: EASE.out },
 							`<${STAGGER.tight}`,
 						);
 					}
 					if (terms) {
-						timeline.from(
+						timeline.fromTo(
 							terms,
-							{ autoAlpha: 0, y: 12, duration: DUR.micro, ease: EASE.out },
+							{ autoAlpha: 0, y: 12 },
+							{ autoAlpha: 1, y: 0, duration: DUR.micro, ease: EASE.out },
 							`<${STAGGER.tight}`,
 						);
 					}

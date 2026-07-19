@@ -30,8 +30,27 @@
 		const lab = ctx.root.querySelector<HTMLElement>('[data-token-lab]');
 		const progress = ctx.root.querySelector<HTMLElement>('[data-plateau-progress]');
 		const output = ctx.root.querySelector<HTMLElement>('[data-output-chips]');
+		const introPanel = panel?.closest<HTMLElement>('.diagram-panel');
+		const shatterBeat = ctx.root.querySelector<HTMLElement>('.shatter-beat');
+		const edgeBeat = ctx.root.querySelector<HTMLElement>('.edge-beat');
+		const labBeat = ctx.root.querySelector<HTMLElement>('.lab-beat');
+		const outputBeat = ctx.root.querySelector<HTMLElement>('.output-beat');
 
-		if (panel) timeline.from(panel, { autoAlpha: 0, y: 24, duration: DUR.beat, ease: EASE.out });
+		if (introPanel) {
+			timeline.fromTo(
+				introPanel,
+				{ autoAlpha: 0, y: 24 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+			);
+		}
+		if (introPanel) timeline.to(introPanel, { autoAlpha: 0, y: -12, duration: DUR.micro, ease: EASE.out });
+		if (shatterBeat) {
+			timeline.fromTo(
+				shatterBeat,
+				{ autoAlpha: 0, y: 22 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+			);
+		}
 		if (copy && shatter.length) {
 			/**
 			 * Measure each chip's origin at tween init instead of capturing layout
@@ -72,12 +91,35 @@
 				'<'
 			);
 		}
-		if (callout) timeline.from(callout, { autoAlpha: 0, y: 10, duration: DUR.beat, ease: EASE.out });
-		if (edge.length) {
-			timeline.from(edge, { autoAlpha: 0, y: 18, duration: DUR.beat, stagger: STAGGER.chip, ease: EASE.out });
+		if (callout) {
+			timeline.fromTo(
+				callout,
+				{ autoAlpha: 0, y: 10 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+			);
 		}
-		if (lab) {
-			timeline.from(lab, { autoAlpha: 0, y: 22, duration: DUR.beat, ease: EASE.out });
+		if (shatterBeat) timeline.to(shatterBeat, { autoAlpha: 0, y: -12, duration: DUR.micro, ease: EASE.out });
+		if (edgeBeat) {
+			timeline.fromTo(
+				edgeBeat,
+				{ autoAlpha: 0, y: 22 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+			);
+		}
+		if (edge.length) {
+			timeline.fromTo(
+				edge,
+				{ autoAlpha: 0, y: 18 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, stagger: STAGGER.chip, ease: EASE.out },
+			);
+		}
+		if (edgeBeat) timeline.to(edgeBeat, { autoAlpha: 0, y: -12, duration: DUR.micro, ease: EASE.out });
+		if (labBeat) {
+			timeline.fromTo(
+				labBeat,
+				{ autoAlpha: 0, y: 22 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+			);
 			if (progress) {
 				timeline.set(progress, { scaleX: 0, transformOrigin: 'left center' });
 				const plateauStart = timeline.duration();
@@ -86,8 +128,20 @@
 				timeline.to(progress, { scaleX: 1, duration: 3, ease: EASE.draw }, plateauStart);
 			}
 		}
+		if (labBeat) timeline.to(labBeat, { autoAlpha: 0, y: -12, duration: DUR.micro, ease: EASE.out });
+		if (outputBeat) {
+			timeline.fromTo(
+				outputBeat,
+				{ autoAlpha: 0, y: 22 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+			);
+		}
 		if (output) {
-			timeline.from(output, { autoAlpha: 0, y: 12, duration: DUR.beat, ease: EASE.out });
+			timeline.fromTo(
+				output,
+				{ autoAlpha: 0, y: 12 },
+				{ autoAlpha: 1, y: 0, duration: DUR.beat, ease: EASE.out },
+			);
 			timeline.to(output, { autoAlpha: 0, duration: DUR.settle, ease: EASE.out });
 		}
 		return timeline;
@@ -124,7 +178,7 @@
 
 	<section class="beat shatter-beat" aria-labelledby="shatter-title">
 		<div class="beat-heading">
-			<p class="eyebrow">01 / Split the prompt</p>
+			<p class="section-label">01 · split the prompt</p>
 			<h2 id="shatter-title">One sentence becomes several lookup pieces</h2>
 		</div>
 		<div class="prompt-copy" data-prompt-copy aria-label={PROMPT}>{PROMPT}</div>
@@ -141,7 +195,7 @@
 
 	<section class="beat edge-beat" aria-labelledby="edge-title">
 		<div class="beat-heading">
-			<p class="eyebrow">02 / Where the edges show</p>
+			<p class="section-label">02 · where the edges show</p>
 			<h2 id="edge-title">Tokens are not a character counter</h2>
 		</div>
 		<div class="edge-grid">
@@ -180,7 +234,7 @@
 
 	<section class="beat output-beat" aria-labelledby="output-title">
 		<div class="beat-heading">
-			<p class="eyebrow">03 / Hand off</p>
+			<p class="section-label">03 · hand off</p>
 			<h2 id="output-title">The numbered row is ready for the next station</h2>
 		</div>
 		<p class="output-copy">These scene-owned chips line up at the dock. The traveling token stream is a separate object and will carry the handoff onward.</p>
@@ -235,14 +289,11 @@
 
 	.beat-heading { display: grid; gap: 0.35rem; }
 
-	.eyebrow {
+	.section-label {
 		margin: 0;
-		color: var(--concept-history);
-		font-family: var(--mono);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
+		color: var(--c-ink-muted);
+		font: 500 0.76rem/1.3 var(--mono);
+		letter-spacing: 0.04em;
 	}
 
 	h2 { margin: 0; font-size: clamp(1.5rem, 3.5vw, 2.35rem); line-height: 1.12; }
@@ -372,5 +423,38 @@
 		.port { min-width: 0; width: 50%; }
 		.output-port { min-width: 50%; }
 		.output-chips { display: none; }
+	}
+
+	:global(.journey[data-journey='enhanced']) .scene {
+		display: block;
+		height: 100svh;
+		min-height: 100svh;
+		overflow: hidden;
+		padding-block: clamp(1.5rem, 5vh, 3.5rem);
+	}
+
+	:global(.journey[data-journey='enhanced']) .scene > :global(.station-head) {
+		position: absolute;
+		top: 7%;
+		right: var(--page-gutter);
+		left: var(--page-gutter);
+	}
+
+	:global(.journey[data-journey='enhanced']) .scene > :global(.diagram-panel),
+	:global(.journey[data-journey='enhanced']) .scene > .beat {
+		position: absolute;
+		top: 25%;
+		right: var(--page-gutter);
+		left: var(--page-gutter);
+		width: auto;
+		max-width: 58rem;
+		margin-inline: auto;
+	}
+
+	:global(.journey[data-journey='enhanced']) .scene > .ports {
+		position: absolute;
+		right: var(--page-gutter);
+		bottom: 3%;
+		left: var(--page-gutter);
 	}
 </style>
