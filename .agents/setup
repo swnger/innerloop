@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+if ! command -v bun >/dev/null 2>&1; then
+	echo "Installing Bun..."
+	curl -fsSL https://bun.sh/install | bash
+fi
+
+profile_marker="# innerloop Bun"
+touch "$HOME/.bash_profile"
+if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile"; then
+	cat >> "$HOME/.bash_profile" <<'EOF'
+
+# innerloop Bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+EOF
+fi
+
+echo "Installing project dependencies..."
+bun install --cwd "$repo_root" --frozen-lockfile
+
+agent_browser_package="$BUN_INSTALL/install/global/node_modules/agent-browser"
+if [[ ! -d "$agent_browser_package" ]]; then
+	echo "Installing agent-browser..."
+	bun install --global agent-browser
+fi
+
+case "$(uname -m)" in
+	x86_64) agent_browser_arch="x64" ;;
+	aarch64 | arm64) agent_browser_arch="arm64" ;;
+	*) echo "Unsupported agent-browser architecture: $(uname -m)" >&2; exit 1 ;;
+esac
+agent_browser_binary="$agent_browser_package/bin/agent-browser-linux-$agent_browser_arch"
+chmod +x "$agent_browser_binary"
+ln -sfn "$agent_browser_binary" "$BUN_INSTALL/bin/agent-browser"
+
+if ! compgen -G "$HOME/.agent-browser/browsers/chrome-*/chrome" >/dev/null; then
+	echo "Installing agent-browser Chrome and system dependencies..."
+	agent-browser install --with-deps
+else
+	echo "agent-browser Chrome is already installed."
+fi
+
+echo "Orb setup complete."
